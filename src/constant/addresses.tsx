@@ -1,4 +1,10 @@
 // Addresses for various contracts on supported networks
+
+export enum ChainId {
+  Mainnet = 8453,
+  Testnet = 4
+
+}
 export const ZYBRA_CONFIGURATOR_ADDRESS = {
     1: '0xZybraConfiguratorMainnet', // Mainnet
     4: '0xZybraConfiguratorRinkeby', // Rinkeby
@@ -11,8 +17,14 @@ export const ZYBRA_CONFIGURATOR_ADDRESS = {
     8453: '0xERC7540VaultBase', // Base
   };
 
-
+  
   export const MULTICALL_ADDRESS = {
+    1: '0xERC7540VaultMainnet', // Mainnet
+    4: '0xERC7540VaultRinkeby', // Rinkeby
+    8453: '0xERC7540VaultBase', // Base
+  };
+
+  export const ENS_REGISTRAR_ADDRESSES = {
     1: '0xERC7540VaultMainnet', // Mainnet
     4: '0xERC7540VaultRinkeby', // Rinkeby
     8453: '0xERC7540VaultBase', // Base

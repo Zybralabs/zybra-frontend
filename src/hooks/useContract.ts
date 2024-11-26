@@ -15,6 +15,8 @@ import ZfiStakingABI from '../abis/ZfiStaking.json';
 import ERC20ABI from '../abis/ERC20.json';
 import NFTABI from '../abis/NFT.json';
 import CentrifugeVaultABI from '../abis/CentrifugeZybraVault.json';
+import ENS_PUBLIC_RESOLVER_ABI from '../abis/ens-public-resolver.json';
+import ENS_ABI from '../abis/ens-registrar.json';
 
 // Contract Addresses
 import {
@@ -25,6 +27,8 @@ import {
     ZYBRA_VAULT_BASE_ADDRESS,
     SWARM_VAULT_ADDRESS,
     ZFI_STAKING_ADDRESS,
+    ENS_REGISTRAR_ADDRESSES,
+    ChainId,
 } from '../constant/addresses';
 
 // Enum for Vault Types
@@ -149,6 +153,15 @@ export function useZybraConfiguratorContract(
         withSignerIfPossible,
         chainId,
     );
+}
+
+
+export function useENSRegistrarContract() {
+    return useContract(ENS_REGISTRAR_ADDRESSES[ChainId.Mainnet], ENS_ABI)
+}
+
+export function useENSResolverContract(address: string | undefined) {
+    return useContract(address, ENS_PUBLIC_RESOLVER_ABI)
 }
 
 

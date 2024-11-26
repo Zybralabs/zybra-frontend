@@ -4,9 +4,9 @@ import { BigNumber } from 'ethers';
 import { useCallback, useMemo } from 'react';
 import { calculateGasMargin } from '../utils/calculateGasMargin';
 import { useAccount } from '../hooks/useAccount';
-import { useTokenContract } from '../hooks/useContract';
 import { useTokenAllowance } from '../hooks/useTokenAllowance';
 import { logger } from '../utils/logger';
+import { useERC20TokenContract } from '@/hooks/useContract';
 
 export enum ApprovalState {
   UNKNOWN = 'UNKNOWN',
@@ -44,9 +44,9 @@ function useApprovalStateForSpender(
 }
 
 export function useApproval(
-  amountToApprove: BigNumber | undefined,
-  spender: string | undefined,
-  tokenAddress: string | undefined,
+  amountToApprove: BigNumber,
+  spender: string,
+  tokenAddress: string,
   useIsPendingApproval: (tokenAddress?: string, spender?: string) => boolean,
 ): [
   ApprovalState,
@@ -59,7 +59,7 @@ export function useApproval(
 
   const approvalState = useApprovalStateForSpender(amountToApprove, spender, tokenAddress, useIsPendingApproval);
 
-  const tokenContract = useTokenContract(tokenAddress);
+  const tokenContract = useERC20TokenContract(tokenAddress,true,chainId);
 
   const approve = useCallback(async () => {
     function logFailure(error: Error | string): undefined {
