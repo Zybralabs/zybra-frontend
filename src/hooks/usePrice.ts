@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import QuoterABI from "../abis/UniswapV3Quoter.json"; // ABI for Uniswap V3 Quoter
 import { useContract } from "./useContract"; // Custom hook for connecting contracts
 
 // Constants

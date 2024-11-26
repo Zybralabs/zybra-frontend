@@ -14,6 +14,8 @@ import TrancheAssetABI from '../abis/TrancheAsset.json';
 import ZfiStakingABI from '../abis/ZfiStaking.json';
 import ERC20ABI from '../abis/ERC20.json';
 import NFTABI from '../abis/NFT.json';
+import QuoterABI from "../abis/UniswapV3Quoter.json"; // ABI for Uniswap V3 Quoter
+
 import CentrifugeVaultABI from '../abis/CentrifugeZybraVault.json';
 import ENS_PUBLIC_RESOLVER_ABI from '../abis/ens-public-resolver.json';
 import ENS_ABI from '../abis/ens-registrar.json';
@@ -29,6 +31,8 @@ import {
     ZFI_STAKING_ADDRESS,
     ENS_REGISTRAR_ADDRESSES,
     ChainId,
+    CENTRIFUGE_VAULT_ADDRESS,
+    QOUTER_ADDRESS,
 } from '../constant/addresses';
 
 // Enum for Vault Types
@@ -81,18 +85,15 @@ export function useContract<T extends Contract = Contract>(
 
 // Vault Contract Hook
 export function useCentrifugeVaultContract(
-    address: string,
     withSignerIfPossible = true,
     chainId: number,
 ) {
 
-
-    return useContract(address, CentrifugeVaultABI, withSignerIfPossible, chainId); // Assuming Swarm uses the same ABI as ERC7540Vault;
+    return useContract(CENTRIFUGE_VAULT_ADDRESS[chainId], CentrifugeVaultABI, withSignerIfPossible, chainId); // Assuming Swarm uses the same ABI as ERC7540Vault;
 
 
 
 }
-
 
 export function useERC7540VaultContract(
     address: string,
@@ -162,6 +163,10 @@ export function useENSRegistrarContract() {
 
 export function useENSResolverContract(address: string | undefined) {
     return useContract(address, ENS_PUBLIC_RESOLVER_ABI)
+}
+
+export function useUniswapQouter(chainId: number) {
+    return useContract(QOUTER_ADDRESS[chainId],QuoterABI ,chainId)
 }
 
 

@@ -25,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body className={open_sans.className}>
-        <Providers>{children}</Providers>
+        <Providers children={children}>{children}</Providers>
       </body>
     </html>
   );

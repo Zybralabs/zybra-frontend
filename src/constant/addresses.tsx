@@ -17,6 +17,11 @@ export const ZYBRA_CONFIGURATOR_ADDRESS = {
     8453: '0xERC7540VaultBase', // Base
   };
 
+export const CENTRIFUGE_VAULT_ADDRESS = {
+    1: '0xERC7540VaultMainnet', // Mainnet
+    4: '0xERC7540VaultRinkeby', // Rinkeby
+    8453: '0xERC7540VaultBase', // Base
+  };
   
   export const MULTICALL_ADDRESS = {
     1: '0xERC7540VaultMainnet', // Mainnet
@@ -48,6 +53,12 @@ export const ZYBRA_CONFIGURATOR_ADDRESS = {
     8453: '0xZybraVaultBaseBase', // Base
   };
 
+  export const QOUTER_ADDRESS = {
+    1: '0xZybraVaultBaseMainnet', // Mainnet
+    4: '0xZybraVaultBaseRinkeby', // Rinkeby
+    8453: '0xZybraVaultBaseBase', // Base
+  };
+  
   export const ZFI_TOKEN_ADDRESS = {
     1: '0xZybraVaultBaseMainnet', // Mainnet
     4: '0xZybraVaultBaseRinkeby', // Rinkeby
