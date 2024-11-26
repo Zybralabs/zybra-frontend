@@ -28,7 +28,6 @@
   - [Prerequisites](#prerequisites)
   - [Steps](#steps)
 - [Features](#features)
-- [⭐️ Support Us](#️-support-us)
 
 ---
 
