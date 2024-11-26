@@ -35,6 +35,18 @@ export const ZYBRA_CONFIGURATOR_ADDRESS = {
     4: '0xZybraVaultBaseRinkeby', // Rinkeby
     8453: '0xZybraVaultBaseBase', // Base
   };
+
+  export const ZFI_TOKEN_ADDRESS = {
+    1: '0xZybraVaultBaseMainnet', // Mainnet
+    4: '0xZybraVaultBaseRinkeby', // Rinkeby
+    8453: '0xZybraVaultBaseBase', // Base
+  };
+
+  export const ZFI_STAKING_ADDRESS = {
+    1: '0xZybraVaultBaseMainnet', // Mainnet
+    4: '0xZybraVaultBaseRinkeby', // Rinkeby
+    8453: '0xZybraVaultBaseBase', // Base
+  };
   
   // USDC Token Addresses for different networks
   export const USDC_ADDRESS = {

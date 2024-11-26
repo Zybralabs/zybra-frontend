@@ -11,6 +11,7 @@ import ERC7540ABI from '../abis/ERC7540.json';
 import InvestmentManagerABI from '../abis/InvestmentManager.json';
 import SwarmVaultBaseABI from '../abis/SwarmZybraVault.json';
 import TrancheAssetABI from '../abis/TrancheAsset.json';
+import ZfiStakingABI from '../abis/ZfiStaking.json';
 import ERC20ABI from '../abis/ERC20.json';
 import NFTABI from '../abis/NFT.json';
 import CentrifugeVaultABI from '../abis/CentrifugeZybraVault.json';
@@ -23,6 +24,7 @@ import {
     INVESTMENT_MANAGER_ADDRESS,
     ZYBRA_VAULT_BASE_ADDRESS,
     SWARM_VAULT_ADDRESS,
+    ZFI_STAKING_ADDRESS,
 } from '../constant/addresses';
 
 // Enum for Vault Types
@@ -169,6 +171,19 @@ export function useInvestmentManagerContract(
     return useContract(
         chainId ? INVESTMENT_MANAGER_ADDRESS[chainId] : undefined,
         InvestmentManagerABI,
+        withSignerIfPossible,
+        chainId,
+    );
+}
+
+
+export function useZFIStakingContract(
+    withSignerIfPossible = true,
+    chainId?: number,
+) {
+    return useContract(
+        chainId ? ZFI_STAKING_ADDRESS[chainId] : undefined,
+        ZfiStakingABI,
         withSignerIfPossible,
         chainId,
     );
