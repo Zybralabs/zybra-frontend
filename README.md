@@ -8,9 +8,7 @@
 [![Stargazers](https://img.shields.io/github/stars/YourGitHubUsername/ZybraFinance)](https://github.com/YourGitHubUsername/ZybraFinance/stargazers)
 [![Forks](https://img.shields.io/github/forks/YourGitHubUsername/ZybraFinance)](https://github.com/YourGitHubUsername/ZybraFinance/forks)
 [![Issues](https://img.shields.io/github/issues/YourGitHubUsername/ZybraFinance)](https://github.com/YourGitHubUsername/ZybraFinance/issues)
-[![MIT License](https://img.shields.io/github/license/YourGitHubUsername/ZybraFinance)](https://github.com/YourGitHubUsername/ZybraFinance/blob/main/LICENSE)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue?logo=Linkedin&logoColor=white)](https://www.linkedin.com/in/your-profile/)
-![Vercel](https://img.shields.io/github/deployments/YourGitHubUsername/ZybraFinance/production?label=Vercel&logo=Vercel&logoColor=white)
+[![MIT License](https://img.shields.io/github/license/webners1/ZybraFinance)](https://github.com/webners1/ZybraFinance/blob/main/LICENSE)
 
 <br>
 
@@ -34,20 +32,10 @@
 
 ---
 
-## Update
-
-### 2024-02:
-- Fully integrated **Centrifuge** and **Swarm Vaults** for asset management.
-- Switched to Next.js v14 for enhanced performance and SEO capabilities.
-- Updated with Wagmi v2, Viem, and ChakraUI for better developer experience.
-- Added support for multi-chain networks including `Linea`, `lineaTestnet`, `Bsc`, and `bscTestnet`.
-- Improved transaction hooks with enhanced modularity.
-
----
 
 ## Description
 
-Zybra Finance is a next-generation decentralized asset management platform for efficient and scalable finance operations. Built using the latest tools in Web3, Zybra Finance enables seamless integration with Centrifuge and Swarm vaults, offering secure asset staking, borrowing, and liquidation management.
+Zybra Finance is a next-generation decentralized RWA Based Liquid Asset Investment platform for efficient and scalable finance operations. Built using the latest tools in Web3, Zybra Finance enables seamless integration with Centrifuge and Swarm vaults, offering secure asset staking, borrowing, and liquidation management.
 
 With a minimalist design and robust infrastructure, Zybra Finance empowers users to manage their financial assets with ease. The platform utilizes cutting-edge tech such as [Next.js](https://nextjs.org/), [Wagmi](https://wagmi.sh/), [Viem](https://viem.sh/), and [RainbowKit](https://www.rainbowkit.com/).
 
