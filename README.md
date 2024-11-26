@@ -21,7 +21,6 @@
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
-- [Update](#update)
 - [Description](#description)
 - [Built With](#built-with)
 - [Installation](#installation)
