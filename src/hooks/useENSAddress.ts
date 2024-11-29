@@ -3,6 +3,7 @@ import useDebounce from './useDebounce';
 import { safeNamehash } from '@/utils/safeNamehash';
 import { useMainnetSingleCallResult } from '@/lib/hooks/multicall';
 import isZero from '@/utils/isZero';
+import { useENSRegistrarContract, useENSResolverContract } from './useContract';
 
 /**
  * Does a lookup for an ENS name to find its address.

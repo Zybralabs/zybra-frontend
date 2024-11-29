@@ -15,6 +15,9 @@ import ZfiStakingABI from '../abis/ZfiStaking.json';
 import ERC20ABI from '../abis/ERC20.json';
 import NFTABI from '../abis/NFT.json';
 import QuoterABI from "../abis/UniswapV3Quoter.json"; // ABI for Uniswap V3 Quoter
+import EntryPointABI from "../abis/EntryPoint.json"; // ABI for Uniswap V3 Quoter
+import AccountAbstractionABI from "../abis/AccountAbstraction.json"; // ABI for Uniswap V3 Quoter
+import MulticallABI from "../abis/multicall.json"; // ABI for Uniswap V3 Quoter
 
 import CentrifugeVaultABI from '../abis/CentrifugeZybraVault.json';
 import ENS_PUBLIC_RESOLVER_ABI from '../abis/ens-public-resolver.json';
@@ -23,7 +26,6 @@ import ENS_ABI from '../abis/ens-registrar.json';
 // Contract Addresses
 import {
     ZYBRA_CONFIGURATOR_ADDRESS,
-    ERC7540_VAULT_ADDRESS,
     CENTRIFUGE_ROUTER_ADDRESS,
     INVESTMENT_MANAGER_ADDRESS,
     ZYBRA_VAULT_BASE_ADDRESS,
@@ -33,6 +35,8 @@ import {
     ChainId,
     CENTRIFUGE_VAULT_ADDRESS,
     QOUTER_ADDRESS,
+    MULTICALL_ADDRESS,
+    ABSTRACTION_ENTRY_POINT,
 } from '../constant/addresses';
 
 // Enum for Vault Types
@@ -182,6 +186,19 @@ export function useCentrifugeRouterContract(
     );
 }
 
+
+export function useMulticall(
+    withSignerIfPossible = true,
+    chainId?: number,
+) {
+    return useContract(
+        chainId ? MULTICALL_ADDRESS[chainId] : undefined,
+        MulticallABI,
+        withSignerIfPossible,
+        chainId,
+    );
+}
+
 export function useInvestmentManagerContract(
     withSignerIfPossible = true,
     chainId?: number,
@@ -214,6 +231,46 @@ export function useZybraVaultBaseContract(
     return useContract(
         chainId ? ZYBRA_VAULT_BASE_ADDRESS[chainId] : undefined,
         ZybraVaultBaseABI,
+        withSignerIfPossible,
+        chainId,
+    );
+}
+
+
+export function useZybraVaultBaseContract(
+    withSignerIfPossible = true,
+    chainId?: number,
+) {
+    return useContract(
+        chainId ? ZYBRA_VAULT_BASE_ADDRESS[chainId] : undefined,
+        ZybraVaultBaseABI,
+        withSignerIfPossible,
+        chainId,
+    );
+}
+
+
+
+export function useAbstractEntryPointContract(
+    withSignerIfPossible = true,
+    chainId?: number,
+) {
+    return useContract(
+        chainId ? ABSTRACTION_ENTRY_POINT[chainId] : undefined,
+        EntryPointABI,
+        withSignerIfPossible,
+        chainId,
+    );
+}
+
+export function useAbstractionAccountContract(
+    address: string,
+    withSignerIfPossible = true,
+    chainId?: number,
+) {
+    return useContract(
+        address,
+        AccountAbstractionABI,
         withSignerIfPossible,
         chainId,
     );

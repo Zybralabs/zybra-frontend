@@ -9,6 +9,7 @@ import { WagmiProvider } from "wagmi";
 import { BlockProvider } from '../context/BlockContext'
 
 import { wagmiConfig } from "@/wagmi";
+import { UserAccountProvider } from "@/context/UserAccountContext";
 
 export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   const [mounted, setMounted] = useState(false);
@@ -28,12 +29,14 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
       <QueryClientProvider client={queryClient}>
         <CacheProvider>
         <BlockProvider>
+<UserAccountProvider>
 
           <ChakraProvider resetCSS theme={theme}>
             <RainbowKitProvider coolMode appInfo={appInfo}>
               {mounted && children}
             </RainbowKitProvider>
           </ChakraProvider>
+</UserAccountProvider>
         </BlockProvider>
         </CacheProvider>
       </QueryClientProvider>

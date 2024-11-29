@@ -23,11 +23,18 @@ export const CENTRIFUGE_VAULT_ADDRESS = {
     8453: '0xERC7540VaultBase', // Base
   };
   
+  export const ABSTRACTION_ENTRY_POINT = {
+    1: '0xERC7540VaultMainnet', // Mainnet
+    4: '0xERC7540VaultRinkeby', // Rinkeby
+    8453: '0xERC7540VaultBase', // Base
+  };
+
   export const MULTICALL_ADDRESS = {
     1: '0xERC7540VaultMainnet', // Mainnet
     4: '0xERC7540VaultRinkeby', // Rinkeby
     8453: '0xERC7540VaultBase', // Base
   };
+
 
   export const ENS_REGISTRAR_ADDRESSES = {
     1: '0xERC7540VaultMainnet', // Mainnet
@@ -93,4 +100,49 @@ export const CENTRIFUGE_VAULT_ADDRESS = {
       BTC_USD: '0xBaseChainBTCUSDPriceFeed', // Replace with actual Base chain BTC/USD Price Feed
     },
   };
-  
+  // Stock Price Feed IDs for Pyth Network
+  export const STOCK_PRICE_FEED_ID = {
+    // Tech Stocks
+    AAPL_USD: '0xAAPL_PriceFeedID', // Apple
+    MSFT_USD: '0xMSFT_PriceFeedID', // Microsoft
+    GOOGL_USD: '0xGOOGL_PriceFeedID', // Alphabet (Google)
+    AMZN_USD: '0xAMZN_PriceFeedID', // Amazon
+    TSLA_USD: '0xTSLA_PriceFeedID', // Tesla
+    META_USD: '0xMETA_PriceFeedID', // Meta (Facebook)
+
+    // Financial Stocks
+    JPM_USD: '0xJPM_PriceFeedID', // JPMorgan Chase
+    BAC_USD: '0xBAC_PriceFeedID', // Bank of America
+    WFC_USD: '0xWFC_PriceFeedID', // Wells Fargo
+    GS_USD: '0xGS_PriceFeedID', // Goldman Sachs
+
+    // Consumer Goods Stocks
+    KO_USD: '0xKO_PriceFeedID', // Coca-Cola
+    PEP_USD: '0xPEP_PriceFeedID', // PepsiCo
+    PG_USD: '0xPG_PriceFeedID', // Procter & Gamble
+    MCD_USD: '0xMCD_PriceFeedID', // McDonald's
+    SBUX_USD: '0xSBUX_PriceFeedID', // Starbucks
+
+    // Automotive Stocks
+    GM_USD: '0xGM_PriceFeedID', // General Motors
+    F_USD: '0xF_PriceFeedID', // Ford Motor Company
+
+    // Healthcare Stocks
+    JNJ_USD: '0xJNJ_PriceFeedID', // Johnson & Johnson
+    PFE_USD: '0xPFE_PriceFeedID', // Pfizer
+    MRK_USD: '0xMRK_PriceFeedID', // Merck
+
+    // Energy Stocks
+    XOM_USD: '0xXOM_PriceFeedID', // Exxon Mobil
+    CVX_USD: '0xCVX_PriceFeedID', // Chevron
+
+    // Airlines
+    DAL_USD: '0xDAL_PriceFeedID', // Delta Airlines
+    UAL_USD: '0xUAL_PriceFeedID', // United Airlines
+
+    // Indices
+    SPY_USD: '0xSPY_PriceFeedID', // S&P 500 ETF
+    DIA_USD: '0xDIA_PriceFeedID', // Dow Jones ETF
+    QQQ_USD: '0xQQQ_PriceFeedID', // NASDAQ 100 ETF
+  };
+

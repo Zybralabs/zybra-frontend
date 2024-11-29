@@ -2,6 +2,7 @@ import JSBI from 'jsbi'
 import { useMemo } from 'react'
 import { useContract } from './useContract'
 import { useSingleCallResult } from '@/lib/hooks/multicall'
+import useENSAddress from './useENSAddress'
 
 const CHAIN_DATA_ABI = [
   {
