@@ -1,7 +1,14 @@
-import { useMemo } from 'react';
-import { useMultipleContractSingleData } from '@uniswap/redux-multicall';
-import { useCentrifugeVaultContract, useSwarmVaultContract, useERC20TokenContract } from './useContractHooks'; // Import hooks
-import { VaultType } from '@/hooks/useContract';
+import { useMemo } from "react";
+
+import { useMultipleContractSingleData } from "@uniswap/redux-multicall";
+
+import { VaultType } from "@/hooks/useContract";
+
+import {
+  useCentrifugeVaultContract,
+  useSwarmVaultContract,
+  useERC20TokenContract,
+} from "./useContractHooks"; // Import hooks
 
 /**
  * Hook to fetch tranche details (name, symbol, price) for Centrifuge vaults.
@@ -13,9 +20,9 @@ export function useCentrifugeTrancheDetails(vaultAddress: string) {
 
   const { data: trancheData } = useMultipleContractSingleData(
     [
-      { contract: vaultContract, methodName: 'poolId', callInputs: [] },
-      { contract: vaultContract, methodName: 'trancheId', callInputs: [] },
-      { contract: vaultContract, methodName: 'asset', callInputs: [] },
+      { contract: vaultContract, methodName: "poolId", callInputs: [] },
+      { contract: vaultContract, methodName: "trancheId", callInputs: [] },
+      { contract: vaultContract, methodName: "asset", callInputs: [] },
     ],
     vaultContract?.address,
   );
@@ -26,8 +33,8 @@ export function useCentrifugeTrancheDetails(vaultAddress: string) {
 
   const { data: trancheTokenData } = useMultipleContractSingleData(
     [
-      { contract: trancheTokenContract, methodName: 'name', callInputs: [] },
-      { contract: trancheTokenContract, methodName: 'symbol', callInputs: [] },
+      { contract: trancheTokenContract, methodName: "name", callInputs: [] },
+      { contract: trancheTokenContract, methodName: "symbol", callInputs: [] },
     ],
     trancheTokenContract?.address,
   );
@@ -36,11 +43,11 @@ export function useCentrifugeTrancheDetails(vaultAddress: string) {
     if (!trancheData || !trancheTokenData) return null;
 
     return {
-      poolId: trancheData[0]?.result || '',
-      trancheId: trancheData[1]?.result || '',
-      asset: trancheAssetAddress || '',
-      name: trancheTokenData[0]?.result || '',
-      symbol: trancheTokenData[1]?.result || '',
+      poolId: trancheData[0]?.result || "",
+      trancheId: trancheData[1]?.result || "",
+      asset: trancheAssetAddress || "",
+      name: trancheTokenData[0]?.result || "",
+      symbol: trancheTokenData[1]?.result || "",
     };
   }, [trancheData, trancheTokenData, trancheAssetAddress]);
 }
@@ -56,9 +63,9 @@ export function useSwarmTokenDetails(tokenAddress: string, account: string) {
 
   const { data: tokenData } = useMultipleContractSingleData(
     [
-      { contract: tokenContract, methodName: 'name', callInputs: [] },
-      { contract: tokenContract, methodName: 'symbol', callInputs: [] },
-      { contract: tokenContract, methodName: 'balanceOf', callInputs: [account] },
+      { contract: tokenContract, methodName: "name", callInputs: [] },
+      { contract: tokenContract, methodName: "symbol", callInputs: [] },
+      { contract: tokenContract, methodName: "balanceOf", callInputs: [account] },
     ],
     tokenContract?.address,
   );
@@ -67,9 +74,9 @@ export function useSwarmTokenDetails(tokenAddress: string, account: string) {
     if (!tokenData) return null;
 
     return {
-      name: tokenData[0]?.result || '',
-      symbol: tokenData[1]?.result || '',
-      balance: tokenData[2]?.result || '0',
+      name: tokenData[0]?.result || "",
+      symbol: tokenData[1]?.result || "",
+      balance: tokenData[2]?.result || "0",
     };
   }, [tokenData]);
 }

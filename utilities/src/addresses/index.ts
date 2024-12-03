@@ -1,21 +1,21 @@
-import { getAddress } from '@ethersproject/address'
+import { getAddress } from "@ethersproject/address";
 
 // returns the checksummed address if the address is valid, otherwise returns false
 export function isAddress(value?: string | null | undefined): string | false {
   if (!value) {
-    return false
+    return false;
   }
   try {
     // Alphabetical letters must be made lowercase for getAddress to work.
     // See documentation here: https://docs.ethers.io/v5/api/utils/address/
-    return getAddress(value.toLowerCase())
+    return getAddress(value.toLowerCase());
   } catch {
-    return false
+    return false;
   }
 }
 
 export function isSameAddress(a?: string, b?: string): boolean {
-  return a === b || a?.toLowerCase() === b?.toLowerCase() // Lazy-lowercases the addresses
+  return a === b || a?.toLowerCase() === b?.toLowerCase(); // Lazy-lowercases the addresses
 }
 
 /**
@@ -25,16 +25,16 @@ export function isSameAddress(a?: string, b?: string): boolean {
  * @param chars - The number of characters to show at the beginning after the 0x and end.
  * @param charsEnd - (Optional) The number of characters to show at the end if different from chars.
  */
-export function shortenAddress(address = '', chars = 4, charsEnd?: number): string {
-  const parsed = isAddress(address)
+export function shortenAddress(address = "", chars = 4, charsEnd?: number): string {
+  const parsed = isAddress(address);
   if (!parsed) {
-    return ''
+    return "";
   }
   if (charsEnd === undefined) {
-    charsEnd = chars
+    charsEnd = chars;
   }
 
-  return ellipseAddressAdd0x(parsed, chars, charsEnd)
+  return ellipseAddressAdd0x(parsed, chars, charsEnd);
 }
 
 /**
@@ -45,13 +45,13 @@ export function shortenAddress(address = '', chars = 4, charsEnd?: number): stri
  * @returns formatted string
  */
 function ellipseAddressAdd0x(targetAddress: string, charsStart = 4, charsEnd = 4): string {
-  const hasPrefix = targetAddress.startsWith('0x')
-  const prefix = hasPrefix ? '' : '0x'
-  const wholeAddress = prefix + targetAddress
+  const hasPrefix = targetAddress.startsWith("0x");
+  const prefix = hasPrefix ? "" : "0x";
+  const wholeAddress = prefix + targetAddress;
   if (charsStart + charsEnd >= wholeAddress.length) {
-    return wholeAddress
+    return wholeAddress;
   }
-  return ellipseMiddle(prefix + targetAddress, charsStart + 2, charsEnd)
+  return ellipseMiddle(prefix + targetAddress, charsStart + 2, charsEnd);
 }
 
 /**
@@ -62,5 +62,5 @@ function ellipseAddressAdd0x(targetAddress: string, charsStart = 4, charsEnd = 4
  * @returns formatted string
  */
 export function ellipseMiddle(target: string, charsStart = 4, charsEnd = 4): string {
-  return `${target.slice(0, charsStart)}...${target.slice(target.length - charsEnd)}`
+  return `${target.slice(0, charsStart)}...${target.slice(target.length - charsEnd)}`;
 }

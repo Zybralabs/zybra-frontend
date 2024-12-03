@@ -1,53 +1,57 @@
-import { useFocusEffect } from '@react-navigation/core'
-import { BrowserEvent, SharedEventName } from '@uniswap/analytics-events'
-import React, { PropsWithChildren, ReactNode, memo, useEffect, useId, useMemo } from 'react'
-import { isWeb } from 'utilities/src/platform'
+import { useFocusEffect } from "@react-navigation/core";
+import { BrowserEvent, SharedEventName } from "@uniswap/analytics-events";
+import React, { PropsWithChildren, ReactNode, memo, useEffect, useId, useMemo } from "react";
+import { isWeb } from "utilities/src/platform";
 // eslint-disable-next-line no-restricted-imports
-import { analytics } from 'utilities/src/telemetry/analytics/analytics'
-import { useAnalyticsNavigationContext } from 'utilities/src/telemetry/trace/AnalyticsNavigationContext'
-import { ITraceContext, TraceContext, useTrace } from 'utilities/src/telemetry/trace/TraceContext'
-import { getEventHandlers } from 'utilities/src/telemetry/trace/utils'
+import { analytics } from "utilities/src/telemetry/analytics/analytics";
+import { useAnalyticsNavigationContext } from "utilities/src/telemetry/trace/AnalyticsNavigationContext";
+import { ITraceContext, TraceContext, useTrace } from "utilities/src/telemetry/trace/TraceContext";
+import { getEventHandlers } from "utilities/src/telemetry/trace/utils";
 
-export function getEventsFromProps(logPress?: boolean, logFocus?: boolean, logKeyPress?: boolean): string[] {
-  const events = []
+export function getEventsFromProps(
+  logPress?: boolean,
+  logFocus?: boolean,
+  logKeyPress?: boolean,
+): string[] {
+  const events = [];
   if (logPress) {
-    events.push(isWeb ? 'onClick' : 'onPress')
+    events.push(isWeb ? "onClick" : "onPress");
   }
   if (logFocus) {
-    events.push(BrowserEvent.onFocus)
+    events.push(BrowserEvent.onFocus);
   }
   if (logKeyPress) {
-    events.push(BrowserEvent.onKeyPress)
+    events.push(BrowserEvent.onKeyPress);
   }
-  return events
+  return events;
 }
 
 export type TraceProps = {
   // whether to log impression on mount
-  logImpression?: boolean
+  logImpression?: boolean;
 
   // whether to log a press on a click within the area
-  logPress?: boolean
+  logPress?: boolean;
 
   // whether to log a focus on this element
-  logFocus?: boolean
+  logFocus?: boolean;
 
   // whether to log a key press
-  logKeyPress?: boolean
+  logKeyPress?: boolean;
 
   // event to log if logging an event other than the default for press
-  eventOnTrigger?: string
+  eventOnTrigger?: string;
 
   // verifies an impression has come from that page directly to override the direct only skip list
-  directFromPage?: boolean
+  directFromPage?: boolean;
 
   // additional properties to log with impression
   // (eg. TokenDetails Impression: { tokenAddress: 'address', tokenName: 'name' })
-  properties?: Record<string, unknown>
-}
+  properties?: Record<string, unknown>;
+};
 
 // only used for avoiding double logging in development
-const devDoubleLogDisableMap: Record<string, boolean> = {}
+const devDoubleLogDisableMap: Record<string, boolean> = {};
 
 function _Trace({
   children,
@@ -64,15 +68,16 @@ function _Trace({
   modal,
   properties,
 }: PropsWithChildren<TraceProps & ITraceContext>): JSX.Element {
-  const id = useId()
+  const id = useId();
 
-  const { useIsPartOfNavigationTree, shouldLogScreen: shouldLogScreen } = useAnalyticsNavigationContext()
-  const isPartOfNavigationTree = useIsPartOfNavigationTree()
-  const parentTrace = useTrace()
+  const { useIsPartOfNavigationTree, shouldLogScreen: shouldLogScreen } =
+    useAnalyticsNavigationContext();
+  const isPartOfNavigationTree = useIsPartOfNavigationTree();
+  const parentTrace = useTrace();
 
   const events = useMemo(() => {
-    return getEventsFromProps(logPress, logFocus, logKeyPress)
-  }, [logFocus, logKeyPress, logPress])
+    return getEventsFromProps(logPress, logFocus, logKeyPress);
+  }, [logFocus, logKeyPress, logPress]);
 
   // Component props are destructured to ensure shallow comparison
   const combinedProps = useMemo(() => {
@@ -83,34 +88,34 @@ function _Trace({
       ...(section ? { section } : {}),
       ...(modal ? { modal } : {}),
       ...(element ? { element } : {}),
-    }
+    };
 
     return {
       ...parentTrace,
       ...filteredProps,
-    }
-  }, [parentTrace, screen, section, modal, element, page])
+    };
+  }, [parentTrace, screen, section, modal, element, page]);
 
   // Log impression on mount for elements that are not part of the navigation tree
   useEffect(() => {
     if (!devDoubleLogDisableMap[id] && logImpression && !isPartOfNavigationTree) {
       if (shouldLogScreen(directFromPage, (properties as ITraceContext | undefined)?.screen)) {
         // Log the event
-        const eventProps = { ...combinedProps, ...properties }
-        analytics.sendEvent(eventOnTrigger ?? SharedEventName.PAGE_VIEWED, eventProps)
+        const eventProps = { ...combinedProps, ...properties };
+        analytics.sendEvent(eventOnTrigger ?? SharedEventName.PAGE_VIEWED, eventProps);
 
         // In development for web, ensure we don't double log impressions due to strict mode
         if (__DEV__) {
-          devDoubleLogDisableMap[id] = true
+          devDoubleLogDisableMap[id] = true;
           setTimeout(() => {
-            devDoubleLogDisableMap[id] = false
-          }, 50)
+            devDoubleLogDisableMap[id] = false;
+          }, 50);
         }
       }
     }
     // Impressions should only be logged on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logImpression])
+  }, [logImpression]);
 
   const modifiedChildren =
     events.length > 0 ? (
@@ -118,7 +123,7 @@ function _Trace({
         {(consumedProps): ReactNode =>
           React.Children.map(children, (child) => {
             if (!React.isValidElement(child)) {
-              return child
+              return child;
             }
 
             // For each child, augment event handlers defined in `actionProps` with event tracing
@@ -132,16 +137,16 @@ function _Trace({
                 element,
                 properties,
               ),
-            )
+            );
           })
         }
       </TraceContext.Consumer>
     ) : (
       children
-    )
+    );
 
   if (!isPartOfNavigationTree) {
-    return <TraceContext.Provider value={combinedProps}>{modifiedChildren}</TraceContext.Provider>
+    return <TraceContext.Provider value={combinedProps}>{modifiedChildren}</TraceContext.Provider>;
   }
 
   return (
@@ -153,10 +158,13 @@ function _Trace({
     >
       <TraceContext.Provider value={combinedProps}>{modifiedChildren}</TraceContext.Provider>
     </NavAwareTrace>
-  )
+  );
 }
 
-type NavAwareTraceProps = Pick<TraceProps, 'logImpression' | 'properties' | 'directFromPage' | 'eventOnTrigger'>
+type NavAwareTraceProps = Pick<
+  TraceProps,
+  "logImpression" | "properties" | "directFromPage" | "eventOnTrigger"
+>;
 
 // Internal component to keep track of navigation events
 // Needed since we need to rely on `navigation.useFocusEffect` to track
@@ -169,20 +177,20 @@ function NavAwareTrace({
   children,
   properties,
 }: { combinedProps: ITraceContext } & PropsWithChildren<NavAwareTraceProps>): JSX.Element {
-  const { shouldLogScreen } = useAnalyticsNavigationContext()
+  const { shouldLogScreen } = useAnalyticsNavigationContext();
   // Note: this does not register impressions when going back to a page from a modal
   useFocusEffect(
     React.useCallback(() => {
       if (logImpression) {
-        const eventProps = { ...combinedProps, ...properties }
+        const eventProps = { ...combinedProps, ...properties };
         if (shouldLogScreen(directFromPage, (properties as ITraceContext | undefined)?.screen)) {
-          analytics.sendEvent(eventOnTrigger ?? SharedEventName.PAGE_VIEWED, eventProps)
+          analytics.sendEvent(eventOnTrigger ?? SharedEventName.PAGE_VIEWED, eventProps);
         }
       }
     }, [combinedProps, directFromPage, eventOnTrigger, logImpression, properties, shouldLogScreen]),
-  )
+  );
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
-export const Trace = memo(_Trace)
+export const Trace = memo(_Trace);

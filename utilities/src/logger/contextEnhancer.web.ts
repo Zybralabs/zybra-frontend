@@ -1,8 +1,12 @@
-import { addSentryContextBreadcrumb } from 'utilities/src/logger/breadcrumbs'
+import { addSentryContextBreadcrumb } from "utilities/src/logger/breadcrumbs";
 
-export function logContextUpdate(contextName: string, newState: unknown, _isDatadogEnabled: boolean): void {
+export function logContextUpdate(
+  contextName: string,
+  newState: unknown,
+  _isDatadogEnabled: boolean,
+): void {
   if (__DEV__) {
-    return
+    return;
   }
-  addSentryContextBreadcrumb(contextName, newState)
+  addSentryContextBreadcrumb(contextName, newState);
 }

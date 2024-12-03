@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
-import { useMoonPay } from "../lib/hooks/useMoonpay"; // MoonPay hook
+
 import { useCoinbase } from "../lib/hooks/useCoinbase"; // Coinbase Onramp hook
+import { useMoonPay } from "../lib/hooks/useMoonpay"; // MoonPay hook
 
 interface UnifiedOnRampProps {
   provider: "moonpay" | "coinbase"; // Add more providers as needed
@@ -21,16 +22,10 @@ interface UnifiedOnRampHookReturn {
   fetchConversionRate: (
     cryptoCurrency: string,
     fiatCurrency: string,
-    fiatAmount: number
-  ) => Promise<void>;
-  createBuyTransaction: (
     fiatAmount: number,
-    cryptoCurrency: string
-  ) => Promise<any>;
-  listenForDeposits: (
-    tokenAddress: string,
-    tokenDecimals: number
-  ) => Promise<string | undefined>;
+  ) => Promise<void>;
+  createBuyTransaction: (fiatAmount: number, cryptoCurrency: string) => Promise<any>;
+  listenForDeposits: (tokenAddress: string, tokenDecimals: number) => Promise<string | undefined>;
   initializeAccount: () => Promise<string>;
 }
 
@@ -91,7 +86,7 @@ export function useUnifiedOnRamp({ provider }: UnifiedOnRampProps): UnifiedOnRam
         setLoading(false);
       }
     },
-    [provider, moonPay]
+    [provider, moonPay],
   );
 
   // Create Buy Transaction
@@ -121,7 +116,7 @@ export function useUnifiedOnRamp({ provider }: UnifiedOnRampProps): UnifiedOnRam
         setLoading(false);
       }
     },
-    [provider, moonPay, coinbase]
+    [provider, moonPay, coinbase],
   );
 
   // Listen for Deposits
@@ -132,7 +127,7 @@ export function useUnifiedOnRamp({ provider }: UnifiedOnRampProps): UnifiedOnRam
       }
       throw new Error("listenForDeposits is not implemented for this provider.");
     },
-    [provider, moonPay]
+    [provider, moonPay],
   );
 
   // Initialize Account

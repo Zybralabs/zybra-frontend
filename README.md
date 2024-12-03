@@ -30,7 +30,6 @@
 
 ---
 
-
 ## Description
 
 Zybra Finance is a next-generation decentralized RWA Based Liquid Asset Investment platform for efficient and scalable finance operations. Built using the latest tools in Web3, Zybra Finance enables seamless integration with Centrifuge and Swarm vaults, offering secure asset staking, borrowing, and liquidation management.
@@ -63,8 +62,6 @@ With a minimalist design and robust infrastructure, Zybra Finance empowers users
 
 ### Steps
 
-
-
 ```bash
 git clone https://github.com/YourGitHubUsername/ZybraFinance.git .
 
@@ -79,7 +76,9 @@ npm install
 
 
 ```
+
 2. Clone the repository:
+
 ```
 bun dev
 # or
@@ -90,11 +89,10 @@ yarn dev
 npm run dev
 ```
 
-
- Web3 Wallet Integration: Supports MetaMask, RainbowKit, Coinbase Wallet, WalletConnect, and more.
- Multi-chain Support: Seamlessly switch between supported chains like Linea, BSC, and more.
- Real-Time Data: Fetch real-time token balances and network data.
- Dark Mode: Built-in support for light/dark themes.
- Asset Management: Efficient interaction with Centrifuge and Swarm vaults.
- Transaction Hooks: Simplified integration with contract functions.
- Robust Codebase: Pre-configured with ESLint, Prettier, and TypeScript.
+Web3 Wallet Integration: Supports MetaMask, RainbowKit, Coinbase Wallet, WalletConnect, and more.
+Multi-chain Support: Seamlessly switch between supported chains like Linea, BSC, and more.
+Real-Time Data: Fetch real-time token balances and network data.
+Dark Mode: Built-in support for light/dark themes.
+Asset Management: Efficient interaction with Centrifuge and Swarm vaults.
+Transaction Hooks: Simplified integration with contract functions.
+Robust Codebase: Pre-configured with ESLint, Prettier, and TypeScript.

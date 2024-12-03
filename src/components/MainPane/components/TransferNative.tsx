@@ -1,15 +1,5 @@
 import { type FC, useState, useEffect } from "react";
 
-import {
-  Button,
-  HStack,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  VStack,
-} from "@chakra-ui/react";
 import { isAddress, parseEther } from "viem";
 import { useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 
@@ -66,36 +56,7 @@ const TransferNative: FC = () => {
     }
   }, [receipt, isError, error, notifyError, notifySuccess]);
 
-  return (
-    <VStack w={"45%"} minWidth={"270px"} gap={2}>
-      <AddressInput receiver={receiver} setReceiver={setReceiver} />
-
-      <HStack>
-        <NumberInput
-          value={amount}
-          min={0}
-          onChange={handleAmountChange}
-          step={0.00000001}
-          precision={8}
-        >
-          <NumberInputField />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-
-        <Button
-          variant="ghost"
-          onClick={handleTransfer}
-          isLoading={isLoading || isPending}
-          className="custom-button"
-        >
-          Transfer
-        </Button>
-      </HStack>
-    </VStack>
-  );
+  return <></>;
 };
 
 export default TransferNative;

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+
 import { BigNumber, ethers } from "ethers";
-import { useERC20TokenContract } from "@/hooks/useContract";
+
 import { useBlockContext } from "@/context/BlockContext";
+import { useERC20TokenContract } from "@/hooks/useContract";
 
 /**
  * Hook to fetch token allowance for a specific spender.
@@ -13,7 +15,7 @@ import { useBlockContext } from "@/context/BlockContext";
 export function useTokenAllowance(
   tokenAddress: string,
   owner: string | undefined,
-  spender: string | undefined
+  spender: string | undefined,
 ) {
   const [allowance, setAllowance] = useState<BigNumber | undefined>(undefined);
   const [isFetching, setIsFetching] = useState<boolean>(false);

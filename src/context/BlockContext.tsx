@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { ethers } from 'ethers';
-import { useEthersProvider } from '../useEthersProvider'; // Custom hook for provider
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+import { ethers } from "ethers";
+
+import { ChainId } from "@/constant/addresses";
+import { useEthersProvider } from "@/hooks/useContract";
 
 interface Transaction {
   hash: string;
   timestamp: number;
-  status: 'pending' | 'confirmed' | 'failed';
+  status: "pending" | "confirmed" | "failed";
   from: string;
   to: string;
   value: string; // Store in wei for precision
@@ -17,7 +20,7 @@ interface BlockContextProps {
   latestMainnetBlock: number | null;
   transactions: Transaction[];
   addTransaction: (transaction: Transaction) => void;
-  updateTransactionStatus: (hash: string, status: 'confirmed' | 'failed') => void;
+  updateTransactionStatus: (hash: string, status: "confirmed" | "failed") => void;
 }
 
 const BlockContext = createContext<BlockContextProps>({
@@ -29,40 +32,42 @@ const BlockContext = createContext<BlockContextProps>({
   updateTransactionStatus: () => {},
 });
 
-export const useBlockContext = () => {
-  return useContext(BlockContext);
-};
+export const useBlockContext = () => useContext(BlockContext);
 
 export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const provider = useEthersProvider();
-  const mainnetProvider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID'); // Replace with your RPC
 
   const [chainId, setChainId] = useState<number | null>(null);
   const [latestBlock, setLatestBlock] = useState<number | null>(null);
   const [latestMainnetBlock, setLatestMainnetBlock] = useState<number | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [mainnetProvider, setmainnetProvider] = useState<Transaction[]>([]);
 
   // Load transactions from localStorage
   useEffect(() => {
-    const storedTransactions = localStorage.getItem('user-transactions');
+    const storedTransactions = localStorage.getItem("user-transactions");
     if (storedTransactions) {
       setTransactions(JSON.parse(storedTransactions));
     }
+    setmainnetProvider(
+      new ethers.JsonRpcApiProvider(
+        ChainId.Mainnet,
+        "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
+      ),
+    );
   }, []);
 
   // Save transactions to localStorage on update
   useEffect(() => {
-    localStorage.setItem('user-transactions', JSON.stringify(transactions));
+    localStorage.setItem("user-transactions", JSON.stringify(transactions));
   }, [transactions]);
 
   const addTransaction = (transaction: Transaction) => {
     setTransactions((prev) => [...prev, transaction]);
   };
 
-  const updateTransactionStatus = (hash: string, status: 'confirmed' | 'failed') => {
-    setTransactions((prev) =>
-      prev.map((tx) => (tx.hash === hash ? { ...tx, status } : tx))
-    );
+  const updateTransactionStatus = (hash: string, status: "confirmed" | "failed") => {
+    setTransactions((prev) => prev.map((tx) => (tx.hash === hash ? { ...tx, status } : tx)));
   };
 
   useEffect(() => {
@@ -78,15 +83,12 @@ export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLatestBlock(blockNumber);
 
       // Check for pending transactions
-      const pendingTxs = transactions.filter((tx) => tx.status === 'pending');
+      const pendingTxs = transactions.filter((tx) => tx.status === "pending");
       for (const tx of pendingTxs) {
         try {
           const receipt = await provider.getTransactionReceipt(tx.hash);
           if (receipt) {
-            updateTransactionStatus(
-              tx.hash,
-              receipt.status === 1 ? 'confirmed' : 'failed'
-            );
+            updateTransactionStatus(tx.hash, receipt.status === 1 ? "confirmed" : "failed");
           }
         } catch (err) {
           console.error(`Error checking transaction ${tx.hash}:`, err);
@@ -94,27 +96,27 @@ export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    provider.on('block', onBlock);
+    provider.on("block", onBlock);
 
     return () => {
-      provider.off('block', onBlock);
+      provider.off("block", onBlock);
     };
   }, [provider, transactions]);
 
-  useEffect(() => {
-    if (!mainnetProvider) return;
+  // useEffect(() => {
+  //   if (!mainnetProvider) return;
 
-    // Subscribe to Mainnet block updates
-    const onMainnetBlock = (blockNumber: number) => {
-      setLatestMainnetBlock(blockNumber);
-    };
+  //   // Subscribe to Mainnet block updates
+  //   const onMainnetBlock = (blockNumber: number) => {
+  //     setLatestMainnetBlock(blockNumber);
+  //   };
 
-    mainnetProvider.on('block', onMainnetBlock);
+  //   mainnetProvider.on('block', onMainnetBlock);
 
-    return () => {
-      mainnetProvider.off('block', onMainnetBlock);
-    };
-  }, [mainnetProvider]);
+  //   return () => {
+  //     mainnetProvider.off('block', onMainnetBlock);
+  //   };
+  // }, [mainnetProvider]);
 
   return (
     <BlockContext.Provider

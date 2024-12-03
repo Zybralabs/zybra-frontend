@@ -10,22 +10,15 @@ import { Providers } from "./providers";
 const open_sans = Open_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next-Web3-Boilerplate",
-  applicationName: "Next Web3 Boilerplate",
-  description: "Next.js Web3 boilerplate built on Wagmi, Viem, and Rainbow",
-  authors: {
-    name: "Pedrojok01",
-    url: "https://github.com/Pedrojok01/Next-Web3-Boilerplate",
-  },
-  icons: "favicon.ico",
-  manifest: "site.webmanifest",
+  title: "Zybra Finance",
+  description: "A Real-World Asset (RWA) based Liquid Lending Protocol.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={open_sans.className}>
-        <Providers children={children}>{children}</Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

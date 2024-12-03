@@ -1,3 +1,3 @@
 export const noOpFunction = (): void => {
-  return
-}
+  return;
+};

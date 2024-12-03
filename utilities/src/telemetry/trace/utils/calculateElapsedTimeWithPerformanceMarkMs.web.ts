@@ -6,13 +6,13 @@ export function calculateElapsedTimeWithPerformanceMarkMs(
   markName: string,
   fallbackStartTime?: number,
 ): number | undefined {
-  const elapsedTime = performance.mark(markName)
+  const elapsedTime = performance.mark(markName);
   if (elapsedTime) {
-    return elapsedTime.startTime
+    return elapsedTime.startTime;
   }
   if (fallbackStartTime) {
     // On some browsers like iOS WebViews, performance.mark is not supported.
-    return Date.now() - fallbackStartTime
+    return Date.now() - fallbackStartTime;
   }
-  return undefined
+  return undefined;
 }

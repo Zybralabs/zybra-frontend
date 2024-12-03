@@ -1,82 +1,81 @@
 {
-    "name": "Centrifuge & Swarm Token List",
-    "timestamp": "2024-11-23T10:00:00.000Z",
-    "version": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "name": "Centrifuge & Swarm Token List",
+  "timestamp": "2024-11-23T10:00:00.000Z",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "tags": {
+    "centrifuge": "Centrifuge pools",
+    "swarm": "Swarm protocol tokens"
+  },
+  "logoURI": "ipfs://QmExampleLogoHashForList",
+  "keywords": ["centrifuge", "swarm", "pools", "stocks", "tokens"],
+  "tokens": [
+    {
+      "name": "Tinlake Pool - Real Estate",
+      "address": "0xCentrifugePoolAddress1",
+      "symbol": "RETP",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Real Estate Tokenized Pool (Centrifuge)",
+      "logoURI": "ipfs://QmRealEstatePoolLogo",
+      "source": "centrifuge"
     },
-    "tags": {
-      "centrifuge": "Centrifuge pools",
-      "swarm": "Swarm protocol tokens"
+    {
+      "name": "Tinlake Pool - Invoice Financing",
+      "address": "0xCentrifugePoolAddress2",
+      "symbol": "INVP",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Invoice Financing Tokenized Pool (Centrifuge)",
+      "logoURI": "ipfs://QmInvoicePoolLogo",
+      "source": "centrifuge"
     },
-    "logoURI": "ipfs://QmExampleLogoHashForList",
-    "keywords": ["centrifuge", "swarm", "pools", "stocks", "tokens"],
-    "tokens": [
-      {
-        "name": "Tinlake Pool - Real Estate",
-        "address": "0xCentrifugePoolAddress1",
-        "symbol": "RETP",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Real Estate Tokenized Pool (Centrifuge)",
-        "logoURI": "ipfs://QmRealEstatePoolLogo",
-        "source": "centrifuge"
-      },
-      {
-        "name": "Tinlake Pool - Invoice Financing",
-        "address": "0xCentrifugePoolAddress2",
-        "symbol": "INVP",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Invoice Financing Tokenized Pool (Centrifuge)",
-        "logoURI": "ipfs://QmInvoicePoolLogo",
-        "source": "centrifuge"
-      },
-      {
-        "name": "Swarm - Tesla Stock Token",
-        "address": "0xSwarmTokenAddress1",
-        "symbol": "Tesla",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Swarm protocol Tesla stock token",
-        "logoURI": "ipfs://QmTeslaStockLogo",
-        "priceFeedId": "priceFeedTeslaStock",
-        "source": "swarm"
-      },
-      {
-        "name": "Swarm - Apple Stock Token",
-        "address": "0xSwarmTokenAddress2",
-        "symbol": "Apple",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Swarm protocol Apple stock token",
-        "logoURI": "ipfs://QmAppleStockLogo",
-        "priceFeedId": "priceFeedAppleStock",
-        "source": "swarm"
-      },
-      {
-        "name": "Swarm - Microsoft Stock Token",
-        "address": "0xSwarmTokenAddress3",
-        "symbol": "MSFT",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Swarm protocol Microsoft stock token",
-        "logoURI": "ipfs://QmMicrosoftStockLogo",
-        "priceFeedId": "priceFeedMicrosoftStock",
-        "source": "swarm"
-      },
-      {
-        "name": "Swarm - Alphabet Stock Token",
-        "address": "0xSwarmTokenAddress4",
-        "symbol": "GOOGL",
-        "decimals": 18,
-        "chainId": 8453,
-        "description": "Swarm protocol Alphabet (Google) stock token",
-        "logoURI": "ipfs://QmGoogleStockLogo",
-        "priceFeedId": "priceFeedGoogleStock",
-        "source": "swarm"
-      }
-    ]
-  }
-  
+    {
+      "name": "Swarm - Tesla Stock Token",
+      "address": "0xSwarmTokenAddress1",
+      "symbol": "Tesla",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Swarm protocol Tesla stock token",
+      "logoURI": "ipfs://QmTeslaStockLogo",
+      "priceFeedId": "priceFeedTeslaStock",
+      "source": "swarm"
+    },
+    {
+      "name": "Swarm - Apple Stock Token",
+      "address": "0xSwarmTokenAddress2",
+      "symbol": "Apple",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Swarm protocol Apple stock token",
+      "logoURI": "ipfs://QmAppleStockLogo",
+      "priceFeedId": "priceFeedAppleStock",
+      "source": "swarm"
+    },
+    {
+      "name": "Swarm - Microsoft Stock Token",
+      "address": "0xSwarmTokenAddress3",
+      "symbol": "MSFT",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Swarm protocol Microsoft stock token",
+      "logoURI": "ipfs://QmMicrosoftStockLogo",
+      "priceFeedId": "priceFeedMicrosoftStock",
+      "source": "swarm"
+    },
+    {
+      "name": "Swarm - Alphabet Stock Token",
+      "address": "0xSwarmTokenAddress4",
+      "symbol": "GOOGL",
+      "decimals": 18,
+      "chainId": 8453,
+      "description": "Swarm protocol Alphabet (Google) stock token",
+      "logoURI": "ipfs://QmGoogleStockLogo",
+      "priceFeedId": "priceFeedGoogleStock",
+      "source": "swarm"
+    }
+  ]
+}

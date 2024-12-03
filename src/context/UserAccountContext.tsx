@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useAccountAbstraction } from '../hooks/useAccountAbstraction'; // Hook for minimal account abstraction
-import { useAccount } from '../hooks/useAccount'; // Hook for web3 wallet
-import { WalletType } from '@/constant/account/enum';
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+
+import { WalletType } from "@/constant/account/enum";
+
+import { useAccount } from "../hooks/useAccount"; // Hook for web3 wallet
+import { useAccountAbstraction } from "../hooks/useAccountAbstraction"; // Hook for minimal account abstraction
 
 interface UserAccountContextProps {
   address: string | null;
@@ -16,10 +18,10 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   address: null,
   walletType: null,
   fetchAccount: async () => {
-    throw new Error('UserAccountContext not initialized');
+    throw new Error("UserAccountContext not initialized");
   },
   createAccount: async () => {
-    throw new Error('UserAccountContext not initialized');
+    throw new Error("UserAccountContext not initialized");
   },
   loading: false,
   error: null,
@@ -53,7 +55,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return fetchedAddress;
       }
     } catch (err) {
-      console.error('Error fetching account:', err);
+      console.error("Error fetching account:", err);
       throw err;
     }
   }, [isConnected, web3Address, fetchMinimalAccountFromAPI]);
@@ -66,7 +68,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setWalletType(WalletType.MINIMAL);
       return minimalAddress;
     } catch (err) {
-      console.error('Error creating account:', err);
+      console.error("Error creating account:", err);
       throw err;
     }
   }, [createMinimalAccount]);

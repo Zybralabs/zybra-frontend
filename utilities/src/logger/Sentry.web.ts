@@ -1,6 +1,6 @@
-import * as SentryReact from '@sentry/react'
-import { CaptureContext, SeverityLevel } from '@sentry/types'
-import { BreadCrumb, ISentry } from 'utilities/src/logger/Sentry'
+import * as SentryReact from "@sentry/react";
+import { CaptureContext, SeverityLevel } from "@sentry/types";
+import { BreadCrumb, ISentry } from "utilities/src/logger/Sentry";
 
 /**
  * Logs an exception to our Sentry Dashboard
@@ -9,7 +9,7 @@ import { BreadCrumb, ISentry } from 'utilities/src/logger/Sentry'
  * @param context Context from where this method is called
  */
 export function captureException(error: unknown, captureContext?: CaptureContext): void {
-  SentryReact.captureException(error, captureContext)
+  SentryReact.captureException(error, captureContext);
 }
 
 /**
@@ -21,20 +21,25 @@ export function captureException(error: unknown, captureContext?: CaptureContext
  * @param extraArgs Key/value pairs to enrich logging and allow filtering.
  *                  More info here: https://docs.sentry.io/platforms/react-native/enriching-events/context/
  */
-export function captureMessage(level: SeverityLevel, context: string, message: string, ...extraArgs: unknown[]): void {
+export function captureMessage(
+  level: SeverityLevel,
+  context: string,
+  message: string,
+  ...extraArgs: unknown[]
+): void {
   SentryReact.captureMessage(message, {
     level,
     tags: { webContext: context },
     ...(extraArgs ? { extra: { data: extraArgs } } : {}),
-  })
+  });
 }
 
 function addBreadCrumb(breadCrumb: BreadCrumb): void {
-  SentryReact.addBreadcrumb(breadCrumb)
+  SentryReact.addBreadcrumb(breadCrumb);
 }
 
 function setTag(key: string, value: Primitive): void {
-  SentryReact.setTag(key, value)
+  SentryReact.setTag(key, value);
 }
 
 export const Sentry: ISentry = {
@@ -42,4 +47,4 @@ export const Sentry: ISentry = {
   captureMessage,
   addBreadCrumb,
   setTag,
-} as ISentry
+} as ISentry;

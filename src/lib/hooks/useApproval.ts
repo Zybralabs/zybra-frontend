@@ -1,18 +1,21 @@
-import { MaxUint256 } from '@ethersproject/constants';
-import type { TransactionResponse } from '@ethersproject/providers';
-import { BigNumber } from 'ethers';
-import { useCallback, useMemo } from 'react';
-import { calculateGasMargin } from '../utils/calculateGasMargin';
-import { useAccount } from '../hooks/useAccount';
-import { useTokenAllowance } from '../hooks/useTokenAllowance';
-import { logger } from '../utils/logger';
-import { useERC20TokenContract } from '@/hooks/useContract';
+import { useCallback, useMemo } from "react";
+
+import { MaxUint256 } from "@ethersproject/constants";
+import type { TransactionResponse } from "@ethersproject/providers";
+import { BigNumber } from "ethers";
+
+import { useERC20TokenContract } from "@/hooks/useContract";
+
+import { useAccount } from "../hooks/useAccount";
+import { useTokenAllowance } from "../hooks/useTokenAllowance";
+import { calculateGasMargin } from "../utils/calculateGasMargin";
+import { logger } from "../utils/logger";
 
 export enum ApprovalState {
-  UNKNOWN = 'UNKNOWN',
-  NOT_APPROVED = 'NOT_APPROVED',
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
+  UNKNOWN = "UNKNOWN",
+  NOT_APPROVED = "NOT_APPROVED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
 }
 
 function useApprovalStateForSpender(
@@ -51,19 +54,29 @@ export function useApproval(
 ): [
   ApprovalState,
   () => Promise<
-    | { response: TransactionResponse; tokenAddress: string; spenderAddress: string; amount: BigNumber }
+    | {
+        response: TransactionResponse;
+        tokenAddress: string;
+        spenderAddress: string;
+        amount: BigNumber;
+      }
     | undefined
   >,
 ] {
   const { chainId } = useAccount();
 
-  const approvalState = useApprovalStateForSpender(amountToApprove, spender, tokenAddress, useIsPendingApproval);
+  const approvalState = useApprovalStateForSpender(
+    amountToApprove,
+    spender,
+    tokenAddress,
+    useIsPendingApproval,
+  );
 
-  const tokenContract = useERC20TokenContract(tokenAddress,true,chainId);
+  const tokenContract = useERC20TokenContract(tokenAddress, true, chainId);
 
   const approve = useCallback(async () => {
     function logFailure(error: Error | string): undefined {
-      logger.error('useApproval', error, {
+      logger.error("useApproval", error, {
         tokenAddress,
         spender,
         amountToApprove: amountToApprove?.toString(),
@@ -73,33 +86,31 @@ export function useApproval(
     }
 
     if (approvalState !== ApprovalState.NOT_APPROVED) {
-      return logFailure('approve was called unnecessarily');
+      return logFailure("approve was called unnecessarily");
     } else if (!chainId) {
-      return logFailure('no chainId');
+      return logFailure("no chainId");
     } else if (!tokenAddress) {
-      return logFailure('no token address');
+      return logFailure("no token address");
     } else if (!tokenContract) {
-      return logFailure('token contract is null');
+      return logFailure("token contract is null");
     } else if (!amountToApprove) {
-      return logFailure('missing amount to approve');
+      return logFailure("missing amount to approve");
     } else if (!spender) {
-      return logFailure('no spender');
+      return logFailure("no spender");
     }
 
     let useExact = false;
-    const estimatedGas = await tokenContract.estimateGas
-      .approve(spender, MaxUint256)
-      .catch(() => {
-        useExact = true;
-        return tokenContract.estimateGas.approve(spender, amountToApprove);
-      });
+    const estimatedGas = await tokenContract.estimateGas.approve(spender, MaxUint256).catch(() => {
+      useExact = true;
+      return tokenContract.estimateGas.approve(spender, amountToApprove);
+    });
 
     return tokenContract
       .approve(spender, useExact ? amountToApprove : MaxUint256, {
         gasLimit: calculateGasMargin(estimatedGas),
       })
       .then((response) => {
-        logger.info('Approval transaction submitted', {
+        logger.info("Approval transaction submitted", {
           tokenAddress,
           spender,
           chainId,

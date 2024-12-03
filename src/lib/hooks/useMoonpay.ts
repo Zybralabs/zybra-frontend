@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
-import axios from 'axios';
-import { useAccountAbstraction } from './useAccountAbstraction'; // Account abstraction hook
-import { ethers } from 'ethers';
-import { useEthersProvider } from './useEthersProvider';
+import { useState, useCallback, useEffect } from "react";
+
+import axios from "axios";
+import { ethers } from "ethers";
+
+import { useAccountAbstraction } from "./useAccountAbstraction"; // Account abstraction hook
+import { useEthersProvider } from "./useEthersProvider";
 
 interface MoonPayTransaction {
   id: string;
@@ -32,7 +34,7 @@ interface MoonPayHookProps {
 
 export function useMoonPay({ apiKey, apiBaseUrl }: MoonPayHookProps) {
   const { deployMinimalAccount, minimalAccountAddress } = useAccountAbstraction(); // Hook for managing account abstraction
-const provider = useEthersProvider()
+  const provider = useEthersProvider();
   const [transactions, setTransactions] = useState<MoonPayTransaction[]>([]);
   const [conversionRate, setConversionRate] = useState<ConversionRate | null>(null);
   const [supportedAssets, setSupportedAssets] = useState<string[]>([]);
@@ -61,15 +63,15 @@ const provider = useEthersProvider()
 
     try {
       if (!minimalAccountAddress) {
-        throw new Error('Minimal account address not found');
+        throw new Error("Minimal account address not found");
       }
 
-      const response = await apiClient().get('/v3/transactions', {
+      const response = await apiClient().get("/v3/transactions", {
         params: { walletAddress: minimalAccountAddress },
       });
       setTransactions(response.data);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to fetch transactions.');
+      setError(err?.response?.data?.message || "Failed to fetch transactions.");
     } finally {
       setLoading(false);
     }
@@ -81,10 +83,10 @@ const provider = useEthersProvider()
     setError(null);
 
     try {
-      const response = await apiClient().get('/v3/currencies');
+      const response = await apiClient().get("/v3/currencies");
       setSupportedAssets(response.data.map((asset: any) => asset.code));
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to fetch supported assets.');
+      setError(err?.response?.data?.message || "Failed to fetch supported assets.");
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ const provider = useEthersProvider()
       setError(null);
 
       try {
-        const response = await apiClient().get('/v3/currency/price', {
+        const response = await apiClient().get("/v3/currency/price", {
           params: { cryptoCurrency, fiatCurrency, baseCurrencyAmount: fiatAmount },
         });
         setConversionRate({
@@ -105,12 +107,12 @@ const provider = useEthersProvider()
           cryptoAmount: response.data.quoteCurrencyAmount,
         });
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Failed to fetch conversion rate.');
+        setError(err?.response?.data?.message || "Failed to fetch conversion rate.");
       } finally {
         setLoading(false);
       }
     },
-    [apiClient]
+    [apiClient],
   );
 
   // Step 5: Create Buy Transaction
@@ -121,20 +123,20 @@ const provider = useEthersProvider()
 
       try {
         const walletAddress = await initializeAccount(); // Ensure account exists
-        const response = await apiClient().post('/v3/transactions', {
+        const response = await apiClient().post("/v3/transactions", {
           baseCurrencyAmount: fiatAmount,
           cryptoCurrency,
           walletAddress,
         });
         return response.data as MoonPayTransaction;
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Failed to create buy transaction.');
+        setError(err?.response?.data?.message || "Failed to create buy transaction.");
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [apiClient, initializeAccount]
+    [apiClient, initializeAccount],
   );
 
   // Step 6: Listen for Deposits
@@ -144,14 +146,14 @@ const provider = useEthersProvider()
 
       const contract = new ethers.Contract(
         tokenAddress,
-        ['function balanceOf(address) view returns (uint256)'],
-        provider
+        ["function balanceOf(address) view returns (uint256)"],
+        provider,
       );
 
       const balance = await contract.balanceOf(minimalAccountAddress);
       return ethers.utils.formatUnits(balance, tokenDecimals);
     },
-    [minimalAccountAddress, provider]
+    [minimalAccountAddress, provider],
   );
 
   useEffect(() => {

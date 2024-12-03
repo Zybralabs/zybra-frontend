@@ -56,5 +56,5 @@ logger.error(error, {
       currencyAmounts,
     },
   },
-})
+});
 ```

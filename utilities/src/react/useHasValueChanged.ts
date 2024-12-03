@@ -1,7 +1,7 @@
-import { usePreviousWithLayoutEffect } from 'utilities/src/react/usePreviousWithLayoutEffect'
+import { usePreviousWithLayoutEffect } from "utilities/src/react/usePreviousWithLayoutEffect";
 
 export function useHasValueChanged<ValueType>(value: ValueType): boolean {
-  const prevValue = usePreviousWithLayoutEffect(value)
+  const prevValue = usePreviousWithLayoutEffect(value);
 
-  return prevValue !== value
+  return prevValue !== value;
 }

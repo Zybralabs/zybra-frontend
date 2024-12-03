@@ -1,33 +1,33 @@
-import { ONE_HOUR_MS, ONE_MINUTE_MS, ONE_SECOND_MS } from 'utilities/src/time/time'
+import { ONE_HOUR_MS, ONE_MINUTE_MS, ONE_SECOND_MS } from "utilities/src/time/time";
 
 export function getDurationRemainingString(expirationTime: number): string {
-  const timeLeft = expirationTime - Date.now()
-  const s = ((timeLeft % ONE_MINUTE_MS) / ONE_SECOND_MS).toFixed(0)
+  const timeLeft = expirationTime - Date.now();
+  const s = ((timeLeft % ONE_MINUTE_MS) / ONE_SECOND_MS).toFixed(0);
   if (timeLeft <= ONE_MINUTE_MS) {
-    return `${s}s`
+    return `${s}s`;
   }
-  const m = Math.floor(timeLeft / ONE_MINUTE_MS)
+  const m = Math.floor(timeLeft / ONE_MINUTE_MS);
   if (timeLeft <= ONE_HOUR_MS) {
-    return `${m}m ${s}s`
+    return `${m}m ${s}s`;
   }
-  const h = Math.floor(timeLeft / ONE_HOUR_MS)
-  return `${h}h ${m}m ${s}s`
+  const h = Math.floor(timeLeft / ONE_HOUR_MS);
+  return `${h}h ${m}m ${s}s`;
 }
 
 export function getDurationRemaining(expirationTime: number): {
-  seconds: number
-  minutes?: number
-  hours?: number
+  seconds: number;
+  minutes?: number;
+  hours?: number;
 } {
-  const timeLeft = expirationTime - Date.now()
-  const seconds = Math.floor((timeLeft % ONE_MINUTE_MS) / ONE_SECOND_MS)
+  const timeLeft = expirationTime - Date.now();
+  const seconds = Math.floor((timeLeft % ONE_MINUTE_MS) / ONE_SECOND_MS);
   if (timeLeft <= ONE_MINUTE_MS) {
-    return { seconds }
+    return { seconds };
   }
-  const minutes = Math.floor(timeLeft / ONE_MINUTE_MS)
+  const minutes = Math.floor(timeLeft / ONE_MINUTE_MS);
   if (timeLeft <= ONE_HOUR_MS) {
-    return { seconds, minutes }
+    return { seconds, minutes };
   }
-  const hours = Math.floor(timeLeft / ONE_HOUR_MS)
-  return { seconds, minutes, hours }
+  const hours = Math.floor(timeLeft / ONE_HOUR_MS);
+  return { seconds, minutes, hours };
 }

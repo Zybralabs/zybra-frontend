@@ -35,7 +35,8 @@ import linea_logo from "../public/img/linea_logo.png";
 import lineaTesnet_logo from "../public/img/lineaTesnet_logo.png";
 import zksync_logo from "../public/img/zksync_logo.svg";
 
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
+console.log("Env Project ID:", process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID);
 
 if (!walletConnectProjectId) {
   throw new Error(

@@ -1,5 +1,5 @@
-import { PlatformSplitStubError } from 'utilities/src/errors'
+import { PlatformSplitStubError } from "utilities/src/errors";
 
 export async function getUniqueId(): Promise<string> {
-  throw new PlatformSplitStubError('getUniqueId')
+  throw new PlatformSplitStubError("getUniqueId");
 }

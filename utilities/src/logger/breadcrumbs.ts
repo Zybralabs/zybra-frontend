@@ -1,8 +1,8 @@
-import { addBreadcrumb } from '@sentry/core'
-import dayjs from 'dayjs'
+import { addBreadcrumb } from "@sentry/core";
+import dayjs from "dayjs";
 
-const CONTEXT_BREADCRUMB_CATEGORY = 'react.context'
-const CONTEXT_BREADCRUMB_TYPE = 'info'
+const CONTEXT_BREADCRUMB_CATEGORY = "react.context";
+const CONTEXT_BREADCRUMB_TYPE = "info";
 
 export function addSentryContextBreadcrumb(contextName: string, newState: unknown): void {
   addBreadcrumb({
@@ -13,5 +13,5 @@ export function addSentryContextBreadcrumb(contextName: string, newState: unknow
     },
     type: CONTEXT_BREADCRUMB_TYPE,
     timestamp: dayjs().valueOf(),
-  })
+  });
 }

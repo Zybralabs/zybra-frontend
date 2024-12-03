@@ -1,11 +1,11 @@
 import React, { useCallback, type FC, type ChangeEvent } from "react";
 
-import { Box, Input, InputGroup, InputLeftAddon, Spinner } from "@chakra-ui/react";
 import Image from "next/image";
 import { isAddress, zeroAddress } from "viem";
 import { useEnsResolver } from "wagmi";
 
-import { useDebounce, useNotify } from "@/hooks";
+import { useNotify } from "@/hooks";
+import useDebounce from "@/hooks/useDebounce";
 
 import Jazzicons from "./Jazzicons";
 import warningImage from "../../../public/img/warning.svg";
@@ -51,7 +51,7 @@ const AddressInput: FC<AddressInputProps> = ({ receiver, setReceiver }) => {
   );
 
   const getAddonContent = (): JSX.Element | null => {
-    if (isResolvingInProgress) return <Spinner />;
+    if (isResolvingInProgress) return <></>;
     const validAddress = isValidEthAddress(receiver)
       ? receiver
       : isAddress(resolvedAddress as string) && resolvedAddress !== zeroAddress
@@ -72,22 +72,7 @@ const AddressInput: FC<AddressInputProps> = ({ receiver, setReceiver }) => {
     return null;
   };
 
-  return (
-    <Box w={"100%"}>
-      <InputGroup>
-        <InputLeftAddon w={"50px"} p={0} justifyContent={"center"}>
-          {getAddonContent()}
-        </InputLeftAddon>
-        <Input
-          value={receiver}
-          onChange={handleInput}
-          placeholder="Enter Ethereum name or address"
-          name="ethereum"
-          spellCheck={false}
-        />
-      </InputGroup>
-    </Box>
-  );
+  return <></>;
 };
 
 export default AddressInput;

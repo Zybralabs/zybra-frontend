@@ -1,4 +1,4 @@
-import { PlatformSplitStubError } from 'utilities/src/errors'
+import { PlatformSplitStubError } from "utilities/src/errors";
 
 /**
  * Returns the time elapsed between page load and now in milliseconds.
@@ -8,5 +8,5 @@ export function calculateElapsedTimeWithPerformanceMarkMs(
   _markName: string,
   _fallbackStartTime?: number,
 ): number | undefined {
-  throw new PlatformSplitStubError('calculateElapsedTimeWithPerformanceMarkMs')
+  throw new PlatformSplitStubError("calculateElapsedTimeWithPerformanceMarkMs");
 }

@@ -1,61 +1,61 @@
-import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
+import { Currency, CurrencyAmount } from "@uniswap/sdk-core";
 import {
   FormatterRule,
   StandardCurrency,
   TYPE_TO_FORMATTER_RULES,
   TwoDecimalsCurrency,
-} from 'utilities/src/format/localeBasedFormats'
-import { NumberType } from 'utilities/src/format/types'
-import { logger } from 'utilities/src/logger/logger'
+} from "utilities/src/format/localeBasedFormats";
+import { NumberType } from "utilities/src/format/types";
+import { logger } from "utilities/src/logger/logger";
 
 function getFormatterRule(input: number, type: NumberType): FormatterRule {
-  const { rules, defaultFormat } = TYPE_TO_FORMATTER_RULES[type]
+  const { rules, defaultFormat } = TYPE_TO_FORMATTER_RULES[type];
   for (const rule of rules) {
     if (
       (rule.exact !== undefined && input === rule.exact) ||
       (rule.upperBound !== undefined && input < rule.upperBound)
     ) {
-      return rule
+      return rule;
     }
   }
 
-  logger.error('Invalid input or misconfigured formatter rules for type', {
+  logger.error("Invalid input or misconfigured formatter rules for type", {
     tags: {
-      file: 'localeBased',
-      function: 'getFormatterRule',
+      file: "localeBased",
+      function: "getFormatterRule",
     },
     extra: { type, input },
-  })
+  });
 
   // Use default formatting if no applicable rules found (should never happen)
-  return { formatter: defaultFormat }
+  return { formatter: defaultFormat };
 }
 
 export function formatNumber({
   input,
   locale,
-  currencyCode = 'USD',
+  currencyCode = "USD",
   type = NumberType.TokenNonTx,
-  placeholder = '-',
+  placeholder = "-",
 }: {
-  input: number | null | undefined
-  locale: string
-  currencyCode?: string
-  type?: NumberType
-  placeholder?: string
+  input: number | null | undefined;
+  locale: string;
+  currencyCode?: string;
+  type?: NumberType;
+  placeholder?: string;
 }): string {
   if (input === null || input === undefined) {
-    return placeholder
+    return placeholder;
   }
 
-  const { formatter, overrideValue, postFormatModifier } = getFormatterRule(input, type)
-  if (typeof formatter === 'string') {
-    return formatter
+  const { formatter, overrideValue, postFormatModifier } = getFormatterRule(input, type);
+  if (typeof formatter === "string") {
+    return formatter;
   }
 
-  const createdFormat = formatter.createFormat(locale, currencyCode)
-  const formatted = createdFormat.format(overrideValue !== undefined ? overrideValue : input)
-  return postFormatModifier ? postFormatModifier(formatted) : formatted
+  const createdFormat = formatter.createFormat(locale, currencyCode);
+  const formatted = createdFormat.format(overrideValue !== undefined ? overrideValue : input);
+  return postFormatModifier ? postFormatModifier(formatted) : formatted;
 }
 
 export function formatCurrencyAmount({
@@ -64,17 +64,17 @@ export function formatCurrencyAmount({
   type = NumberType.TokenNonTx,
   placeholder,
 }: {
-  amount?: CurrencyAmount<Currency> | null | undefined
-  locale: string
-  type?: NumberType
-  placeholder?: string
+  amount?: CurrencyAmount<Currency> | null | undefined;
+  locale: string;
+  type?: NumberType;
+  placeholder?: string;
 }): string {
   return formatNumber({
     input: amount ? parseFloat(amount.toFixed()) : undefined,
     locale,
     type,
     placeholder,
-  })
+  });
 }
 
 export function formatNumberOrString({
@@ -82,30 +82,32 @@ export function formatNumberOrString({
   locale,
   currencyCode,
   type,
-  placeholder = '-',
+  placeholder = "-",
 }: {
-  price: Maybe<number | string>
-  locale: string
-  currencyCode?: string
-  type: NumberType
-  placeholder?: string
+  price: Maybe<number | string>;
+  locale: string;
+  currencyCode?: string;
+  type: NumberType;
+  placeholder?: string;
 }): string {
   if (price === null || price === undefined) {
-    return placeholder
+    return placeholder;
   }
-  if (typeof price === 'string') {
-    return formatNumber({ input: parseFloat(price), locale, currencyCode, type, placeholder })
+  if (typeof price === "string") {
+    return formatNumber({ input: parseFloat(price), locale, currencyCode, type, placeholder });
   }
-  return formatNumber({ input: price, locale, currencyCode, type, placeholder })
+  return formatNumber({ input: price, locale, currencyCode, type, placeholder });
 }
 
 export function formatPercent(rawPercentage: Maybe<number | string>, locale: string): string {
   if (rawPercentage === null || rawPercentage === undefined) {
-    return '-'
+    return "-";
   }
   const percentage =
-    typeof rawPercentage === 'string' ? parseFloat(rawPercentage) : parseFloat(rawPercentage.toString())
-  return formatNumber({ input: percentage / 100, type: NumberType.Percentage, locale })
+    typeof rawPercentage === "string"
+      ? parseFloat(rawPercentage)
+      : parseFloat(rawPercentage.toString());
+  return formatNumber({ input: percentage / 100, type: NumberType.Percentage, locale });
 }
 
 export function addFiatSymbolToNumber({
@@ -114,65 +116,70 @@ export function addFiatSymbolToNumber({
   currencyCode,
   currencySymbol,
 }: {
-  value: Maybe<number | string>
-  locale: string
-  currencyCode: string
-  currencySymbol: string
+  value: Maybe<number | string>;
+  locale: string;
+  currencyCode: string;
+  currencySymbol: string;
 }): string {
-  const format = StandardCurrency.createFormat(locale, currencyCode)
-  const parts = format.formatToParts(0)
-  const isSymbolAtFront = parts[0]?.type === 'currency'
+  const format = StandardCurrency.createFormat(locale, currencyCode);
+  const parts = format.formatToParts(0);
+  const isSymbolAtFront = parts[0]?.type === "currency";
   const extra = isSymbolAtFront // Some locales have something like an extra space after symbol
-    ? parts[1]?.type === 'literal'
+    ? parts[1]?.type === "literal"
       ? parts[1]?.value
-      : ''
-    : parts[parts.length - 2]?.type === 'literal'
+      : ""
+    : parts[parts.length - 2]?.type === "literal"
       ? parts[parts.length - 2]?.value
-      : ''
+      : "";
 
-  return isSymbolAtFront ? `${currencySymbol}${extra}${value}` : `${value}${extra}${currencySymbol}`
+  return isSymbolAtFront
+    ? `${currencySymbol}${extra}${value}`
+    : `${value}${extra}${currencySymbol}`;
 }
 
 export type FiatCurrencyComponents = {
-  groupingSeparator: string
-  decimalSeparator: string
-  symbol: string
-  fullSymbol: string // Some currencies have whitespace in between number and currency
-  symbolAtFront: boolean // All currencies are at front or back except CVE, which we won't ever support
-}
+  groupingSeparator: string;
+  decimalSeparator: string;
+  symbol: string;
+  fullSymbol: string; // Some currencies have whitespace in between number and currency
+  symbolAtFront: boolean; // All currencies are at front or back except CVE, which we won't ever support
+};
 /**
  * Helper function to return components of a currency value for a specific locale
  * E.g. comma, period, or space for separating thousands
  */
-export function getFiatCurrencyComponents(locale: string, currencyCode: string): FiatCurrencyComponents {
-  const format = TwoDecimalsCurrency.createFormat(locale, currencyCode)
+export function getFiatCurrencyComponents(
+  locale: string,
+  currencyCode: string,
+): FiatCurrencyComponents {
+  const format = TwoDecimalsCurrency.createFormat(locale, currencyCode);
 
   // See MDN for official docs https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/formatToParts
   // Returns something like [{"type":"currency","value":"$"},{"type":"integer","value":"1"}]
-  const parts = format.formatToParts(1000000.0) // This number should provide both types of separators
-  let groupingSeparator = ','
-  let decimalSeparator = '.'
-  let symbol = ''
-  let fullSymbol = ''
-  let symbolAtFront = true
+  const parts = format.formatToParts(1000000.0); // This number should provide both types of separators
+  let groupingSeparator = ",";
+  let decimalSeparator = ".";
+  let symbol = "";
+  let fullSymbol = "";
+  let symbolAtFront = true;
 
   parts.forEach((part, index) => {
-    if (part.type === 'group') {
-      groupingSeparator = part.value
-    } else if (part.type === 'decimal') {
-      decimalSeparator = part.value
-    } else if (part.type === 'currency') {
-      symbol = part.value
-      fullSymbol = symbol
+    if (part.type === "group") {
+      groupingSeparator = part.value;
+    } else if (part.type === "decimal") {
+      decimalSeparator = part.value;
+    } else if (part.type === "currency") {
+      symbol = part.value;
+      fullSymbol = symbol;
 
-      symbolAtFront = index === 0
-      const nextPart = symbolAtFront ? parts[index + 1] : parts[index - 1]
+      symbolAtFront = index === 0;
+      const nextPart = symbolAtFront ? parts[index + 1] : parts[index - 1];
       // Check for additional characters between symbol and number, like whitespace
-      if (nextPart?.type === 'literal') {
-        fullSymbol = symbolAtFront ? symbol + nextPart.value : nextPart.value + symbol
+      if (nextPart?.type === "literal") {
+        fullSymbol = symbolAtFront ? symbol + nextPart.value : nextPart.value + symbol;
       }
     }
-  })
+  });
 
   return {
     groupingSeparator,
@@ -180,5 +187,5 @@ export function getFiatCurrencyComponents(locale: string, currencyCode: string):
     symbol,
     fullSymbol,
     symbolAtFront,
-  }
+  };
 }

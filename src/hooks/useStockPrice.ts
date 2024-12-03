@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import yahooFinance from 'yahoo-finance2';
+import { useEffect, useState } from "react";
+
+import yahooFinance from "yahoo-finance2";
 
 export interface StockPrice {
   symbol: string;
@@ -39,14 +40,14 @@ export function useStockPrices(stockSymbols: string[]) {
               console.error(`Failed to fetch price for ${symbol}:`, err);
               return null;
             }
-          })
+          }),
         );
 
         // Filter out any null results
         setStockPrices(prices.filter((price) => price !== null) as StockPrice[]);
       } catch (err) {
-        console.error('Failed to fetch stock prices:', err);
-        setError('Failed to fetch stock prices.');
+        console.error("Failed to fetch stock prices:", err);
+        setError("Failed to fetch stock prices.");
       } finally {
         setLoading(false);
       }

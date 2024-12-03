@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+
 import { ethers } from "ethers";
-import { useContract, useUniswapQouter } from "./useContract"; // Custom hook for connecting contracts
+
 import { useBlockContext } from "@/context/BlockContext";
+
+import { useContract, useUniswapQouter } from "./useContract"; // Custom hook for connecting contracts
 
 // Constants
 const QUOTER_ADDRESS = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"; // Uniswap V3 Quoter contract address
@@ -17,7 +20,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
   const [price, setPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const {chainId} = useBlockContext()
+  const { chainId } = useBlockContext();
   const quoterContract = useUniswapQouter(chainId);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
           USDC_ADDRESS,
           FEE_TIER,
           tokenAmountInWei,
-          0
+          0,
         );
 
         // Convert quoted amount (in USDC's decimals)

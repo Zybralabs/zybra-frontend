@@ -1,17 +1,17 @@
-import { PlatformSplitStubError } from 'utilities/src/errors'
-import { ApplicationTransport } from 'utilities/src/telemetry/analytics/ApplicationTransport'
+import { PlatformSplitStubError } from "utilities/src/errors";
+import { ApplicationTransport } from "utilities/src/telemetry/analytics/ApplicationTransport";
 
 // matches amplitude supported values, not using amplitude's type to decouple from underlying library
-export type UserPropertyValue = number | string | boolean | Array<string | number>
+export type UserPropertyValue = number | string | boolean | Array<string | number>;
 
 export interface TestnetModeConfig {
-  aggregateEventName: string
-  passthroughAllowlistEvents: string[]
-  allowlistEvents: string[]
+  aggregateEventName: string;
+  passthroughAllowlistEvents: string[];
+  allowlistEvents: string[];
 }
 
 export async function getAnalyticsAtomDirect(_forceRead?: boolean): Promise<boolean> {
-  throw new PlatformSplitStubError('getAnalyticsAtomDirect')
+  throw new PlatformSplitStubError("getAnalyticsAtomDirect");
 }
 
 export interface Analytics {
@@ -20,12 +20,12 @@ export interface Analytics {
     allowed: boolean,
     initHash?: string,
     userIdGetter?: () => Promise<string>,
-  ): Promise<void>
-  setAllowAnalytics(allowed: boolean): Promise<void>
-  setTestnetMode(enabled: boolean, _config: TestnetModeConfig): void
-  sendEvent(eventName: string, eventProperties: Record<string, unknown>): void
-  flushEvents(): void
-  setUserProperty(property: string, value: UserPropertyValue, insert?: boolean): void
+  ): Promise<void>;
+  setAllowAnalytics(allowed: boolean): Promise<void>;
+  setTestnetMode(enabled: boolean, _config: TestnetModeConfig): void;
+  sendEvent(eventName: string, eventProperties: Record<string, unknown>): void;
+  flushEvents(): void;
+  setUserProperty(property: string, value: UserPropertyValue, insert?: boolean): void;
 }
 
 export const analytics: Analytics = {
@@ -35,21 +35,21 @@ export const analytics: Analytics = {
     _initHash?: string,
     _userIdGetter?: () => Promise<string>,
   ): Promise<void> {
-    throw new PlatformSplitStubError('initAnalytics')
+    throw new PlatformSplitStubError("initAnalytics");
   },
   setAllowAnalytics(_allowed: boolean): Promise<void> {
-    throw new PlatformSplitStubError('flushAnalyticsEvents')
+    throw new PlatformSplitStubError("flushAnalyticsEvents");
   },
   setTestnetMode(_enabled: boolean, _config: TestnetModeConfig): void {
-    throw new PlatformSplitStubError('setTestnetMode')
+    throw new PlatformSplitStubError("setTestnetMode");
   },
   sendEvent(_eventName: string, ..._eventProperties: unknown[]): void {
-    throw new PlatformSplitStubError('sendAnalyticsEvent')
+    throw new PlatformSplitStubError("sendAnalyticsEvent");
   },
   flushEvents(): void {
-    throw new PlatformSplitStubError('flushAnalyticsEvents')
+    throw new PlatformSplitStubError("flushAnalyticsEvents");
   },
   setUserProperty(_property: string, _value: UserPropertyValue): void {
-    throw new PlatformSplitStubError('setUserProperty')
+    throw new PlatformSplitStubError("setUserProperty");
   },
-}
+};

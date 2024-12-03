@@ -1,22 +1,19 @@
-import React, { useEffect } from 'react';
-import { useAccountAbstraction } from '../hooks/useAccountAbstraction';
+import React, { useEffect } from "react";
+
+import { useAccountAbstraction } from "../hooks/useAccountAbstraction";
 
 const TransactionManager = () => {
-  const {
-    fetchMinimalAccountFromAPI,
-    createMinimalAccount,
-    executeTransaction,
-    transactions,
-  } = useAccountAbstraction();
+  const { fetchMinimalAccountFromAPI, createMinimalAccount, executeTransaction, transactions } =
+    useAccountAbstraction();
 
   useEffect(() => {
     const initialize = async () => {
       const account = await fetchMinimalAccountFromAPI();
       if (!account) {
         const newAccount = await createMinimalAccount();
-        console.log('Created Minimal Account:', newAccount);
+        console.log("Created Minimal Account:", newAccount);
       } else {
-        console.log('Fetched Minimal Account:', account);
+        console.log("Fetched Minimal Account:", account);
       }
     };
 
@@ -26,14 +23,14 @@ const TransactionManager = () => {
   const handleExecuteTransaction = async () => {
     try {
       const txHash = await executeTransaction(
-        '0xMinimalAccountAddress', // User's MinimalAccount
-        '0xRecipientAddress', // Recipient address
-        ethers.utils.parseEther('0.1'), // Value in wei
-        '0x' // Optional function data
+        "0xMinimalAccountAddress", // User's MinimalAccount
+        "0xRecipientAddress", // Recipient address
+        ethers.utils.parseEther("0.1"), // Value in wei
+        "0x", // Optional function data
       );
-      console.log('Transaction Hash:', txHash);
+      console.log("Transaction Hash:", txHash);
     } catch (err) {
-      console.error('Transaction execution failed:', err);
+      console.error("Transaction execution failed:", err);
     }
   };
 

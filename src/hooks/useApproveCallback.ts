@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react'
-import { Contract } from '@ethersproject/contracts'
-import { BigNumber } from '@ethersproject/bignumber'
-import { useEthersProvider } from './useEthersProvider.ts' // Custom hook for Ethers provider
+import { useCallback, useState } from "react";
+
+import { BigNumber } from "@ethersproject/bignumber";
+import { Contract } from "@ethersproject/contracts";
+
+import { useEthersProvider } from "./useEthersProvider.ts"; // Custom hook for Ethers provider
 
 export enum ApprovalState {
   UNKNOWN,
@@ -20,73 +22,71 @@ export enum ApprovalState {
 export function useApproveCallback(
   amountToApprove?: BigNumber,
   spender?: string,
-  tokenAddress?: string
+  tokenAddress?: string,
 ): [ApprovalState, () => Promise<void>] {
-  const provider = useEthersProvider()
-  const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN)
+  const provider = useEthersProvider();
+  const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN);
 
   // Function to check current allowance
   const checkAllowance = useCallback(async () => {
     if (!provider || !spender || !tokenAddress || !amountToApprove) {
-      setApprovalState(ApprovalState.UNKNOWN)
-      return
+      setApprovalState(ApprovalState.UNKNOWN);
+      return;
     }
 
     try {
-      const signer = provider.getSigner()
+      const signer = provider.getSigner();
       const erc20Contract = new Contract(
         tokenAddress,
-        [
-          'function allowance(address owner, address spender) view returns (uint256)',
-        ],
-        signer
-      )
+        ["function allowance(address owner, address spender) view returns (uint256)"],
+        signer,
+      );
 
-      const owner = await signer.getAddress()
-      const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender)
+      const owner = await signer.getAddress();
+      const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender);
 
       if (currentAllowance.gte(amountToApprove)) {
-        setApprovalState(ApprovalState.APPROVED)
+        setApprovalState(ApprovalState.APPROVED);
       } else {
-        setApprovalState(ApprovalState.NOT_APPROVED)
+        setApprovalState(ApprovalState.NOT_APPROVED);
       }
     } catch (error) {
-      console.error('Error checking allowance:', error)
-      setApprovalState(ApprovalState.UNKNOWN)
+      console.error("Error checking allowance:", error);
+      setApprovalState(ApprovalState.UNKNOWN);
     }
-  }, [provider, spender, tokenAddress, amountToApprove])
+  }, [provider, spender, tokenAddress, amountToApprove]);
 
   // Function to send approval transaction
   const approveCallback = useCallback(async () => {
     if (!provider || !spender || !tokenAddress || !amountToApprove) {
-      console.error('Missing required parameters for approval')
-      return
+      console.error("Missing required parameters for approval");
+      return;
     }
 
     try {
-      setApprovalState(ApprovalState.PENDING)
+      setApprovalState(ApprovalState.PENDING);
 
-      const signer = provider.getSigner()
+      const signer = provider.getSigner();
       const erc20Contract = new Contract(
         tokenAddress,
-        ['function approve(address spender, uint256 amount) returns (bool)'],
-        signer
-      )
+        ["function approve(address spender, uint256 amount) returns (bool)"],
+        signer,
+      );
 
-      const tx = await erc20Contract.approve(spender, amountToApprove)
-      await tx.wait()
+      const tx = await erc20Contract.approve(spender, amountToApprove);
+      await tx.wait();
 
-      setApprovalState(ApprovalState.APPROVED)
+      setApprovalState(ApprovalState.APPROVED);
     } catch (error) {
-      console.error('Approval transaction failed:', error)
-      setApprovalState(ApprovalState.NOT_APPROVED)
+      console.error("Approval transaction failed:", error);
+      setApprovalState(ApprovalState.NOT_APPROVED);
     }
-  }, [provider, spender, tokenAddress, amountToApprove])
+  }, [provider, spender, tokenAddress, amountToApprove]);
 
   // Automatically check allowance on mount/update
   useCallback(() => {
-    checkAllowance()
-  }, [checkAllowance])
+    checkAllowance();
+  }, [checkAllowance]);
 
-  return [approvalState, approveCallback]
+  return [approvalState, approveCallback];
 }

@@ -1,10 +1,11 @@
-import { BigNumber } from 'ethers';
-import { useCallback, useMemo } from 'react';
-import { formatUnits } from '@ethersproject/units';
+import { useCallback, useMemo } from "react";
+
+import { formatUnits } from "@ethersproject/units";
+import { BigNumber } from "ethers";
 
 // Default locale and fiat currency constants
-const DEFAULT_LOCALE = 'en-US';
-const DEFAULT_LOCAL_CURRENCY = 'USD';
+const DEFAULT_LOCALE = "en-US";
+const DEFAULT_LOCAL_CURRENCY = "USD";
 
 interface NumberFormatOptions extends Intl.NumberFormatOptions {}
 
@@ -31,7 +32,7 @@ function formatNumber(
   locale: string = DEFAULT_LOCALE,
 ): string {
   if (input === null || input === undefined || isNaN(Number(input))) {
-    return '-';
+    return "-";
   }
   return new Intl.NumberFormat(locale, options).format(Number(input));
 }
@@ -44,23 +45,31 @@ function formatFiat(
   options: NumberFormatOptions = TWO_DECIMALS,
 ): string {
   if (input === null || input === undefined || isNaN(Number(input))) {
-    return '-';
+    return "-";
   }
-  return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency }).format(Number(input));
+  return new Intl.NumberFormat(locale, { ...options, style: "currency", currency }).format(
+    Number(input),
+  );
 }
 
 // Utility for formatting percentages
-function formatPercent(input: number | string | null | undefined, locale: string = DEFAULT_LOCALE): string {
+function formatPercent(
+  input: number | string | null | undefined,
+  locale: string = DEFAULT_LOCALE,
+): string {
   if (input === null || input === undefined || isNaN(Number(input))) {
-    return '-';
+    return "-";
   }
   return `${Number(input).toLocaleString(locale, { maximumFractionDigits: 2 })}%`;
 }
 
 // Utility for formatting Ethereum values (BigNumber)
-function formatEther(input: BigNumber | string | number | null | undefined, decimals: number = 18): string {
+function formatEther(
+  input: BigNumber | string | number | null | undefined,
+  decimals: number = 18,
+): string {
   if (input === null || input === undefined) {
-    return '-';
+    return "-";
   }
   return formatUnits(input.toString(), decimals);
 }

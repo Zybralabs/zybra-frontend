@@ -1,6 +1,6 @@
-import { ApolloLink } from '@apollo/client'
-import { DatadogLink } from '@datadog/mobile-react-native-apollo-client'
+import { ApolloLink } from "@apollo/client";
+import { DatadogLink } from "@datadog/mobile-react-native-apollo-client";
 
 export const getDatadogApolloLink = (): ApolloLink => {
-  return new DatadogLink()
-}
+  return new DatadogLink();
+};

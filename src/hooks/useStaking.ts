@@ -1,6 +1,8 @@
 import { useCallback } from "react";
-import {  useZFIStakingContract } from "./useContract"; // Hook for contract interaction
+
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
+
+import { useZFIStakingContract } from "./useContract"; // Hook for contract interaction
 
 /**
  * Hook for interacting with the LzybraCentrifugeStaking contract.
@@ -8,7 +10,7 @@ import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/
  * @param chainId Chain ID for the network.
  */
 export function useLzybraStaking(contractAddress: string, chainId: number) {
-  const stakingContract = useZFIStakingContract(true,chainId)
+  const stakingContract = useZFIStakingContract(true, chainId);
 
   const handleTransaction = useCallback(
     async (methodName: string, args: any[] = [], overrides: any = {}) => {
@@ -28,51 +30,51 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
         return null;
       }
     },
-    [stakingContract]
+    [stakingContract],
   );
 
   // State-Changing Functions
   const stake = useCallback(
     async (amount: number) => handleTransaction("stake", [amount]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const unstake = useCallback(
     async (amount: number) => handleTransaction("unstake", [amount]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const triggerLiquidation = useCallback(
     async (vaultOwner: string, auctionId: number) =>
       handleTransaction("triggerLiquidation", [vaultOwner, auctionId]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const withdrawReward = useCallback(
     async () => handleTransaction("withdrawReward"),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   // Read Functions with `useSingleCallResult`
   const pendingReward = useCallback(
     (stakerAddress: string) =>
       useSingleCallResult(contractAddress, "pendingReward", [stakerAddress]),
-    [contractAddress]
+    [contractAddress],
   );
 
   const totalStaked = useCallback(
     () => useSingleCallResult(contractAddress, "totalStaked", []),
-    [contractAddress]
+    [contractAddress],
   );
 
   const totalProfitDistributed = useCallback(
     () => useSingleCallResult(contractAddress, "totalProfitDistributed", []),
-    [contractAddress]
+    [contractAddress],
   );
 
   const getCollateralAssetPrice = useCallback(
     () => useSingleCallResult(contractAddress, "getCollateralAssetPrice", []),
-    [contractAddress]
+    [contractAddress],
   );
 
   // Batch Read Function
@@ -86,7 +88,7 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
     return useSingleContractMultipleData(
       contractAddress,
       methods.map((m) => m.method),
-      methods.map((m) => m.args)
+      methods.map((m) => m.args),
     );
   }, [contractAddress]);
 

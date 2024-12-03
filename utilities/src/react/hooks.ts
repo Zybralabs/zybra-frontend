@@ -1,18 +1,18 @@
-import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 // modified from https://usehooks.com/usePrevious/
 export function usePrevious<T>(value: T): T | undefined {
   // The ref object is a generic container whose current property is mutable ...
   // ... and can hold any value, similar to an instance property on a class
-  const ref = useRef<T>()
+  const ref = useRef<T>();
 
   // Store current value in ref
   useEffect(() => {
-    ref.current = value
-  }, [value]) // Only re-run if value changes
+    ref.current = value;
+  }, [value]); // Only re-run if value changes
 
   // Return previous value (happens before update in useEffect above)
-  return ref.current
+  return ref.current;
 }
 
 // adapted from https://usehooks.com/useAsync/ but simplified
@@ -21,94 +21,94 @@ export function useAsyncData<T>(
   asyncCallback: () => Promise<T> | undefined,
   onCancel?: () => void,
 ): {
-  isLoading: boolean
-  data: T | undefined
-  error?: Error
+  isLoading: boolean;
+  data: T | undefined;
+  error?: Error;
 } {
   const [state, setState] = useState<{
-    data: T | undefined
-    isLoading: boolean
-    error?: Error
+    data: T | undefined;
+    isLoading: boolean;
+    error?: Error;
   }>({
     data: undefined,
     isLoading: true,
     error: undefined,
-  })
-  const onCancelRef = useRef(onCancel)
-  const lastCompletedAsyncCallbackRef = useRef(asyncCallback)
+  });
+  const onCancelRef = useRef(onCancel);
+  const lastCompletedAsyncCallbackRef = useRef(asyncCallback);
 
   useEffect(() => {
-    let isPending = false
+    let isPending = false;
 
     async function runCallback(): Promise<void> {
-      isPending = true
+      isPending = true;
       setState((prevState) => {
         if (!prevState.error) {
           // Return the same state to avoid an unneeded re-render.
-          return prevState
+          return prevState;
         }
-        return { ...prevState, error: undefined }
-      })
-      const data = await asyncCallback()
+        return { ...prevState, error: undefined };
+      });
+      const data = await asyncCallback();
       if (isPending) {
-        lastCompletedAsyncCallbackRef.current = asyncCallback
-        setState((prevState) => ({ ...prevState, data, isLoading: false }))
+        lastCompletedAsyncCallbackRef.current = asyncCallback;
+        setState((prevState) => ({ ...prevState, data, isLoading: false }));
       }
     }
 
     runCallback()
       .catch((error) => {
-        setState((prevState) => ({ ...prevState, error }))
+        setState((prevState) => ({ ...prevState, error }));
         if (isPending) {
-          lastCompletedAsyncCallbackRef.current = asyncCallback
-          setState((prevState) => ({ ...prevState, isLoading: false }))
+          lastCompletedAsyncCallbackRef.current = asyncCallback;
+          setState((prevState) => ({ ...prevState, isLoading: false }));
         }
       })
       .finally(() => {
-        isPending = false
-      })
+        isPending = false;
+      });
 
-    const handleCancel = onCancelRef.current
+    const handleCancel = onCancelRef.current;
 
     return () => {
       if (!isPending) {
-        return
+        return;
       }
-      isPending = false
+      isPending = false;
       if (handleCancel) {
-        handleCancel()
+        handleCancel();
       }
-    }
-  }, [asyncCallback])
+    };
+  }, [asyncCallback]);
 
   return useMemo(() => {
     if (asyncCallback !== lastCompletedAsyncCallbackRef.current) {
-      return { isLoading: true, data: undefined }
+      return { isLoading: true, data: undefined };
     }
-    return state
-  }, [asyncCallback, state])
+    return state;
+  }, [asyncCallback, state]);
 }
 
 // modified from https://usehooks.com/useMemoCompare/
 export function useMemoCompare<T>(next: () => T, compare: (a: T | undefined, b: T) => boolean): T {
   // Ref for storing previous value
-  const previousRef = useRef<T>()
-  const previous = previousRef.current
-  const nextValue = next()
+  const previousRef = useRef<T>();
+  const previous = previousRef.current;
+  const nextValue = next();
 
   // Pass previous and next value to compare function
   // to determine whether to consider them equal.
-  const isEqual = compare(previous, nextValue)
+  const isEqual = compare(previous, nextValue);
 
   // If not equal update previousRef to next value.
   // We only update if not equal so that this hook continues to return
   // the same old value if compare keeps returning true.
   if (!isEqual || !previous) {
-    previousRef.current = nextValue
+    previousRef.current = nextValue;
   }
 
   // Finally, if equal then return the previous value if it's set
-  return isEqual && previous ? previous : nextValue
+  return isEqual && previous ? previous : nextValue;
 }
 
 export function useOnClickOutside<T extends HTMLElement>(
@@ -116,33 +116,33 @@ export function useOnClickOutside<T extends HTMLElement>(
   handler: undefined | (() => void),
   ignoredNodes: Array<RefObject<T | undefined>> = [],
 ): void {
-  const handlerRef = useRef<undefined | (() => void)>(handler)
+  const handlerRef = useRef<undefined | (() => void)>(handler);
 
   useEffect(() => {
-    handlerRef.current = handler
-  }, [handler])
+    handlerRef.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent): void => {
-      const nodeClicked = node.current?.contains(e.target as Node)
+      const nodeClicked = node.current?.contains(e.target as Node);
       const ignoredNodeClicked = ignoredNodes.reduce(
         (reducer, val) => reducer || !!val.current?.contains(e.target as Node),
         false,
-      )
+      );
 
       if ((nodeClicked || ignoredNodeClicked) ?? false) {
-        return
+        return;
       }
 
       if (handlerRef.current) {
-        handlerRef.current()
+        handlerRef.current();
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [node, ignoredNodes])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [node, ignoredNodes]);
 }

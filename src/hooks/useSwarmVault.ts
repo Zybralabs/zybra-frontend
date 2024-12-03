@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
-import { useSwarmVaultContract } from './useContract'; // Import the contract hook
+import { useCallback } from "react";
+
+import { useSwarmVaultContract } from "./useContract"; // Import the contract hook
 
 /**
  * Hook to interact with the Swarm Vault contract.
@@ -10,7 +11,7 @@ export function useSwarmVault(chainId: number) {
   const handleCall = useCallback(
     async (methodName: string, ...args: any[]) => {
       if (!swarmVaultContract) {
-        console.error('SwarmVault contract is not connected.');
+        console.error("SwarmVault contract is not connected.");
         return null;
       }
       try {
@@ -27,7 +28,7 @@ export function useSwarmVault(chainId: number) {
   const handleTransaction = useCallback(
     async (methodName: string, args: any[] = [], overrides: any = {}) => {
       if (!swarmVaultContract) {
-        console.error('SwarmVault contract is not connected.');
+        console.error("SwarmVault contract is not connected.");
         return null;
       }
 
@@ -49,7 +50,7 @@ export function useSwarmVault(chainId: number) {
   // State-changing Functions (Deposit Variants)
   const depositWithAsset = useCallback(
     async (assetAmount: number, withdrawalAsset: any, offer: any) =>
-      handleTransaction('deposit', [assetAmount, withdrawalAsset, offer]),
+      handleTransaction("deposit", [assetAmount, withdrawalAsset, offer]),
     [handleTransaction],
   );
 
@@ -60,14 +61,7 @@ export function useSwarmVault(chainId: number) {
       mintAmount: number,
       isDynamic: boolean,
       maxRate: number,
-    ) =>
-      handleTransaction('deposit', [
-        assetAmount,
-        offerId,
-        mintAmount,
-        isDynamic,
-        maxRate,
-      ]),
+    ) => handleTransaction("deposit", [assetAmount, offerId, mintAmount, isDynamic, maxRate]),
     [handleTransaction],
   );
 
@@ -79,20 +73,13 @@ export function useSwarmVault(chainId: number) {
       maxRate: number,
       isDynamic: boolean,
       affiliate?: string,
-    ) =>
-      handleTransaction('withdraw', [
-        offerId,
-        assetAmount,
-        maxRate,
-        isDynamic,
-        affiliate,
-      ]),
+    ) => handleTransaction("withdraw", [offerId, assetAmount, maxRate, isDynamic, affiliate]),
     [handleTransaction],
   );
 
   const withdrawWithSpecificLogic = useCallback(
     async (assetAmount: number, specificLogic: boolean) =>
-      handleTransaction('withdrawWithSpecificLogic', [assetAmount, specificLogic]),
+      handleTransaction("withdrawWithSpecificLogic", [assetAmount, specificLogic]),
     [handleTransaction],
   );
 
@@ -104,70 +91,53 @@ export function useSwarmVault(chainId: number) {
       assetAmount: number,
       asset: any,
       priceUpdate: string[],
-    ) =>
-      handleTransaction('liquidation', [
-        provider,
-        onBehalfOf,
-        assetAmount,
-        asset,
-        priceUpdate,
-      ]),
+    ) => handleTransaction("liquidation", [provider, onBehalfOf, assetAmount, asset, priceUpdate]),
     [handleTransaction],
   );
 
   const repayingDebt = useCallback(
-    async (
-      provider: string,
-      asset: string,
-      lzybraAmount: number,
-      priceUpdate: string[],
-    ) =>
-      handleTransaction('repayingDebt', [
-        provider,
-        asset,
-        lzybraAmount,
-        priceUpdate,
-      ]),
+    async (provider: string, asset: string, lzybraAmount: number, priceUpdate: string[]) =>
+      handleTransaction("repayingDebt", [provider, asset, lzybraAmount, priceUpdate]),
     [handleTransaction],
   );
 
   const claimOffer = useCallback(
-    async (offerId: number) => handleTransaction('claimOffer', [offerId]),
+    async (offerId: number) => handleTransaction("claimOffer", [offerId]),
     [handleTransaction],
   );
 
   const addPriceFeed = useCallback(
     async (asset: string, pythPriceId: string, chainlinkAggregator: string) =>
-      handleTransaction('addPriceFeed', [asset, pythPriceId, chainlinkAggregator]),
+      handleTransaction("addPriceFeed", [asset, pythPriceId, chainlinkAggregator]),
     [handleTransaction],
   );
 
   // View Functions
   const getBorrowed = useCallback(
-    async (user: string, asset: string) => handleCall('getBorrowed', user, asset),
+    async (user: string, asset: string) => handleCall("getBorrowed", user, asset),
     [handleCall],
   );
 
   const getPoolTotalCirculation = useCallback(
-    async () => handleCall('getPoolTotalCirculation'),
+    async () => handleCall("getPoolTotalCirculation"),
     [handleCall],
   );
 
   const getCollateralRatioAndLiquidationInfo = useCallback(
     async (user: string, asset: string, priceUpdate: string[]) =>
-      handleCall('getCollateralRatioAndLiquidationInfo', user, asset, priceUpdate),
+      handleCall("getCollateralRatioAndLiquidationInfo", user, asset, priceUpdate),
     [handleCall],
   );
 
   const getAssetPrice = useCallback(
     async (depositAsset: any, withdrawalAsset: any, offerPrice: any) =>
-      handleCall('getAssetPrice', depositAsset, withdrawalAsset, offerPrice),
+      handleCall("getAssetPrice", depositAsset, withdrawalAsset, offerPrice),
     [handleCall],
   );
 
   const getAssetPriceOracle = useCallback(
     async (asset: string, priceUpdate: string[]) =>
-      handleCall('getAssetPriceOracle', asset, priceUpdate),
+      handleCall("getAssetPriceOracle", asset, priceUpdate),
     [handleCall],
   );
 

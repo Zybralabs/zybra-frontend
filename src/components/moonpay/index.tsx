@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useMoonPayWithAbstraction } from './hooks/useMoonPayWithAbstraction';
+import React, { useState } from "react";
+
+import { useMoonPayWithAbstraction } from "./hooks/useMoonPayWithAbstraction";
 
 const MoonPayAbstractionComponent = () => {
   const {
@@ -11,17 +12,17 @@ const MoonPayAbstractionComponent = () => {
     conversionRate,
     initializeAccount,
   } = useMoonPayWithAbstraction({
-    apiKey: 'your_moonpay_api_key',
-    apiBaseUrl: 'https://api.moonpay.com',
+    apiKey: "your_moonpay_api_key",
+    apiBaseUrl: "https://api.moonpay.com",
   });
 
   const [fiatAmount, setFiatAmount] = useState(100);
-  const [cryptoCurrency, setCryptoCurrency] = useState('USDC');
+  const [cryptoCurrency, setCryptoCurrency] = useState("USDC");
 
   const handleBuy = async () => {
     await initializeAccount(); // Ensure account exists
     const tx = await createBuyTransaction(fiatAmount, cryptoCurrency);
-    console.log('Transaction:', tx);
+    console.log("Transaction:", tx);
   };
 
   return (

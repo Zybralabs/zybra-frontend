@@ -1,16 +1,16 @@
-import { Interface } from '@ethersproject/abi';
-import { BigNumber } from 'ethers';
+import { Interface } from "@ethersproject/abi";
+import { BigNumber } from "ethers";
 
 const ERC20_INTERFACE = new Interface([
   {
     inputs: [
-      { name: '_spender', type: 'address' },
-      { name: '_value', type: 'uint256' },
+      { name: "_spender", type: "address" },
+      { name: "_value", type: "uint256" },
     ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
   },
 ]);
 
@@ -27,12 +27,12 @@ interface Amount {
 export default function approveAmountCalldata(
   amount: Amount,
   spender: string,
-): { to: string; data: string; value: '0x0' } {
+): { to: string; data: string; value: "0x0" } {
   if (!amount.currency.isToken) {
-    throw new Error('Must call with an amount of token');
+    throw new Error("Must call with an amount of token");
   }
 
-  const approveData = ERC20_INTERFACE.encodeFunctionData('approve', [
+  const approveData = ERC20_INTERFACE.encodeFunctionData("approve", [
     spender,
     amount.quotient.toString(),
   ]);
@@ -40,6 +40,6 @@ export default function approveAmountCalldata(
   return {
     to: amount.currency.address,
     data: approveData,
-    value: '0x0',
+    value: "0x0",
   };
 }

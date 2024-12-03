@@ -1,19 +1,20 @@
 import { useState, useCallback } from "react";
+
 import type {
-    BuyOptionsRequest,
-    BuyOptionsResponse,
-    BuyQuoteRequest,
-    BuyQuoteResponse,
-    SellOptionsRequest,
-    SellOptionsResponse,
-    SellQuoteRequest,
-    SellQuoteResponse,
-    GenerateWalletRequest,
-    GenerateWalletResponse,
-    SellTransactionStatusRequest,
-    SellTransactionStatusResponse,
-    CreateTransferRequest,
-    CreateTransferResponse,
+  BuyOptionsRequest,
+  BuyOptionsResponse,
+  BuyQuoteRequest,
+  BuyQuoteResponse,
+  SellOptionsRequest,
+  SellOptionsResponse,
+  SellQuoteRequest,
+  SellQuoteResponse,
+  GenerateWalletRequest,
+  GenerateWalletResponse,
+  SellTransactionStatusRequest,
+  SellTransactionStatusResponse,
+  CreateTransferRequest,
+  CreateTransferResponse,
 } from "./types";
 
 export function useCoinbase(apiBaseUrl: string) {
@@ -50,11 +51,13 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const generateBuyOptions = useCallback(
-    async (params: BuyOptionsRequest): Promise<{
+    async (
+      params: BuyOptionsRequest,
+    ): Promise<{
       json: BuyOptionsResponse;
       paymentCurrencies: { name: string }[];
       purchaseCurrencies: { name: string }[];
@@ -87,7 +90,7 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const generateBuyQuote = useCallback(
@@ -114,11 +117,13 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const generateSellOptions = useCallback(
-    async (params: SellOptionsRequest): Promise<{
+    async (
+      params: SellOptionsRequest,
+    ): Promise<{
       json: SellOptionsResponse;
       cashoutCurrencies: { name: string }[];
       sellCurrencies: { name: string }[];
@@ -151,7 +156,7 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const generateSellQuote = useCallback(
@@ -178,7 +183,7 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const generateWallet = useCallback(
@@ -205,24 +210,19 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const getSellTransactionStatus = useCallback(
-    async (
-      params: SellTransactionStatusRequest
-    ): Promise<SellTransactionStatusResponse> => {
+    async (params: SellTransactionStatusRequest): Promise<SellTransactionStatusResponse> => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `${apiBaseUrl}/sell-transaction-status-api`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(params),
-          }
-        );
+        const response = await fetch(`${apiBaseUrl}/sell-transaction-status-api`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch sell transaction status");
@@ -237,7 +237,7 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   const createTransfer = useCallback(
@@ -264,7 +264,7 @@ export function useCoinbase(apiBaseUrl: string) {
         setLoading(false);
       }
     },
-    [apiBaseUrl]
+    [apiBaseUrl],
   );
 
   return {
