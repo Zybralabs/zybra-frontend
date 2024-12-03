@@ -30,7 +30,7 @@ interface MoonPayHookProps {
   apiBaseUrl: string; // MoonPay's API Base URL
 }
 
-export function useMoonPayWithAbstraction({ apiKey, apiBaseUrl }: MoonPayHookProps) {
+export function useMoonPay({ apiKey, apiBaseUrl }: MoonPayHookProps) {
   const { deployMinimalAccount, minimalAccountAddress } = useAccountAbstraction(); // Hook for managing account abstraction
 const provider = useEthersProvider()
   const [transactions, setTransactions] = useState<MoonPayTransaction[]>([]);
