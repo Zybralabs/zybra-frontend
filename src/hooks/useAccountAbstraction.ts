@@ -2,7 +2,6 @@ import { useCallback, useState } from "react";
 
 import { ethers } from "ethers";
 
-import { useEthersProvider } from "./useEthersProvider";
 
 export interface Transaction {
   id: string;
