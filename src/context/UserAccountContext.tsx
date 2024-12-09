@@ -28,16 +28,14 @@ interface UserAccountContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
     email: string,
-    password: string,
-    firstName: string,
-    lastName: string,
-    profileDetails?: {
-      image?: string;
-      about?: string;
-      country?: string;
-      state?: string;
-      city?: string;
-      address?: string;
+      password: string,
+      firstName: string,
+      lastName: string,
+      walletAddress: string,
+      country: string,
+      state: string,
+      city: string,
+      address: string
     },
     wallet?: string
   ) => Promise<void>;
@@ -89,6 +87,14 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   signUp: async () => {
     throw new Error("UserAccountContext not initialized");
   },
+  verifyCode: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
+  sendVerificationEmail: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
+  
+  
 });
 
 export const useUserAccount = () => useContext(UserAccountContext);
@@ -168,6 +174,28 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [apiClient, address]
   );
 
+
+
+    const sendVerificationEmail = useCallback(async (email:string) => {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/send-verification-email`, { email });
+        return response.data;
+      } catch (err) {
+        console.error("Error sending verification email:", err);
+        throw new Error(err.response?.data?.message || "Failed to send verification email");
+      }
+    }, []);
+  
+    const verifyCode = useCallback(async (email:string, code:number) => {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/verify-code`, { email, code });
+        return response.data;
+      } catch (err) {
+        console.error("Error verifying code:", err);
+        throw new Error(err.response?.data?.message || "Verification failed");
+      }
+    }, []);
+ 
 
   const walletSignIn = useCallback(
     async (walletAddress: string) => {
@@ -355,6 +383,8 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         walletSignIn,
         signIn,
         signUp,
+        sendVerificationEmail,
+        verifyCode
       }}
     >
       {children}
