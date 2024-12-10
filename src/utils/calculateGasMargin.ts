@@ -1,6 +1,8 @@
 import { BigNumber } from "@ethersproject/bignumber";
 
 import { useEthersProvider } from "@/hooks/useContract";
+import { ChainId } from "@/constant/addresses";
+import { useBlockContext } from "@/context/BlockContext";
 
 /**
  * Calculates the gas value with a margin based on real-time gas price.
@@ -8,7 +10,8 @@ import { useEthersProvider } from "@/hooks/useContract";
  * @param marginPercentage The percentage to add as a margin (default is 20%).
  */
 export function useCalculateGasMargin() {
-  const provider = useEthersProvider(); // Use provider from hook
+ const {chainId}  = useBlockContext()
+  const provider = useEthersProvider(chainId?? ChainId.Testnet); // Use provider from hook
 
   const calculateGasMargin = async (
     gasLimit: BigNumber,

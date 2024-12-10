@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import {
-  UseAccountReturnType as UseAccountReturnTypeWagmi,
+  type UseAccountReturnType as UseAccountReturnTypeWagmi,
   useAccount as useAccountWagmi,
   useChainId,
 } from "wagmi";

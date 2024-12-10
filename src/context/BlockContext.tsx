@@ -16,8 +16,8 @@ interface Transaction {
 
 interface BlockContextProps {
   chainId: number | null;
-  latestBlock: number | null;
-  latestMainnetBlock: number | null;
+  latestBlock: number ;
+  latestMainnetBlock: number;
   transactions: Transaction[];
   addTransaction: (transaction: Transaction) => void;
   updateTransactionStatus: (hash: string, status: "confirmed" | "failed") => void;
@@ -25,8 +25,8 @@ interface BlockContextProps {
 
 const BlockContext = createContext<BlockContextProps>({
   chainId: null,
-  latestBlock: null,
-  latestMainnetBlock: null,
+  latestBlock: 0,
+  latestMainnetBlock: 0,
   transactions: [],
   addTransaction: () => {},
   updateTransactionStatus: () => {},

@@ -2,13 +2,13 @@ import { useMemo } from "react";
 
 import { Contract } from "@ethersproject/contracts";
 import { Web3Provider } from "@ethersproject/providers";
-import { useWeb3React } from "@web3-react/core";
 
 // eslint-disable-next-line import/order
 // import { logger } from './utilities/logger'; // Replace with your logger utility
 
 // ABIs
 import { usePublicClient } from "wagmi";
+
 
 import AccountAbstractionABI from "../abis/AccountAbstraction.json"; // ABI for Uniswap V3 Quoter
 import CentrifugeRouterABI from "../abis/CentrifugeRouter.json";
@@ -26,13 +26,11 @@ import TrancheAssetABI from "../abis/TrancheAsset.json";
 import QuoterABI from "../abis/UniswapV3Quoter.json"; // ABI for Uniswap V3 Quoter
 import ZfiStakingABI from "../abis/ZfiStaking.json";
 import ZybraConfiguratorABI from "../abis/ZybraConfigurator.json";
-
 // Contract Addresses
 import {
   ZYBRA_CONFIGURATOR_ADDRESS,
   CENTRIFUGE_ROUTER_ADDRESS,
   INVESTMENT_MANAGER_ADDRESS,
-  ZYBRA_VAULT_BASE_ADDRESS,
   SWARM_VAULT_ADDRESS,
   ZFI_STAKING_ADDRESS,
   ENS_REGISTRAR_ADDRESSES,
@@ -50,16 +48,18 @@ export enum VaultType {
 }
 
 // Hook to get Ethers.js provider
-export function useEthersProvider(): Web3Provider | null {
-  const provider = usePublicClient();
+export function useEthersProvider(chainId: number): Web3Provider | null {
+  const provider = usePublicClient({ chainId }); // Pass chainId to getPublicClient
 
   return useMemo(() => {
     if (!provider) {
       return null;
     }
-    return new Web3Provider(provider);
-  }, [provider]);
+    return new Web3Provider(provider as any); // Ensure compatibility with Ethers.js
+  }, [provider, chainId]);
 }
+
+
 
 // Generalized useContract Hook
 export function useContract<T extends Contract = Contract>(
@@ -68,7 +68,7 @@ export function useContract<T extends Contract = Contract>(
   withSignerIfPossible = true,
   chainId?: number,
 ): T | null {
-  const provider = useEthersProvider(chainId);
+  const provider = useEthersProvider(chainId ?? ChainId.Testnet);
 
   return useMemo(() => {
     if (!address || !ABI || !provider) return null;
@@ -88,7 +88,7 @@ export function useContract<T extends Contract = Contract>(
 // Vault Contract Hook
 export function useCentrifugeVaultContract(withSignerIfPossible = true, chainId: number) {
   return useContract(
-    CENTRIFUGE_VAULT_ADDRESS[chainId],
+    CENTRIFUGE_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     CentrifugeVaultABI,
     withSignerIfPossible,
     chainId,
@@ -105,7 +105,7 @@ export function useERC7540VaultContract(
 
 export function useSwarmVaultContract(withSignerIfPossible = true, chainId: number) {
   return useContract(
-    SWARM_VAULT_ADDRESS[chainId],
+    SWARM_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     SwarmVaultBaseABI,
     withSignerIfPossible,
     chainId,
@@ -138,7 +138,7 @@ export function useNFTContract(address: string, withSignerIfPossible = true, cha
 // Existing Hooks for Other Contracts
 export function useZybraConfiguratorContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
-    chainId ? ZYBRA_CONFIGURATOR_ADDRESS[chainId] : undefined,
+    chainId ? ZYBRA_CONFIGURATOR_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZybraConfiguratorABI,
     withSignerIfPossible,
     chainId,
@@ -154,30 +154,32 @@ export function useENSResolverContract(address: string | undefined) {
 }
 
 export function useUniswapQouter(chainId: number) {
-  return useContract(QOUTER_ADDRESS[chainId], QuoterABI, chainId);
+  return useContract(QOUTER_ADDRESS[chainId ?? ChainId.Testnet], QuoterABI,true, chainId);
 }
 
 export function useCentrifugeRouterContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
-    chainId ? CENTRIFUGE_ROUTER_ADDRESS[chainId] : undefined,
+    chainId ? CENTRIFUGE_ROUTER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     CentrifugeRouterABI,
     withSignerIfPossible,
     chainId,
   );
 }
 
-export function useMulticall(withSignerIfPossible = true, chainId?: number) {
+export function useMulticall(withSignerIfPossible = true, chainId?: number): Contract | null {
+  const address = chainId ? MULTICALL_ADDRESS[chainId] : undefined;
+
   return useContract(
-    chainId ? MULTICALL_ADDRESS[chainId] : undefined,
+    address,
     MulticallABI,
     withSignerIfPossible,
-    chainId,
+    chainId ?? ChainId.Testnet, // Default to Testnet if chainId is undefined
   );
 }
 
 export function useInvestmentManagerContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
-    chainId ? INVESTMENT_MANAGER_ADDRESS[chainId] : undefined,
+    chainId ? INVESTMENT_MANAGER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     InvestmentManagerABI,
     withSignerIfPossible,
     chainId,
@@ -186,25 +188,18 @@ export function useInvestmentManagerContract(withSignerIfPossible = true, chainI
 
 export function useZFIStakingContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
-    chainId ? ZFI_STAKING_ADDRESS[chainId] : undefined,
+    chainId ? ZFI_STAKING_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZfiStakingABI,
     withSignerIfPossible,
     chainId,
   );
 }
 
-export function useZybraVaultBaseContract(withSignerIfPossible = true, chainId?: number) {
-  return useContract(
-    chainId ? ZYBRA_VAULT_BASE_ADDRESS[chainId] : undefined,
-    ZybraVaultBaseABI,
-    withSignerIfPossible,
-    chainId,
-  );
-}
+
 
 export function useAbstractEntryPointContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
-    chainId ? ABSTRACTION_ENTRY_POINT[chainId] : undefined,
+    chainId ? ABSTRACTION_ENTRY_POINT[chainId ?? ChainId.Testnet] : undefined,
     EntryPointABI,
     withSignerIfPossible,
     chainId,

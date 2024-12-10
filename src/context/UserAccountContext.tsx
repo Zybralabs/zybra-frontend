@@ -35,11 +35,16 @@ interface UserAccountContextProps {
       country: string,
       state: string,
       city: string,
-      address: string
-    },
-    wallet?: string
+      address: string  
   ) => Promise<void>;
+  verifyCode:(
+    email: string,
+    code:number
+  )  => Promise<void>;
 
+  sendVerificationEmail:(
+    email: string
+  ) => Promise<void>;
 }
 
 const UserAccountContext = createContext<UserAccountContextProps>({
@@ -366,7 +371,6 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       value={{
         address,
         walletType,
-        setToken,
         token,
         loading: loading || abstractionLoading,
         error: error || abstractionError,

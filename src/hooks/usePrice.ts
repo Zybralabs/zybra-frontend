@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 
 import { ethers } from "ethers";
 
+import { USDC_ADDRESS } from "@/constant/addresses";
 import { useBlockContext } from "@/context/BlockContext";
 
-import { useContract, useUniswapQouter } from "./useContract"; // Custom hook for connecting contracts
+import {  useUniswapQouter } from "./useContract"; // Custom hook for connecting contracts
 
 // Constants
-const QUOTER_ADDRESS = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"; // Uniswap V3 Quoter contract address
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19d4a2e9Eb0cE3606eB48"; // Mainnet USDC address
 
 /**
  * Hook to fetch the price of a token against USDC using Uniswap V3 Quoter.
@@ -46,7 +45,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
         // Get price quote from Uniswap Quoter
         const quotedAmountOut = await quoterContract.callStatic.quoteExactInputSingle(
           tokenAddress,
-          USDC_ADDRESS,
+          USDC_ADDRESS[chainId],
           FEE_TIER,
           tokenAmountInWei,
           0,

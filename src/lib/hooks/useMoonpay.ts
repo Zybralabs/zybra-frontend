@@ -4,7 +4,9 @@ import axios from "axios";
 import { ethers } from "ethers";
 
 import { useAccountAbstraction } from "./useAccountAbstraction"; // Account abstraction hook
-import { useEthersProvider } from "./useEthersProvider";
+import { useEthersProvider } from "@/hooks/useContract";
+import { useBlockContext } from "@/context/BlockContext";
+import { ChainId } from "@/constant/addresses";
 
 interface MoonPayTransaction {
   id: string;
@@ -33,8 +35,9 @@ interface MoonPayHookProps {
 }
 
 export function useMoonPay({ apiKey, apiBaseUrl }: MoonPayHookProps) {
-  const { deployMinimalAccount, minimalAccountAddress } = useAccountAbstraction(); // Hook for managing account abstraction
-  const provider = useEthersProvider();
+  const { deployMinimalAccount, minimalAccountAddress} = useAccountAbstraction(); // Hook for managing account abstraction
+  const { chainId} = useBlockContext(); // Hook for managing account abstraction
+  const provider = useEthersProvider(chainId ?? ChainId.Testnet);
   const [transactions, setTransactions] = useState<MoonPayTransaction[]>([]);
   const [conversionRate, setConversionRate] = useState<ConversionRate | null>(null);
   const [supportedAssets, setSupportedAssets] = useState<string[]>([]);

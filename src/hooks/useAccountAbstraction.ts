@@ -1,22 +1,10 @@
 import { useCallback, useState } from "react";
 
-import { ethers } from "ethers";
 
-
-export interface Transaction {
-  id: string;
-  accountAddress: string;
-  destination: string;
-  value: ethers.BigNumberish;
-  functionData: string;
-  status: "pending" | "completed" | "failed";
-  txHash?: string;
-}
 
 export function useAccountAbstraction() {
   // const { provider } = useEthersProvider();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false); // Loading state
   const [error, setError] = useState<string | null>(null); // Error state
 
