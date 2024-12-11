@@ -1,15 +1,9 @@
 "use client";
 import { type FC } from "react";
 
-import Link from "next/link";
-
 const Footer: FC = () => {
   return (
-    <div>
-      <Link href="" target="_blank" rel="noopener noreferrer">
-        Don&apos;t
-      </Link>
-    </div>
+    <div className="card flex justify-content-center text-2xl font-medium font-red-hat">Footer</div>
   );
 };
 

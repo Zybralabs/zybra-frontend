@@ -9,11 +9,20 @@ import { UserAccountProvider } from "@/context/UserAccountContext";
 import { wagmiConfig } from "@/wagmi";
 
 import { BlockProvider } from "../context/BlockContext";
+import { MoonPayProvider } from "@moonpay/moonpay-react";
+import dynamic from "next/dynamic";
 
 export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+
+  const MoonPayProvider = dynamic(
+    () => import('@moonpay/moonpay-react').then((mod) => mod.MoonPayProvider),
+    { ssr: false },
+  );
+  
 
   const queryClient = useMemo(() => new QueryClient(), []);
 
@@ -21,14 +30,20 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
     appName: "Next-Web3-Boilerplate",
   };
   console.log("Env Project ID:", process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID);
-
+  const moonpay_api_key = process.env.NEXT_PUBLIC_MOONPAY_API_KEY
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider appInfo={appInfo} coolMode modalSize="compact">
+        <MoonPayProvider 
+      apiKey={moonpay_api_key}
+      debug
+    >
+
           <BlockProvider>
             <UserAccountProvider>{mounted && children}</UserAccountProvider>
           </BlockProvider>
+    </MoonPayProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
