@@ -1,5 +1,5 @@
 import { Interface } from "@ethersproject/abi";
-import { BigNumber } from "ethers";
+import type { BigNumberish } from "ethers";
 
 const ERC20_INTERFACE = new Interface([
   {
@@ -21,7 +21,7 @@ interface Token {
 
 interface Amount {
   currency: Token;
-  quotient: BigNumber;
+  quotient: BigNumberish;
 }
 
 export default function approveAmountCalldata(

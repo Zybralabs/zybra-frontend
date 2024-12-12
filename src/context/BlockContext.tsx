@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useWalletClient, usePublicClient, useAccount } from "wagmi";
+
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
+import { useWalletClient, usePublicClient, useAccount } from "wagmi";
 
 interface Transaction {
   hash: string;

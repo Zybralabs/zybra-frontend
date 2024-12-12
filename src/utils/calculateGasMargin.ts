@@ -1,8 +1,6 @@
 import { BigNumber } from "@ethersproject/bignumber";
 
 import { useEthersProvider } from "@/hooks/useContract";
-import { ChainId } from "@/constant/addresses";
-import { useBlockContext } from "@/context/BlockContext";
 
 /**
  * Calculates the gas value with a margin based on real-time gas price.

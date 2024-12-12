@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import axios from "axios";
 
 import { WalletType } from "@/constant/account/enum";
+import type { TransactionData } from "@/types";
 
 import { useAccount } from "../hooks/useAccount";
 import { useAccountAbstraction } from "../hooks/useAccountAbstraction";
@@ -22,12 +23,26 @@ interface UserAccountContextProps {
   getWallets: () => Promise<any>;
   createAbstractWallet: () => Promise<any>;
   executeTransaction: (data: { dest: string; calldata: string; asset: string; amount: number }) => Promise<any>;
-  addTransaction: (data: { type: string; amount: number; asset: string; status?: string; metadata?: object; tx_hash?: string }) => Promise<any>;
+  addTransaction: (data: TransactionData) => Promise<any>;
   getTransactions: (walletAddress?: string) => Promise<any>;
   walletSignIn: (walletAddress: string) => Promise<void>;
+  getUserAssetsAndPoolsHoldings: (walletAddress: string) => Promise<{
+    assets: Array<{
+      assetId: string;
+      name: string;
+      symbol: string;
+      totalAmount: number;
+      totalLzybraBorrowed: number;
+    }>;
+    pools: Array<{
+      poolId: string;
+      name: string;
+      totalAmount: number;
+      totalLzybraBorrowed: number;
+    }>}>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
-    email: string,
+    email: string, 
       password: string,
       firstName: string,
       lastName: string,
@@ -98,7 +113,9 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   sendVerificationEmail: async () => {
     throw new Error("UserAccountContext not initialized");
   },
-  
+  getUserAssetsAndPoolsHoldings: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
   
 });
 
@@ -231,13 +248,78 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 
   const addTransaction = useCallback(
-    async (data: any) => {
-      const response = await apiClient().post("/user/transaction", { userId: address, ...data });
+    async (data: TransactionData) => {
+      // Validate required parameters
+      if (!data.type) {
+        throw new Error("Transaction type is required.");
+      }
+      if (!data.amount || data.amount <= 0) {
+        throw new Error("Transaction amount must be greater than zero.");
+      }
+      if (!data.asset) {
+        throw new Error("Asset is required.");
+      }
+  
+      // Additional validation for deposit/withdraw type transactions
+      if (["deposit", "withdraw"].includes(data.type) && !data.lzybra_borrowed) {
+        throw new Error("Lzybra borrowed is required for deposit or withdraw transactions.");
+      }
+  
+      // Make the API request
+      const response = await apiClient().post("/user/transaction", {
+        userId: address, // Ensure userId is passed
+        ...data,
+      });
+  
       return response.data;
     },
     [apiClient, address]
   );
-
+  
+  const getUserAssetsAndPoolsHoldings = useCallback(async (): Promise<{
+    assets: Array<{
+      assetId: string;
+      name: string;
+      symbol: string;
+      totalAmount: number;
+      totalLzybraBorrowed: number;
+    }>;
+    pools: Array<{
+      poolId: string;
+      name: string;
+      totalAmount: number;
+      totalLzybraBorrowed: number;
+    }>;
+  }> => {
+    if (!address) {
+      throw new Error("User address is required to fetch assets and pools.");
+    }
+  
+    const response = await apiClient().get("/user/assets-pools-holdings", {
+      params: { userId: address }, // Pass user ID to the backend
+    });
+  
+    const { assets, pools } = response.data.payload;
+  
+    // Normalize and ensure all required fields are included
+    const formattedAssets = assets.map((asset: any) => ({
+      assetId: asset._id,
+      name: asset.name,
+      symbol: asset.symbol,
+      totalAmount: asset.totalAmount,
+      totalLzybraBorrowed: asset.totalLzybraBorrowed,
+    }));
+  
+    const formattedPools = pools.map((pool: any) => ({
+      poolId: pool._id,
+      name: pool.name,
+      totalAmount: pool.totalAmount,
+      totalLzybraBorrowed: pool.totalLzybraBorrowed,
+    }));
+  
+    return { assets: formattedAssets, pools: formattedPools };
+  }, [apiClient, address]);
+  
   const getTransactions = useCallback(
     async (walletAddress: any) => {
       const response = await apiClient().get("/user/transactions", {
@@ -390,6 +472,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         signIn,
         signUp,
         sendVerificationEmail,
+        getUserAssetsAndPoolsHoldings,
         verifyCode
       }}
     >
