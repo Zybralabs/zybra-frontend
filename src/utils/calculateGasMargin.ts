@@ -10,8 +10,7 @@ import { useBlockContext } from "@/context/BlockContext";
  * @param marginPercentage The percentage to add as a margin (default is 20%).
  */
 export function useCalculateGasMargin() {
- const {chainId}  = useBlockContext()
-  const provider = useEthersProvider(chainId?? ChainId.Testnet); // Use provider from hook
+  const provider = useEthersProvider(); // Use provider from hook
 
   const calculateGasMargin = async (
     gasLimit: BigNumber,

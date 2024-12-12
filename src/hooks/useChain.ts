@@ -8,8 +8,8 @@ export function getChainInfo(chainId: number) {
       name: "Ethereum Mainnet",
       blockPerMainnetEpochForChainId: 1,
     },
-    4: {
-      name: "Rinkeby Testnet",
+    11155111: {
+      name: "Sepolia Testnet",
       blockPerMainnetEpochForChainId: 1,
     },
     137: {

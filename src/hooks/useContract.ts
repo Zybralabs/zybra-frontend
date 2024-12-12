@@ -7,7 +7,7 @@ import { Web3Provider } from "@ethersproject/providers";
 // import { logger } from './utilities/logger'; // Replace with your logger utility
 
 // ABIs
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useWalletClient } from "wagmi";
 
 
 import AccountAbstractionABI from "../abis/AccountAbstraction.json"; // ABI for Uniswap V3 Quoter
@@ -47,16 +47,27 @@ export enum VaultType {
   CENTRIFUGE_VAULT = "CENTRIFUGE_VAULT",
 }
 
-// Hook to get Ethers.js provider
-export function useEthersProvider(chainId: number): Web3Provider | null {
-  const provider = usePublicClient({ chainId }); // Pass chainId to getPublicClient
+
+
+export function useEthersProvider(): Web3Provider | null {
+  const walletClient = useWalletClient(); // Wallet client (contains signer details)
+  const publicClient = usePublicClient(); // Public client for read-only access
 
   return useMemo(() => {
-    if (!provider) {
-      return null;
+    // Prefer walletClient if available
+    if (walletClient?.data) {
+      const ethereumProvider = walletClient.data as any; // Cast to Ethereum provider compatible with Web3Provider
+      return new Web3Provider(ethereumProvider);
     }
-    return new Web3Provider(provider as any); // Ensure compatibility with Ethers.js
-  }, [provider, chainId]);
+
+    // Fallback to publicClient
+    if (publicClient) {
+      const ethereumProvider = publicClient as any; // Cast to Ethereum provider compatible with Web3Provider
+      return new Web3Provider(ethereumProvider);
+    }
+
+    return null; // Return null if neither wallet nor public client is available
+  }, [walletClient?.data, publicClient]);
 }
 
 
@@ -65,10 +76,9 @@ export function useEthersProvider(chainId: number): Web3Provider | null {
 export function useContract<T extends Contract = Contract>(
   address: string | undefined,
   ABI: any,
-  withSignerIfPossible = true,
-  chainId?: number,
+  withSignerIfPossible = true
 ): T | null {
-  const provider = useEthersProvider(chainId ?? ChainId.Testnet);
+  const provider = useEthersProvider();
 
   return useMemo(() => {
     if (!address || !ABI || !provider) return null;
@@ -90,17 +100,15 @@ export function useCentrifugeVaultContract(withSignerIfPossible = true, chainId:
   return useContract(
     CENTRIFUGE_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     CentrifugeVaultABI,
-    withSignerIfPossible,
-    chainId,
+    withSignerIfPossible
   ); // Assuming Swarm uses the same ABI as ERC7540Vault;
 }
 
 export function useERC7540VaultContract(
   address: string,
-  withSignerIfPossible = true,
-  chainId: number,
+  withSignerIfPossible = true
 ) {
-  return useContract(address, ERC7540ABI, withSignerIfPossible, chainId); // Assuming Swarm uses the same ABI as ERC7540Vault;
+  return useContract(address, ERC7540ABI, withSignerIfPossible); // Assuming Swarm uses the same ABI as ERC7540Vault;
 }
 
 export function useSwarmVaultContract(withSignerIfPossible = true, chainId: number) {
@@ -108,31 +116,29 @@ export function useSwarmVaultContract(withSignerIfPossible = true, chainId: numb
     SWARM_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     SwarmVaultBaseABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
 // Tranche Asset Contract Hook
 export function useTrancheAssetContract(
   address: string,
-  withSignerIfPossible = true,
-  chainId?: number,
+  withSignerIfPossible = true
 ) {
-  return useContract(address, TrancheAssetABI, withSignerIfPossible, chainId);
+  return useContract(address, TrancheAssetABI, withSignerIfPossible);
 }
 
 // ERC20 Token Contract Hook
 export function useERC20TokenContract(
   address: string,
-  withSignerIfPossible = true,
-  chainId?: number,
+  withSignerIfPossible = true
 ) {
-  return useContract(address, ERC20ABI, withSignerIfPossible, chainId);
+  return useContract(address, ERC20ABI, withSignerIfPossible);
 }
 
 // NFT Contract Hook
 export function useNFTContract(address: string, withSignerIfPossible = true, chainId?: number) {
-  return useContract(address, NFTABI, withSignerIfPossible, chainId);
+  return useContract(address, NFTABI, withSignerIfPossible);
 }
 
 // Existing Hooks for Other Contracts
@@ -141,7 +147,7 @@ export function useZybraConfiguratorContract(withSignerIfPossible = true, chainI
     chainId ? ZYBRA_CONFIGURATOR_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZybraConfiguratorABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
@@ -162,7 +168,7 @@ export function useCentrifugeRouterContract(withSignerIfPossible = true, chainId
     chainId ? CENTRIFUGE_ROUTER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     CentrifugeRouterABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
@@ -172,8 +178,7 @@ export function useMulticall(withSignerIfPossible = true, chainId?: number): Con
   return useContract(
     address,
     MulticallABI,
-    withSignerIfPossible,
-    chainId ?? ChainId.Testnet, // Default to Testnet if chainId is undefined
+    withSignerIfPossible, // Default to Testnet if chainId is undefined
   );
 }
 
@@ -182,7 +187,7 @@ export function useInvestmentManagerContract(withSignerIfPossible = true, chainI
     chainId ? INVESTMENT_MANAGER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     InvestmentManagerABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
@@ -191,7 +196,7 @@ export function useZFIStakingContract(withSignerIfPossible = true, chainId?: num
     chainId ? ZFI_STAKING_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZfiStakingABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
@@ -202,14 +207,13 @@ export function useAbstractEntryPointContract(withSignerIfPossible = true, chain
     chainId ? ABSTRACTION_ENTRY_POINT[chainId ?? ChainId.Testnet] : undefined,
     EntryPointABI,
     withSignerIfPossible,
-    chainId,
+    
   );
 }
 
 export function useAbstractionAccountContract(
   address: string,
-  withSignerIfPossible = true,
-  chainId?: number,
+  withSignerIfPossible = true
 ) {
-  return useContract(address, AccountAbstractionABI, withSignerIfPossible, chainId);
+  return useContract(address, AccountAbstractionABI, withSignerIfPossible);
 }

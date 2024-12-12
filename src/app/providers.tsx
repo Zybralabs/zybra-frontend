@@ -3,25 +3,25 @@ import { type ReactNode, useState, useEffect, useMemo } from "react";
 
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { WagmiProvider } from "wagmi";
 
 import { UserAccountProvider } from "@/context/UserAccountContext";
 import { wagmiConfig } from "@/wagmi";
 
 import { BlockProvider } from "../context/BlockContext";
-import { MoonPayProvider } from "@moonpay/moonpay-react";
-import dynamic from "next/dynamic";
 
+const MoonPayProvider = dynamic(
+  () => import('@moonpay/moonpay-react').then((mod) => mod.MoonPayProvider),
+  { ssr: false },
+);
 export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
 
-  const MoonPayProvider = dynamic(
-    () => import('@moonpay/moonpay-react').then((mod) => mod.MoonPayProvider),
-    { ssr: false },
-  );
+
   
 
   const queryClient = useMemo(() => new QueryClient(), []);

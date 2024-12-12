@@ -2,8 +2,9 @@ import { useCallback, useState } from "react";
 
 import { BigNumber } from "@ethersproject/bignumber";
 import { Contract } from "@ethersproject/contracts";
+import type { Web3Provider } from "@ethersproject/providers";
 
-import { useEthersProvider } from "./useContract";
+import { useERC20TokenContract } from "./useContract";
 
 
 export enum ApprovalState {
@@ -24,10 +25,13 @@ export function useApproveCallback(
   amountToApprove?: BigNumber,
   spender?: string,
   tokenAddress?: string,
+  provider: Web3Provider
 ): [ApprovalState, () => Promise<void>] {
-  const provider = useEthersProvider();
   const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN);
-
+  const erc20Contract = useERC20TokenContract(
+    tokenAddress,
+    true
+  );
   // Function to check current allowance
   const checkAllowance = useCallback(async () => {
     if (!provider || !spender || !tokenAddress || !amountToApprove) {
@@ -35,14 +39,11 @@ export function useApproveCallback(
       return;
     }
 
+
     try {
       const signer = provider.getSigner();
-      const erc20Contract = new Contract(
-        tokenAddress,
-        ["function allowance(address owner, address spender) view returns (uint256)"],
-        signer,
-      );
-
+      
+      
       const owner = await signer.getAddress();
       const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender);
 
@@ -55,7 +56,7 @@ export function useApproveCallback(
       console.error("Error checking allowance:", error);
       setApprovalState(ApprovalState.UNKNOWN);
     }
-  }, [provider, spender, tokenAddress, amountToApprove]);
+  }, []);
 
   // Function to send approval transaction
   const approveCallback = useCallback(async () => {
