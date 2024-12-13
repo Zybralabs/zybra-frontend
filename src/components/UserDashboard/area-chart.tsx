@@ -1,72 +1,128 @@
-"use client";
+import React from "react";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Tooltip,
+  Title,
+  Filler,
+  CategoryScale,
+} from "chart.js";
 
-import { useEffect, useRef } from "react";
+ChartJS.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  Tooltip,
+  Title,
+  Filler,
+  CategoryScale
+);
 
-interface AreaChartProps {
-  data: number[];
-  height?: number;
-  className?: string;
-}
+const PortfolioPerformance = () => {
+  const data = {
+    labels: [
+      "2014",
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+    ],
+    datasets: [
+      {
+        label: "Portfolio A",
+        data: [100, 300, 708.32, 650, 500, 450, 500, 700, 600, 800, 900],
+        borderColor: "#00bfff",
+        backgroundColor: "rgba(0, 191, 255, 0.1)",
+        pointBorderColor: "#fff",
+        pointBackgroundColor: "#00bfff",
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      },
+      {
+        label: "Portfolio B",
+        data: [200, 400, 500, 600, 550, 500, 600, 800, 700, 900, 1000],
+        borderColor: "#ff6347",
+        backgroundColor: "rgba(255, 99, 71, 0.1)",
+        pointBorderColor: "#fff",
+        pointBackgroundColor: "#ff6347",
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      },
+    ],
+  };
 
-export function AreaChart({ data, height = 400, className = "" }: AreaChartProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set canvas size
-    canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw area
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-
-    // Create gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "rgba(37, 99, 235, 0.2)");
-    gradient.addColorStop(1, "rgba(37, 99, 235, 0)");
-
-    // Draw points
-    data.forEach((value, index) => {
-      const x = (index / (data.length - 1)) * canvas.offsetWidth;
-      const y = height - (value / Math.max(...data)) * height;
-      ctx.lineTo(x, y);
-    });
-
-    // Complete the area
-    ctx.lineTo(canvas.offsetWidth, height);
-    ctx.closePath();
-
-    // Fill area
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    // Draw line
-    ctx.beginPath();
-    data.forEach((value, index) => {
-      const x = (index / (data.length - 1)) * canvas.offsetWidth;
-      const y = height - (value / Math.max(...data)) * height;
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }, [data, height]);
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        backgroundColor: "#1e293b",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        padding: 8,
+        displayColors: false,
+        cornerRadius: 5,
+      },
+      legend: {
+        labels: {
+          color: "#fff",
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#94a3b8",
+          font: {
+            size: 12,
+          },
+        },
+        grid: {
+          display: true,
+          color: "#1e293b",
+        },
+      },
+      y: {
+        ticks: {
+          color: "#94a3b8",
+          font: {
+            size: 12,
+          },
+        },
+        grid: {
+          display: true,
+          color: "#1e293b",
+        },
+        beginAtZero: true,
+      },
+    },
+  };
 
   return (
-    <div className={`relative h-[${height}px] w-full ${className}`}>
-      <canvas ref={canvasRef} className="h-full w-full" style={{ height: `${height}px` }} />
+    <div className="bg-[#0a1929] rounded-lg p-4">
+      <h2 className="text-lg font-semibold text-white mb-4">
+        Portfolio performance
+      </h2>
+      <div className="h-64">
+        <Line data={data} options={options} />
+      </div>
     </div>
   );
-}
+};
+
+export default PortfolioPerformance;

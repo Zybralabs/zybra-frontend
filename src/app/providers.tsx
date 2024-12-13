@@ -26,7 +26,7 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
     appName: "Next-Web3-Boilerplate",
   };
   console.log("Env Project ID:", process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID);
-  const moonpay_api_key = process.env.NEXT_PUBLIC_MOONPAY_API_KEY;
+  const moonpay_api_key = process.env.NEXT_PUBLIC_MOONPAY_API_KEY ?? "";
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
+import { useAccountAbstraction } from "@/hooks/useAccountAbstraction";
+import { ethers } from "ethers";
 import React, { useEffect } from "react";
 
-import { useAccountAbstraction } from "../hooks/useAccountAbstraction";
 
 const TransactionManager = () => {
   const { fetchMinimalAccountFromAPI, createMinimalAccount, executeTransaction, transactions } =
@@ -25,7 +26,7 @@ const TransactionManager = () => {
       const txHash = await executeTransaction(
         "0xMinimalAccountAddress", // User's MinimalAccount
         "0xRecipientAddress", // Recipient address
-        ethers.utils.parseEther("0.1"), // Value in wei
+        ethers.parseEther("0.1"), // Value in wei
         "0x", // Optional function data
       );
       console.log("Transaction Hash:", txHash);
