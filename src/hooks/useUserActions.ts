@@ -8,20 +8,40 @@ const API_BASE_URL = process.env.REACT_APP_ZYBRA_BASE_API_URL || "";
 
 interface UseUserActions {
   getUserProfile: () => Promise<any>;
-  updateUserProfile: (data: { first_name?: string; last_name?: string; profile_details?: object }) => Promise<any>;
-  submitKYC: (data: { document_type: string; document_number: string; document_image: string }) => Promise<any>;
+  updateUserProfile: (data: {
+    first_name?: string;
+    last_name?: string;
+    profile_details?: object;
+  }) => Promise<any>;
+  submitKYC: (data: {
+    document_type: string;
+    document_number: string;
+    document_image: string;
+  }) => Promise<any>;
   getKYCStatus: () => Promise<any>;
   addWallet: (walletAddress: string) => Promise<any>;
   getWallets: () => Promise<any>;
   createAbstractWallet: () => Promise<any>;
-  executeTransaction: (data: { dest: string; calldata: string; asset: string; amount: number }) => Promise<any>;
-  addTransaction: (data: { type: string; amount: number; asset: string; status?: string; metadata?: object; tx_hash?: string }) => Promise<any>;
+  executeTransaction: (data: {
+    dest: string;
+    calldata: string;
+    asset: string;
+    amount: number;
+  }) => Promise<any>;
+  addTransaction: (data: {
+    type: string;
+    amount: number;
+    asset: string;
+    status?: string;
+    metadata?: object;
+    tx_hash?: string;
+  }) => Promise<any>;
   getTransactions: (walletAddress?: string) => Promise<any>;
 }
 
 export function useUserActions(): UseUserActions {
   const { latestBlock } = useBlockContext(); // Blockchain context data
-  const {address,walletType } = useUserAccount(); // User context data
+  const { address, walletType } = useUserAccount(); // User context data
 
   const apiClient = useCallback(() => {
     return axios.create({
@@ -47,7 +67,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   const submitKYC = useCallback(
@@ -58,7 +78,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   const getKYCStatus = useCallback(async () => {
@@ -76,7 +96,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   const getWallets = useCallback(async () => {
@@ -101,7 +121,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   const addTransaction = useCallback(
@@ -112,7 +132,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   const getTransactions = useCallback(
@@ -122,7 +142,7 @@ export function useUserActions(): UseUserActions {
       });
       return response.data;
     },
-    [apiClient, user]
+    [apiClient, user],
   );
 
   return {

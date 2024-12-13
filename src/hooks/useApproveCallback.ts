@@ -6,7 +6,6 @@ import type { Web3Provider } from "@ethersproject/providers";
 
 import { useERC20TokenContract } from "./useContract";
 
-
 export enum ApprovalState {
   UNKNOWN,
   NOT_APPROVED,
@@ -25,13 +24,10 @@ export function useApproveCallback(
   amountToApprove: BigNumber,
   spender: string,
   tokenAddress: string,
-  provider: Web3Provider
+  provider: Web3Provider,
 ): [ApprovalState, () => Promise<void>] {
   const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN);
-  const erc20Contract = useERC20TokenContract(
-    tokenAddress,
-    true
-  );
+  const erc20Contract = useERC20TokenContract(tokenAddress, true);
   // Function to check current allowance
   const checkAllowance = useCallback(async () => {
     if (!provider || !spender || !tokenAddress || !amountToApprove) {
@@ -39,11 +35,9 @@ export function useApproveCallback(
       return;
     }
 
-
     try {
       const signer = provider.getSigner();
-      
-      
+
       const owner = await signer.getAddress();
       const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender);
 

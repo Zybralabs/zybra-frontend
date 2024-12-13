@@ -21,23 +21,19 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
 
   const totalStaked = useSingleCallResult(stakingContract, "totalStaked", []);
 
-  const totalProfitDistributed = useSingleCallResult(
-    stakingContract,
-    "totalProfitDistributed",
-    []
-  );
+  const totalProfitDistributed = useSingleCallResult(stakingContract, "totalProfitDistributed", []);
 
   const getCollateralAssetPrice = useSingleCallResult(
     stakingContract,
     "getCollateralAssetPrice",
-    []
+    [],
   );
 
   // Batch Read Function
   const batchReadData = useSingleContractMultipleData(
     stakingContract,
     ["totalStaked", "totalProfitDistributed", "getCollateralAssetPrice"],
-    [[], [], []]
+    [[], [], []],
   );
 
   const handleTransaction = useCallback(
@@ -58,29 +54,29 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
         return null;
       }
     },
-    [stakingContract]
+    [stakingContract],
   );
 
   // State-Changing Functions
   const stake = useCallback(
     async (amount: number) => handleTransaction("stake", [amount]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const unstake = useCallback(
     async (amount: number) => handleTransaction("unstake", [amount]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const triggerLiquidation = useCallback(
     async (vaultOwner: string, auctionId: number) =>
       handleTransaction("triggerLiquidation", [vaultOwner, auctionId]),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   const withdrawReward = useCallback(
     async () => handleTransaction("withdrawReward"),
-    [handleTransaction]
+    [handleTransaction],
   );
 
   return useMemo(
@@ -110,6 +106,6 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
       totalProfitDistributed,
       getCollateralAssetPrice,
       batchReadData,
-    ]
+    ],
   );
 }

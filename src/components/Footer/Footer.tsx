@@ -1,9 +1,12 @@
 "use client";
-import { type FC } from "react";
 
-const Footer: FC = () => {
+import React from "react";
+
+const Footer = () => {
   return (
-    <div className="card flex justify-content-center text-2xl font-medium font-red-hat">Footer</div>
+    <footer className="w-full bg-[#0a192f] text-white p-4 text-center">
+      Footer Content
+    </footer>
   );
 };
 

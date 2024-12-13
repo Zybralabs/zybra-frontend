@@ -8,7 +8,7 @@ export const useMoonPay = ({
   cryptoCurrency = "eth",
   fiatAmount = 50,
 }) => {
-  const {addTransaction} = useUserAccount()
+  const { addTransaction } = useUserAccount();
   const [transactions, setTransactions] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,12 +31,11 @@ export const useMoonPay = ({
     }
   }, []);
 
-
   const deposit = async (cryptoCode: any, cryptoAmount: any, walletAddress: any) => {
     try {
       console.log(`Depositing ${cryptoAmount} of ${cryptoCode} to ${walletAddress}`);
       // Simulate a successful deposit and return a depositId
-      const depositId = "mocked_deposit_id";  
+      const depositId = "mocked_deposit_id";
       return depositId;
     } catch (error) {
       console.error("Deposit failed:", error);
@@ -44,7 +43,6 @@ export const useMoonPay = ({
     }
   };
   // Function to add a transaction to the backend
-
 
   // Configuration for the MoonPay widget
   const configuration = {
@@ -56,38 +54,49 @@ export const useMoonPay = ({
     lockAmount: false,
     onUrlSignatureRequested: handleGetSignature,
 
-    async onInitiateDeposit(properties: { cryptoCurrency: any; cryptoCurrencyAmount: any; depositWalletAddress: any; }) {
-      const {
-        cryptoCurrency,
-        cryptoCurrencyAmount,
-        depositWalletAddress,
-      } = properties;
-    
+    async onInitiateDeposit(properties: {
+      cryptoCurrency: any;
+      cryptoCurrencyAmount: any;
+      depositWalletAddress: any;
+    }) {
+      const { cryptoCurrency, cryptoCurrencyAmount, depositWalletAddress } = properties;
+
       try {
         setLoading(true);
         const redirectUrl = `http://localhost:3001/wallet-sign?cryptoCode=${cryptoCurrency}&amount=${cryptoCurrencyAmount}&walletAddress=${depositWalletAddress}`;
-    
+
         const mockDepositId = deposit(
           cryptoCurrency.code,
           cryptoCurrencyAmount,
-          depositWalletAddress
+          depositWalletAddress,
         );
         const depositId = mockDepositId ? mockDepositId.toString() : "default-deposit-id";
-    
+
         window.open(redirectUrl, "_blank");
         setDepositId(depositId);
-    
+
         return { depositId }; // Ensure depositId is a string
       } catch (error) {
         console.error("Error during deposit initiation:", error);
         setError("Failed to initiate deposit.");
         setLoading(false);
-    
+
         return { depositId: "error-deposit-id" }; // Return a fallback string on error
       }
     },
-    
-    async onTransactionCompleted(props: { id: any; baseCurrency: any; baseCurrencyAmount: any; quoteCurrency: any; quoteCurrencyAmount: any; walletAddress: any; status: any; feeAmount: any; networkFeeAmount: any; extraFeeAmount: any; }) {
+
+    async onTransactionCompleted(props: {
+      id: any;
+      baseCurrency: any;
+      baseCurrencyAmount: any;
+      quoteCurrency: any;
+      quoteCurrencyAmount: any;
+      walletAddress: any;
+      status: any;
+      feeAmount: any;
+      networkFeeAmount: any;
+      extraFeeAmount: any;
+    }) {
       try {
         const {
           id,
@@ -122,10 +131,10 @@ export const useMoonPay = ({
         setTransactions(transactionDetails);
         console.log(`Transaction ${id} completed with status: ${status}`);
         setSuccess(true);
-        setLoading(false)
+        setLoading(false);
       } catch (error) {
         console.error("Error during transaction completion:", error);
-        setLoading(false)
+        setLoading(false);
         setError("Failed to complete transaction.");
       }
     },

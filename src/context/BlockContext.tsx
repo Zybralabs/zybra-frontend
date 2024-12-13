@@ -41,7 +41,9 @@ export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Create a dedicated mainnet client
   const mainnetClient = createPublicClient({
     chain: mainnet,
-    transport: http(process.env.NEXT_PUBLIC_MAINNET_RPC || "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"),
+    transport: http(
+      process.env.NEXT_PUBLIC_MAINNET_RPC || "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
+    ),
   });
 
   const [chainId, setChainId] = useState<number | null>(chain?.id || null);
@@ -65,9 +67,7 @@ export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateTransactionStatus = (hash: string, status: "confirmed" | "failed") => {
-    setTransactions((prev) =>
-      prev.map((tx) => (tx.hash === hash ? { ...tx, status } : tx))
-    );
+    setTransactions((prev) => prev.map((tx) => (tx.hash === hash ? { ...tx, status } : tx)));
   };
 
   useEffect(() => {

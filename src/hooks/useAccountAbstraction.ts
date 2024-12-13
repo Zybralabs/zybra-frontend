@@ -1,7 +1,5 @@
 import { useCallback, useState } from "react";
 
-
-
 export function useAccountAbstraction() {
   // const { provider } = useEthersProvider();
 
@@ -30,10 +28,6 @@ export function useAccountAbstraction() {
       setLoading(false);
     }
   }, []);
-
-
-
-
 
   // Execute a transaction via the backend
 

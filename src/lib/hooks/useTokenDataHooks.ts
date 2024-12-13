@@ -4,7 +4,6 @@ import { useMultipleContractSingleData } from "@uniswap/redux-multicall";
 
 import { useCentrifugeVaultContract, useERC20TokenContract, VaultType } from "@/hooks/useContract";
 
-
 /**
  * Hook to fetch tranche details (name, symbol, price) for Centrifuge vaults.
  * @param vaultAddress The address of the Centrifuge vault.

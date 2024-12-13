@@ -12,15 +12,25 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
   const centrifugeVaultContract = useCentrifugeVaultContract(vaultAddress, true, chainId);
 
   // Placeholder contract to ensure hooks are always called
-  const safeContract = centrifugeVaultContract|| null || undefined ;
+  const safeContract = centrifugeVaultContract || null || undefined;
 
   // --- Read Functions (Single Call) ---
   const maxDepositResult = useSingleCallResult(safeContract, "maxDeposit", [vaultAddress]);
   const maxRedeemResult = useSingleCallResult(safeContract, "maxRedeem", [vaultAddress]);
-  const collateralAssetPriceResult = useSingleCallResult(safeContract, "getCollateralAssetPrice", []);
-  const trancheAssetPriceResult = useSingleCallResult(safeContract, "getTrancheAssetPrice", [vaultAddress]);
+  const collateralAssetPriceResult = useSingleCallResult(
+    safeContract,
+    "getCollateralAssetPrice",
+    [],
+  );
+  const trancheAssetPriceResult = useSingleCallResult(safeContract, "getTrancheAssetPrice", [
+    vaultAddress,
+  ]);
   const isVaultResult = useSingleCallResult(safeContract, "isVault", [vaultAddress]);
-  const poolTotalCirculationResult = useSingleCallResult(safeContract, "getPoolTotalCirculation", []);
+  const poolTotalCirculationResult = useSingleCallResult(
+    safeContract,
+    "getPoolTotalCirculation",
+    [],
+  );
   const userTrancheAssetResult = useSingleCallResult(safeContract, "getUserTrancheAsset", [
     vaultAddress,
     "0x0000000000000000000000000000000000000000", // Placeholder user address
@@ -52,7 +62,7 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
       [],
       [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
       [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
-    ]
+    ],
   );
 
   // --- State-Changing Functions ---

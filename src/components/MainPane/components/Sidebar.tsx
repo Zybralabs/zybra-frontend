@@ -1,20 +1,20 @@
-import React from 'react';
-import { PanelMenu } from 'primereact/panelmenu';
-import { Button } from 'primereact/button';
+import React from "react";
+import { PanelMenu } from "primereact/panelmenu";
+import { Button } from "primereact/button";
 
 const Sidebar = () => {
   const menuItems = [
     {
-      label: 'Analytics',
-      icon: 'pi pi-chart-bar',
+      label: "Analytics",
+      icon: "pi pi-chart-bar",
       items: [
-        { label: 'Dashboard', icon: 'pi pi-home' },
-        { label: 'Charts', icon: 'pi pi-chart-line' },
-        { label: 'Reports', icon: 'pi pi-file' },
+        { label: "Dashboard", icon: "pi pi-home" },
+        { label: "Charts", icon: "pi pi-chart-line" },
+        { label: "Reports", icon: "pi pi-file" },
       ],
     },
-    { label: 'Settings', icon: 'pi pi-cog' },
-    { label: 'Profile', icon: 'pi pi-user' },
+    { label: "Settings", icon: "pi pi-cog" },
+    { label: "Profile", icon: "pi pi-user" },
   ];
 
   return (

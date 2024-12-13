@@ -16,15 +16,15 @@ const Card = ({ data }) => {
       <h2 className="text-lg font-bold">{data.title}</h2>
       {data.tvl && (
         <div className="mt-2 text-sm">
-          <p>TVL (USDC): <span className="font-bold">{data.tvl}</span></p>
-          <p>Volume (24h): <span className="font-bold">{data.volume}</span></p>
+          <p>
+            TVL (USDC): <span className="font-bold">{data.tvl}</span>
+          </p>
+          <p>
+            Volume (24h): <span className="font-bold">{data.volume}</span>
+          </p>
           <p>
             APY:{" "}
-            <span
-              className={`font-bold ${
-                data.apy.startsWith("-") ? "text-red" : "text-green"
-              }`}
-            >
+            <span className={`font-bold ${data.apy.startsWith("-") ? "text-red" : "text-green"}`}>
               {data.apy}
             </span>
           </p>
@@ -34,7 +34,9 @@ const Card = ({ data }) => {
         <div className="mt-2 text-sm">
           <p>Price: {data.price}</p>
           <p>Market Cap: {data.marketCap}</p>
-          <p>Change: <span className="text-green">{data.change}</span></p>
+          <p>
+            Change: <span className="text-green">{data.change}</span>
+          </p>
         </div>
       )}
     </div>

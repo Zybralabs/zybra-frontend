@@ -9,7 +9,6 @@ import { Web3Provider } from "@ethersproject/providers";
 // ABIs
 import { usePublicClient, useWalletClient } from "wagmi";
 
-
 import AccountAbstractionABI from "../abis/AccountAbstraction.json"; // ABI for Uniswap V3 Quoter
 import CentrifugeRouterABI from "../abis/CentrifugeRouter.json";
 import CentrifugeVaultABI from "../abis/CentrifugeZybraVault.json";
@@ -47,8 +46,6 @@ export enum VaultType {
   CENTRIFUGE_VAULT = "CENTRIFUGE_VAULT",
 }
 
-
-
 export function useEthersProvider(): Web3Provider | null {
   const walletClient = useWalletClient(); // Wallet client (contains signer details)
   const publicClient = usePublicClient(); // Public client for read-only access
@@ -70,13 +67,11 @@ export function useEthersProvider(): Web3Provider | null {
   }, [walletClient?.data, publicClient]);
 }
 
-
-
 // Generalized useContract Hook
 export function useContract<T extends Contract = Contract>(
   address: string | undefined,
   ABI: any,
-  withSignerIfPossible = true
+  withSignerIfPossible = true,
 ): T | null {
   const provider = useEthersProvider();
 
@@ -96,18 +91,18 @@ export function useContract<T extends Contract = Contract>(
 }
 
 // Vault Contract Hook
-export function useCentrifugeVaultContract(withSignerIfPossible = true, chainId: number) : Contract | null{
+export function useCentrifugeVaultContract(
+  withSignerIfPossible = true,
+  chainId: number,
+): Contract | null {
   return useContract(
     CENTRIFUGE_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     CentrifugeVaultABI,
-    withSignerIfPossible
+    withSignerIfPossible,
   ); // Assuming Swarm uses the same ABI as ERC7540Vault;
 }
 
-export function useERC7540VaultContract(
-  address: string,
-  withSignerIfPossible = true
-) {
+export function useERC7540VaultContract(address: string, withSignerIfPossible = true) {
   return useContract(address, ERC7540ABI, withSignerIfPossible); // Assuming Swarm uses the same ABI as ERC7540Vault;
 }
 
@@ -116,23 +111,16 @@ export function useSwarmVaultContract(withSignerIfPossible = true, chainId: numb
     SWARM_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     SwarmVaultBaseABI,
     withSignerIfPossible,
-    
   );
 }
 
 // Tranche Asset Contract Hook
-export function useTrancheAssetContract(
-  address: string,
-  withSignerIfPossible = true
-) {
+export function useTrancheAssetContract(address: string, withSignerIfPossible = true) {
   return useContract(address, TrancheAssetABI, withSignerIfPossible);
 }
 
 // ERC20 Token Contract Hook
-export function useERC20TokenContract(
-  address: string,
-  withSignerIfPossible = true
-) {
+export function useERC20TokenContract(address: string, withSignerIfPossible = true) {
   return useContract(address, ERC20ABI, withSignerIfPossible);
 }
 
@@ -147,7 +135,6 @@ export function useZybraConfiguratorContract(withSignerIfPossible = true, chainI
     chainId ? ZYBRA_CONFIGURATOR_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZybraConfiguratorABI,
     withSignerIfPossible,
-    
   );
 }
 
@@ -160,7 +147,7 @@ export function useENSResolverContract(address: string | undefined) {
 }
 
 export function useUniswapQouter(chainId: number) {
-  return useContract(QOUTER_ADDRESS[chainId ?? ChainId.Testnet], QuoterABI,true, chainId);
+  return useContract(QOUTER_ADDRESS[chainId ?? ChainId.Testnet], QuoterABI, true, chainId);
 }
 
 export function useCentrifugeRouterContract(withSignerIfPossible = true, chainId?: number) {
@@ -168,7 +155,6 @@ export function useCentrifugeRouterContract(withSignerIfPossible = true, chainId
     chainId ? CENTRIFUGE_ROUTER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     CentrifugeRouterABI,
     withSignerIfPossible,
-    
   );
 }
 
@@ -187,7 +173,6 @@ export function useInvestmentManagerContract(withSignerIfPossible = true, chainI
     chainId ? INVESTMENT_MANAGER_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     InvestmentManagerABI,
     withSignerIfPossible,
-    
   );
 }
 
@@ -196,24 +181,17 @@ export function useZFIStakingContract(withSignerIfPossible = true, chainId?: num
     chainId ? ZFI_STAKING_ADDRESS[chainId ?? ChainId.Testnet] : undefined,
     ZfiStakingABI,
     withSignerIfPossible,
-    
   );
 }
-
-
 
 export function useAbstractEntryPointContract(withSignerIfPossible = true, chainId?: number) {
   return useContract(
     chainId ? ABSTRACTION_ENTRY_POINT[chainId ?? ChainId.Testnet] : undefined,
     EntryPointABI,
     withSignerIfPossible,
-    
   );
 }
 
-export function useAbstractionAccountContract(
-  address: string,
-  withSignerIfPossible = true
-) {
+export function useAbstractionAccountContract(address: string, withSignerIfPossible = true) {
   return useContract(address, AccountAbstractionABI, withSignerIfPossible);
 }

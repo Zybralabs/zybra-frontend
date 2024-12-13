@@ -29,9 +29,7 @@ export default function formatLocaleNumber({
   options.maximumSignificantDigits =
     options.maximumSignificantDigits || fixedDecimals ? undefined : sigFigs;
 
-  const numberString: number;
-
-  numberString = fixedDecimals ? parseFloat(number.toFixed(fixedDecimals)) : number;
+  const numberString = fixedDecimals ? parseFloat(number.toFixed(fixedDecimals)) : number;
 
   return numberString.toLocaleString(localeArg, options);
 }

@@ -1,6 +1,7 @@
 "use client";
 import { Analytics } from "@vercel/analytics/react";
 import type { AppProps } from "next/app";
+// import "@rainbow-me/rainbowkit/styles.css";
 
 import RootLayout from "./layout";
 
