@@ -1,6 +1,8 @@
+
 import React from 'react';
-import TreasuryCard from './components/TreasuryCard';
+
 import TeslaCard from './components/TeslaCard';
+import TreasuryCard from './components/TreasuryCard';
 
 const Dashboard = () => {
   return (

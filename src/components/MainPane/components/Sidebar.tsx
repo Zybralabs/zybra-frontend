@@ -1,6 +1,7 @@
 import React from 'react';
-import { PanelMenu } from 'primereact/panelmenu';
+
 import { Button } from 'primereact/button';
+import { PanelMenu } from 'primereact/panelmenu';
 
 const Sidebar = () => {
   const menuItems = [

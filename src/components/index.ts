@@ -5,3 +5,4 @@ export * from "./Header";
 export * from "./MainPane";
 export * from "./InfoText";
 export * from "./Sidebar";
+export * from "./MainPane";
