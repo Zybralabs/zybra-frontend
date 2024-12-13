@@ -18,7 +18,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 bg-card p-4 h-screen">
+    <div className="w-64 bg-[#001C29] p-4 h-screen">
       <div className="text-center mb-4">
         <h2 className="text-xl font-bold">Zybra</h2>
       </div>

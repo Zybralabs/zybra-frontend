@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <SidebarProvider>
       {/* Root Container with Blue Background */}
-      <div className="flex min-h-screen bg-[#0a192f]">
+      <div className="flex w-full min-h-screen bg-[#0a192f]">
         {/* Sidebar */}
         <Sidebar />
 
@@ -20,7 +20,7 @@ export default function Home() {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-0">
             <MainPane />
           </main>
 

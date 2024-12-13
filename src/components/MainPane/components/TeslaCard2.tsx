@@ -1,13 +1,13 @@
-export default function TeslaCard() {
+export default function TeslaCard2() {
   return (
     <div className="bg-[#001C29] text-white p-6 rounded-xl w-2xl">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div className="space-y-4">
           {/* Status Badge */}
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#002800] text-emerald-400 text-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
-            <p className="text-xs">Not Filled</p>
+          <div className="inline-flex items-center px-3 py-1 rounded-lg bg-[#001620] outline outline-[#CB1E3D] outline-[.25px] text-emerald-400 text-sm">
+            <span className="w-2 h-2 rounded-full bg-[#CB1E3D] mr-2"></span>
+            <p className="text-xs text-[#CB1E3D]">Filled</p>
           </div>
 
           {/* Tesla Logo and Name */}
@@ -108,11 +108,8 @@ export default function TeslaCard() {
           <div className="text-gray-400">Expiry</div>
           <div className="text-lg ml-6">Dec 11, '26 at 9:36 PM</div>
         </div>
-        <button className="px-6 py-3 rounded-2xl bg-[#001620] text-white text-sm flex items-center hover:bg-[#001220] transition-colors">
-          Take Offer
-          <svg className="w-4 h-4 ml-2" viewBox="0 0 16 16" fill="none" stroke="currentColor">
-            <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <button className="px-6 py-3 rounded-2xl bg-[#001620] text-white text-sm flex items-center transition-colors">
+          Closed
         </button>
       </div>
     </div>
