@@ -2,13 +2,8 @@ import { useMemo } from "react";
 
 import { useMultipleContractSingleData } from "@uniswap/redux-multicall";
 
-import { VaultType } from "@/hooks/useContract";
+import { useCentrifugeVaultContract, useERC20TokenContract, VaultType } from "@/hooks/useContract";
 
-import {
-  useCentrifugeVaultContract,
-  useSwarmVaultContract,
-  useERC20TokenContract,
-} from "./useContractHooks"; // Import hooks
 
 /**
  * Hook to fetch tranche details (name, symbol, price) for Centrifuge vaults.

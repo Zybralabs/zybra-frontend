@@ -1,5 +1,7 @@
 import { useMemo, useCallback } from "react";
+
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
+
 import { useZFIStakingContract } from "./useContract"; // Hook for contract interaction
 
 /**
