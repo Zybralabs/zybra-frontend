@@ -96,7 +96,7 @@ export function useContract<T extends Contract = Contract>(
 }
 
 // Vault Contract Hook
-export function useCentrifugeVaultContract(withSignerIfPossible = true, chainId: number) {
+export function useCentrifugeVaultContract(withSignerIfPossible = true, chainId: number) : Contract | null{
   return useContract(
     CENTRIFUGE_VAULT_ADDRESS[chainId ?? ChainId.Testnet],
     CentrifugeVaultABI,
@@ -137,7 +137,7 @@ export function useERC20TokenContract(
 }
 
 // NFT Contract Hook
-export function useNFTContract(address: string, withSignerIfPossible = true, chainId?: number) {
+export function useNFTContract(address: string, withSignerIfPossible = true) {
   return useContract(address, NFTABI, withSignerIfPossible);
 }
 

@@ -5,7 +5,7 @@ import { Footer, Header, MainPane } from "@/components";
 export default function Home() {
   return (
     <>
-      <Header />
+      {/* <Header /> */}
 
       <MainPane />
 

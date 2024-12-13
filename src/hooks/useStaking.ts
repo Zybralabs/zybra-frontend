@@ -1,7 +1,5 @@
-import { useCallback } from "react";
-
+import { useMemo, useCallback } from "react";
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
-
 import { useZFIStakingContract } from "./useContract"; // Hook for contract interaction
 
 /**
@@ -11,6 +9,34 @@ import { useZFIStakingContract } from "./useContract"; // Hook for contract inte
  */
 export function useLzybraStaking(contractAddress: string, chainId: number) {
   const stakingContract = useZFIStakingContract(true, chainId);
+
+  const safeContractAddress = useMemo(() => contractAddress, [contractAddress]);
+
+  // Read Functions with `useSingleCallResult`
+  const pendingReward = useSingleCallResult(stakingContract, "pendingReward", [
+    safeContractAddress,
+  ]);
+
+  const totalStaked = useSingleCallResult(stakingContract, "totalStaked", []);
+
+  const totalProfitDistributed = useSingleCallResult(
+    stakingContract,
+    "totalProfitDistributed",
+    []
+  );
+
+  const getCollateralAssetPrice = useSingleCallResult(
+    stakingContract,
+    "getCollateralAssetPrice",
+    []
+  );
+
+  // Batch Read Function
+  const batchReadData = useSingleContractMultipleData(
+    stakingContract,
+    ["totalStaked", "totalProfitDistributed", "getCollateralAssetPrice"],
+    [[], [], []]
+  );
 
   const handleTransaction = useCallback(
     async (methodName: string, args: any[] = [], overrides: any = {}) => {
@@ -30,82 +56,58 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
         return null;
       }
     },
-    [stakingContract],
+    [stakingContract]
   );
 
   // State-Changing Functions
   const stake = useCallback(
     async (amount: number) => handleTransaction("stake", [amount]),
-    [handleTransaction],
+    [handleTransaction]
   );
 
   const unstake = useCallback(
     async (amount: number) => handleTransaction("unstake", [amount]),
-    [handleTransaction],
+    [handleTransaction]
   );
 
   const triggerLiquidation = useCallback(
     async (vaultOwner: string, auctionId: number) =>
       handleTransaction("triggerLiquidation", [vaultOwner, auctionId]),
-    [handleTransaction],
+    [handleTransaction]
   );
 
   const withdrawReward = useCallback(
     async () => handleTransaction("withdrawReward"),
-    [handleTransaction],
+    [handleTransaction]
   );
 
-  // Read Functions with `useSingleCallResult`
-  const pendingReward = useCallback(
-    (stakerAddress: string) =>
-      useSingleCallResult(contractAddress, "pendingReward", [stakerAddress]),
-    [contractAddress],
+  return useMemo(
+    () => ({
+      // State-Changing Functions
+      stake,
+      unstake,
+      triggerLiquidation,
+      withdrawReward,
+
+      // Read Functions
+      pendingReward,
+      totalStaked,
+      totalProfitDistributed,
+      getCollateralAssetPrice,
+
+      // Batch Read
+      batchReadData,
+    }),
+    [
+      stake,
+      unstake,
+      triggerLiquidation,
+      withdrawReward,
+      pendingReward,
+      totalStaked,
+      totalProfitDistributed,
+      getCollateralAssetPrice,
+      batchReadData,
+    ]
   );
-
-  const totalStaked = useCallback(
-    () => useSingleCallResult(contractAddress, "totalStaked", []),
-    [contractAddress],
-  );
-
-  const totalProfitDistributed = useCallback(
-    () => useSingleCallResult(contractAddress, "totalProfitDistributed", []),
-    [contractAddress],
-  );
-
-  const getCollateralAssetPrice = useCallback(
-    () => useSingleCallResult(contractAddress, "getCollateralAssetPrice", []),
-    [contractAddress],
-  );
-
-  // Batch Read Function
-  const batchReadData = useCallback(async () => {
-    const methods = [
-      { method: "totalStaked", args: [] },
-      { method: "totalProfitDistributed", args: [] },
-      { method: "getCollateralAssetPrice", args: [] },
-    ];
-
-    return useSingleContractMultipleData(
-      contractAddress,
-      methods.map((m) => m.method),
-      methods.map((m) => m.args),
-    );
-  }, [contractAddress]);
-
-  return {
-    // State-Changing Functions
-    stake,
-    unstake,
-    triggerLiquidation,
-    withdrawReward,
-
-    // Read Functions
-    pendingReward,
-    totalStaked,
-    totalProfitDistributed,
-    getCollateralAssetPrice,
-
-    // Batch Read
-    batchReadData,
-  };
 }

@@ -22,9 +22,9 @@ export enum ApprovalState {
  * @returns [approvalState, approveCallback]
  */
 export function useApproveCallback(
-  amountToApprove?: BigNumber,
-  spender?: string,
-  tokenAddress?: string,
+  amountToApprove: BigNumber,
+  spender: string,
+  tokenAddress: string,
   provider: Web3Provider
 ): [ApprovalState, () => Promise<void>] {
   const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN);

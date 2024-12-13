@@ -1,7 +1,5 @@
 import { useMemo, useCallback } from "react";
-
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
-
 import { useERC7540VaultContract } from "./useContract";
 
 /**
@@ -9,115 +7,105 @@ import { useERC7540VaultContract } from "./useContract";
  * @param vaultAddress Address of the ERC7540Vault contract
  */
 export function useERC7540VaultRead(vaultAddress: string, chainId: number) {
-  const contract = useERC7540VaultContract(vaultAddress, false, chainId); // Use the custom contract hook
+  const contract = useERC7540VaultContract(vaultAddress, false, chainId);
 
-  if (!contract) {
-    console.error("Vault contract could not be initialized");
-    return null;
-  }
-  if (!vaultAddress) {
-    console.error("Vault address is required");
-    return null;
-  }
+  // Memoize the fallback contract
+  const safeContract = useMemo(() => contract || { callStatic: {}, estimateGas: {} }, [contract]);
+
+  // --- Individual Function Calls ---
+  const poolId = useSingleCallResult(safeContract, "poolId", []);
+  const trancheId = useSingleCallResult(safeContract, "trancheId", []);
+  const asset = useSingleCallResult(safeContract, "asset", []);
+  const share = useSingleCallResult(safeContract, "share", []);
+  const pricePerShare = useSingleCallResult(safeContract, "pricePerShare", []);
+  const priceLastUpdated = useSingleCallResult(safeContract, "priceLastUpdated", []);
+  const totalAssets = useSingleCallResult(safeContract, "totalAssets", []);
 
   // --- Batch Fetch using Single Contract Multiple Data ---
   const fetchBatchData = useSingleContractMultipleData(
-    vaultAddress,
+    safeContract,
     ["poolId", "trancheId", "asset", "share", "pricePerShare", "priceLastUpdated", "totalAssets"],
-    [],
+    []
   );
 
-  // --- Individual Function Calls ---
-  const poolId = useSingleCallResult(vaultAddress, "poolId", []);
-  const trancheId = useSingleCallResult(vaultAddress, "trancheId", []);
-  const asset = useSingleCallResult(vaultAddress, "asset", []);
-  const share = useSingleCallResult(vaultAddress, "share", []);
-  const pricePerShare = useSingleCallResult(vaultAddress, "pricePerShare", []);
-  const priceLastUpdated = useSingleCallResult(vaultAddress, "priceLastUpdated", []);
-  const totalAssets = useSingleCallResult(vaultAddress, "totalAssets", []);
-
+  // --- Dynamic Functions Wrapped with useCallback ---
   const convertToShares = useCallback(
-    async (assets: string) => useSingleCallResult(vaultAddress, "convertToShares", [assets]),
-    [vaultAddress],
+    (assets: string) => useSingleCallResult(safeContract, "convertToShares", [assets]),
+    [safeContract]
   );
 
   const convertToAssets = useCallback(
-    async (shares: string) => useSingleCallResult(vaultAddress, "convertToAssets", [shares]),
-    [vaultAddress],
+    (shares: string) => useSingleCallResult(safeContract, "convertToAssets", [shares]),
+    [safeContract]
   );
 
   const maxDeposit = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxDeposit", [controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "maxDeposit", [controller]),
+    [safeContract]
   );
 
   const maxMint = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxMint", [controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "maxMint", [controller]),
+    [safeContract]
   );
 
   const maxWithdraw = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxWithdraw", [controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "maxWithdraw", [controller]),
+    [safeContract]
   );
 
   const maxRedeem = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxRedeem", [controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "maxRedeem", [controller]),
+    [safeContract]
   );
 
   const isPermissioned = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "isPermissioned", [controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "isPermissioned", [controller]),
+    [safeContract]
   );
 
-  // --- Pending and Claimable Functions ---
   const pendingDepositRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "pendingDepositRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "pendingDepositRequest", [0, controller]),
+    [safeContract]
   );
 
   const claimableDepositRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "claimableDepositRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "claimableDepositRequest", [0, controller]),
+    [safeContract]
   );
 
   const pendingRedeemRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "pendingRedeemRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "pendingRedeemRequest", [0, controller]),
+    [safeContract]
   );
 
   const claimableRedeemRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "claimableRedeemRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) => useSingleCallResult(safeContract, "claimableRedeemRequest", [0, controller]),
+    [safeContract]
   );
 
   const pendingCancelDepositRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "pendingCancelDepositRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) =>
+      useSingleCallResult(safeContract, "pendingCancelDepositRequest", [0, controller]),
+    [safeContract]
   );
 
   const claimableCancelDepositRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "claimableCancelDepositRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) =>
+      useSingleCallResult(safeContract, "claimableCancelDepositRequest", [0, controller]),
+    [safeContract]
   );
 
   const pendingCancelRedeemRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "pendingCancelRedeemRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) =>
+      useSingleCallResult(safeContract, "pendingCancelRedeemRequest", [0, controller]),
+    [safeContract]
   );
 
   const claimableCancelRedeemRequest = useCallback(
-    async (controller: string) =>
-      useSingleCallResult(vaultAddress, "claimableCancelRedeemRequest", [0, controller]),
-    [vaultAddress],
+    (controller: string) =>
+      useSingleCallResult(safeContract, "claimableCancelRedeemRequest", [0, controller]),
+    [safeContract]
   );
 
   return useMemo(
@@ -154,6 +142,7 @@ export function useERC7540VaultRead(vaultAddress: string, chainId: number) {
       pricePerShare,
       priceLastUpdated,
       totalAssets,
+      fetchBatchData,
       convertToShares,
       convertToAssets,
       maxDeposit,
@@ -169,7 +158,6 @@ export function useERC7540VaultRead(vaultAddress: string, chainId: number) {
       claimableCancelDepositRequest,
       pendingCancelRedeemRequest,
       claimableCancelRedeemRequest,
-      fetchBatchData,
-    ],
+    ]
   );
 }

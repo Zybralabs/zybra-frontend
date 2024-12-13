@@ -1,5 +1,3 @@
-import { useCallback } from "react";
-
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
 
 import { useCentrifugeVaultContract } from "./useContract";
@@ -10,165 +8,102 @@ import { useCentrifugeVaultContract } from "./useContract";
  * @param chainId The chain ID to connect to.
  */
 export function useCentrifugeVault(vaultAddress: string, chainId: number) {
+  // Ensure the contract is initialized
   const centrifugeVaultContract = useCentrifugeVaultContract(vaultAddress, true, chainId);
 
-  if (!centrifugeVaultContract) {
-    console.error("CentrifugeVault contract is not connected.");
-    return {};
-  }
+  // Placeholder contract to ensure hooks are always called
+  const safeContract = centrifugeVaultContract|| null || undefined ;
 
-  const handleTransaction = useCallback(
-    async (methodName: string, args: any[] = [], overrides: any = {}) => {
-      if (!centrifugeVaultContract) {
-        console.error("CentrifugeVault contract is not connected.");
-        return null;
-      }
+  // --- Read Functions (Single Call) ---
+  const maxDepositResult = useSingleCallResult(safeContract, "maxDeposit", [vaultAddress]);
+  const maxRedeemResult = useSingleCallResult(safeContract, "maxRedeem", [vaultAddress]);
+  const collateralAssetPriceResult = useSingleCallResult(safeContract, "getCollateralAssetPrice", []);
+  const trancheAssetPriceResult = useSingleCallResult(safeContract, "getTrancheAssetPrice", [vaultAddress]);
+  const isVaultResult = useSingleCallResult(safeContract, "isVault", [vaultAddress]);
+  const poolTotalCirculationResult = useSingleCallResult(safeContract, "getPoolTotalCirculation", []);
+  const userTrancheAssetResult = useSingleCallResult(safeContract, "getUserTrancheAsset", [
+    vaultAddress,
+    "0x0000000000000000000000000000000000000000", // Placeholder user address
+  ]);
+  const borrowedResult = useSingleCallResult(safeContract, "getBorrowed", [
+    vaultAddress,
+    "0x0000000000000000000000000000000000000000", // Placeholder user address
+  ]);
 
-      try {
-        const tx = await centrifugeVaultContract[methodName](...args, overrides);
-        console.log(`Transaction ${methodName} sent:`, tx.hash);
-
-        const receipt = await tx.wait();
-        console.log(`Transaction ${methodName} confirmed:`, receipt);
-        return receipt;
-      } catch (error) {
-        console.error(`Error sending transaction ${methodName}:`, error);
-        return null;
-      }
-    },
-    [centrifugeVaultContract],
+  // --- Batch Read Function ---
+  const batchDataResults = useSingleContractMultipleData(
+    safeContract,
+    [
+      "maxDeposit",
+      "maxRedeem",
+      "getCollateralAssetPrice",
+      "getTrancheAssetPrice",
+      "isVault",
+      "getPoolTotalCirculation",
+      "getUserTrancheAsset",
+      "getBorrowed",
+    ],
+    [
+      [vaultAddress],
+      [vaultAddress],
+      [],
+      [vaultAddress],
+      [vaultAddress],
+      [],
+      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
+      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
+    ]
   );
 
   // --- State-Changing Functions ---
-  const requestDeposit = useCallback(
-    async (assetAmount: number) => handleTransaction("requestDeposit", [assetAmount, vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+  const handleTransaction = async (methodName: string, args: any[] = [], overrides: any = {}) => {
+    if (!centrifugeVaultContract) {
+      console.error("CentrifugeVault contract is not connected.");
+      return null;
+    }
 
-  const deposit = useCallback(
-    async (mintAmount: number) => handleTransaction("deposit", [vaultAddress, mintAmount]),
-    [handleTransaction, vaultAddress],
-  );
+    try {
+      const tx = await centrifugeVaultContract[methodName](...args, overrides);
+      console.log(`Transaction ${methodName} sent:`, tx.hash);
 
-  const requestWithdraw = useCallback(
-    async (trancheAmount: number, onBehalfOf: string) =>
-      handleTransaction("requestWithdraw", [trancheAmount, onBehalfOf, vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+      const receipt = await tx.wait();
+      console.log(`Transaction ${methodName} confirmed:`, receipt);
+      return receipt;
+    } catch (error) {
+      console.error(`Error sending transaction ${methodName}:`, error);
+      return null;
+    }
+  };
 
-  const withdraw = useCallback(
-    async () => handleTransaction("withdraw", [vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+  const requestDeposit = async (assetAmount: number) =>
+    handleTransaction("requestDeposit", [assetAmount, vaultAddress]);
 
-  const cancelDepositRequest = useCallback(
-    async () => handleTransaction("cancelDepositRequest", [vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+  const deposit = async (mintAmount: number) =>
+    handleTransaction("deposit", [vaultAddress, mintAmount]);
 
-  const cancelWithdrawRequest = useCallback(
-    async () => handleTransaction("cancelWithdrawRequest", [vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+  const requestWithdraw = async (trancheAmount: number, onBehalfOf: string) =>
+    handleTransaction("requestWithdraw", [trancheAmount, onBehalfOf, vaultAddress]);
 
-  const claimCancelDepositRequest = useCallback(
-    async () => handleTransaction("ClaimcancelDepositRequest", [vaultAddress]),
-    [handleTransaction, vaultAddress],
-  );
+  const withdraw = async () => handleTransaction("withdraw", [vaultAddress]);
 
-  const addVault = useCallback(
-    async (vault: string) => handleTransaction("addVault", [vault]),
-    [handleTransaction],
-  );
+  const cancelDepositRequest = async () =>
+    handleTransaction("cancelDepositRequest", [vaultAddress]);
 
-  const removeVault = useCallback(
-    async (vault: string) => handleTransaction("removeVault", [vault]),
-    [handleTransaction],
-  );
+  const cancelWithdrawRequest = async () =>
+    handleTransaction("cancelWithdrawRequest", [vaultAddress]);
 
-  const liquidation = useCallback(
-    async (provider: string, onBehalfOf: string, assetAmount: number) =>
-      handleTransaction("liquidation", [provider, vaultAddress, onBehalfOf, assetAmount]),
-    [handleTransaction, vaultAddress],
-  );
+  const claimCancelDepositRequest = async () =>
+    handleTransaction("ClaimcancelDepositRequest", [vaultAddress]);
 
-  const repayingDebt = useCallback(
-    async (provider: string, lzybraAmount: number) =>
-      handleTransaction("repayingDebt", [provider, vaultAddress, lzybraAmount]),
-    [handleTransaction, vaultAddress],
-  );
+  const addVault = async (vault: string) => handleTransaction("addVault", [vault]);
 
-  // --- Read Functions (Single Call) ---
+  const removeVault = async (vault: string) => handleTransaction("removeVault", [vault]);
 
-  const maxDeposit = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxDeposit", [controller]),
-    [vaultAddress],
-  );
+  const liquidation = async (provider: string, onBehalfOf: string, assetAmount: number) =>
+    handleTransaction("liquidation", [provider, vaultAddress, onBehalfOf, assetAmount]);
 
-  const maxRedeem = useCallback(
-    async (controller: string) => useSingleCallResult(vaultAddress, "maxRedeem", [controller]),
-    [vaultAddress],
-  );
-
-  const getCollateralAssetPrice = useCallback(
-    async () => useSingleCallResult(vaultAddress, "getCollateralAssetPrice", []),
-    [vaultAddress],
-  );
-
-  const getTrancheAssetPrice = useCallback(
-    async () => useSingleCallResult(vaultAddress, "getTrancheAssetPrice", [vaultAddress]),
-    [vaultAddress],
-  );
-
-  const isVault = useCallback(
-    async () => useSingleCallResult(vaultAddress, "isVault", [vaultAddress]),
-    [vaultAddress],
-  );
-
-  const getPoolTotalCirculation = useCallback(
-    async () => useSingleCallResult(vaultAddress, "getPoolTotalCirculation", []),
-    [vaultAddress],
-  );
-
-  const getUserTrancheAsset = useCallback(
-    async (user: string) =>
-      useSingleCallResult(vaultAddress, "getUserTrancheAsset", [vaultAddress, user]),
-    [vaultAddress],
-  );
-
-  const getBorrowed = useCallback(
-    async (user: string) => useSingleCallResult(vaultAddress, "getBorrowed", [vaultAddress, user]),
-    [vaultAddress],
-  );
-
-  // --- Batch Read Function ---
-  const batchReadData = useCallback(
-    async (userAddress?: string, controller?: string) => {
-      const methods = [
-        { method: "maxDeposit", args: [controller || vaultAddress] },
-        { method: "maxRedeem", args: [controller || vaultAddress] },
-        { method: "getCollateralAssetPrice", args: [] },
-        { method: "getTrancheAssetPrice", args: [vaultAddress] },
-        { method: "isVault", args: [vaultAddress] },
-        { method: "getPoolTotalCirculation", args: [] },
-        {
-          method: "getUserTrancheAsset",
-          args: [vaultAddress, userAddress || "0x0000000000000000000000000000000000000000"],
-        },
-        {
-          method: "getBorrowed",
-          args: [vaultAddress, userAddress || "0x0000000000000000000000000000000000000000"],
-        },
-      ];
-
-      return useSingleContractMultipleData(
-        vaultAddress,
-        methods.map((m) => m.method),
-        methods.map((m) => m.args),
-      );
-    },
-    [vaultAddress],
-  );
+  const repayingDebt = async (provider: string, lzybraAmount: number) =>
+    handleTransaction("repayingDebt", [provider, vaultAddress, lzybraAmount]);
 
   return {
     // State-Changing Functions
@@ -185,16 +120,16 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
     repayingDebt,
 
     // Read Functions
-    maxDeposit,
-    maxRedeem,
-    getCollateralAssetPrice,
-    getTrancheAssetPrice,
-    isVault,
-    getPoolTotalCirculation,
-    getUserTrancheAsset,
-    getBorrowed,
+    maxDepositResult,
+    maxRedeemResult,
+    collateralAssetPriceResult,
+    trancheAssetPriceResult,
+    isVaultResult,
+    poolTotalCirculationResult,
+    userTrancheAssetResult,
+    borrowedResult,
 
-    // Batch Read Function
-    batchReadData,
+    // Batch Read Data
+    batchDataResults,
   };
 }
