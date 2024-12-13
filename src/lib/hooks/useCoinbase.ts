@@ -29,7 +29,7 @@ export const useCoinbasePay = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const appId = process.env.NEXT_PUBLIC_COINBASE_APP_ID ??""
+  const appId = process.env.NEXT_PUBLIC_COINBASE_APP_ID ?? "";
 
   useEffect(() => {
     setLoading(true);
@@ -66,7 +66,7 @@ export const useCoinbasePay = ({
           setError(null);
           setLoading(false);
         }
-      }
+      },
     );
 
     return () => {

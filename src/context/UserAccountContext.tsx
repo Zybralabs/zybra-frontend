@@ -16,13 +16,26 @@ interface UserAccountContextProps {
   error: string | null;
   // API actions
   getUserProfile: () => Promise<any>;
-  updateUserProfile: (data: { first_name?: string; last_name?: string; profile_details?: object }) => Promise<any>;
-  submitKYC: (data: { document_type: string; document_number: string; document_image: string }) => Promise<any>;
+  updateUserProfile: (data: {
+    first_name?: string;
+    last_name?: string;
+    profile_details?: object;
+  }) => Promise<any>;
+  submitKYC: (data: {
+    document_type: string;
+    document_number: string;
+    document_image: string;
+  }) => Promise<any>;
   getKYCStatus: () => Promise<any>;
   addWallet: (walletAddress: string) => Promise<any>;
   getWallets: () => Promise<any>;
   createAbstractWallet: () => Promise<any>;
-  executeTransaction: (data: { dest: string; calldata: string; asset: string; amount: number }) => Promise<any>;
+  executeTransaction: (data: {
+    dest: string;
+    calldata: string;
+    asset: string;
+    amount: number;
+  }) => Promise<any>;
   addTransaction: (data: TransactionData) => Promise<any>;
   getTransactions: (walletAddress?: string) => Promise<any>;
   walletSignIn: (walletAddress: string) => Promise<void>;
@@ -39,27 +52,23 @@ interface UserAccountContextProps {
       name: string;
       totalAmount: number;
       totalLzybraBorrowed: number;
-    }>}>;
+    }>;
+  }>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
-    email: string, 
-      password: string,
-      firstName: string,
-      lastName: string,
-      walletAddress: string,
-      country: string,
-      state: string,
-      city: string,
-      address: string  
-  ) => Promise<void>;
-  verifyCode:(
     email: string,
-    code:number
-  )  => Promise<void>;
-
-  sendVerificationEmail:(
-    email: string
+    password: string,
+    firstName: string,
+    lastName: string,
+    walletAddress: string,
+    country: string,
+    state: string,
+    city: string,
+    address: string,
   ) => Promise<void>;
+  verifyCode: (email: string, code: number) => Promise<void>;
+
+  sendVerificationEmail: (email: string) => Promise<void>;
 }
 
 const UserAccountContext = createContext<UserAccountContextProps>({
@@ -116,15 +125,17 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   getUserAssetsAndPoolsHoldings: async () => {
     throw new Error("UserAccountContext not initialized");
   },
-  
 });
 
 export const useUserAccount = () => useContext(UserAccountContext);
 
 export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { address: web3Address, isConnected } = useAccount();
-  const { fetchMinimalAccountFromAPI, loading: abstractionLoading, error: abstractionError } =
-    useAccountAbstraction();
+  const {
+    fetchMinimalAccountFromAPI,
+    loading: abstractionLoading,
+    error: abstractionError,
+  } = useAccountAbstraction();
 
   const [address, setAddress] = useState<string | null>(null);
   const [walletType, setWalletType] = useState<WalletType | null>(null);
@@ -154,7 +165,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const response = await apiClient().put("/user/profile", { ...data, userId: address });
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
 
   const submitKYC = useCallback(
@@ -162,7 +173,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const response = await apiClient().post("/user/kyc", { ...data, userId: address });
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
 
   const getKYCStatus = useCallback(async () => {
@@ -175,7 +186,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const response = await apiClient().post("/user/wallet", { userId: address, walletAddress });
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
 
   const getWallets = useCallback(async () => {
@@ -190,36 +201,34 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const executeTransaction = useCallback(
     async (data: any) => {
-      const response = await apiClient().post("/user/transaction/execute", { userId: address, ...data });
+      const response = await apiClient().post("/user/transaction/execute", {
+        userId: address,
+        ...data,
+      });
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
 
+  const sendVerificationEmail = useCallback(async (email: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/send-verification-email`, { email });
+      return response.data;
+    } catch (err) {
+      console.error("Error sending verification email:", err);
+      throw new Error(err.response?.data?.message || "Failed to send verification email");
+    }
+  }, []);
 
-
-    const sendVerificationEmail = useCallback(async (email:string) => {
-      try {
-        const response = await axios.post(`${API_BASE_URL}/send-verification-email`, { email });
-        return response.data;
-      } catch (err) {
-        console.error("Error sending verification email:", err);
-        throw new Error(err.response?.data?.message || "Failed to send verification email");
-      }
-    }, []);
-  
-
-
-    const verifyCode = useCallback(async (email:string, code:number) => {
-      try {
-        const response = await axios.post(`${API_BASE_URL}/verify-code`, { email, code });
-        return response.data;
-      } catch (err) {
-        console.error("Error verifying code:", err);
-        throw new Error(err.response?.data?.message || "Verification failed");
-      }
-    }, []);
- 
+  const verifyCode = useCallback(async (email: string, code: number) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/verify-code`, { email, code });
+      return response.data;
+    } catch (err) {
+      console.error("Error verifying code:", err);
+      throw new Error(err.response?.data?.message || "Verification failed");
+    }
+  }, []);
 
   const walletSignIn = useCallback(
     async (walletAddress: string) => {
@@ -244,7 +253,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setLoading(false);
       }
     },
-    [apiClient]
+    [apiClient],
   );
 
   const addTransaction = useCallback(
@@ -259,23 +268,23 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!data.asset) {
         throw new Error("Asset is required.");
       }
-  
+
       // Additional validation for deposit/withdraw type transactions
       if (["deposit", "withdraw"].includes(data.type) && !data.lzybra_borrowed) {
         throw new Error("Lzybra borrowed is required for deposit or withdraw transactions.");
       }
-  
+
       // Make the API request
       const response = await apiClient().post("/user/transaction", {
         userId: address, // Ensure userId is passed
         ...data,
       });
-  
+
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
-  
+
   const getUserAssetsAndPoolsHoldings = useCallback(async (): Promise<{
     assets: Array<{
       assetId: string;
@@ -294,13 +303,13 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!address) {
       throw new Error("User address is required to fetch assets and pools.");
     }
-  
+
     const response = await apiClient().get("/user/assets-pools-holdings", {
       params: { userId: address }, // Pass user ID to the backend
     });
-  
+
     const { assets, pools } = response.data.payload;
-  
+
     // Normalize and ensure all required fields are included
     const formattedAssets = assets.map((asset: any) => ({
       assetId: asset._id,
@@ -309,17 +318,17 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       totalAmount: asset.totalAmount,
       totalLzybraBorrowed: asset.totalLzybraBorrowed,
     }));
-  
+
     const formattedPools = pools.map((pool: any) => ({
       poolId: pool._id,
       name: pool.name,
       totalAmount: pool.totalAmount,
       totalLzybraBorrowed: pool.totalLzybraBorrowed,
     }));
-  
+
     return { assets: formattedAssets, pools: formattedPools };
   }, [apiClient, address]);
-  
+
   const getTransactions = useCallback(
     async (walletAddress: any) => {
       const response = await apiClient().get("/user/transactions", {
@@ -327,25 +336,25 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
       return response.data;
     },
-    [apiClient, address]
+    [apiClient, address],
   );
 
   const signIn = useCallback(
     async (email: string, password: string) => {
       setLoading(true);
       setError(null);
-  
+
       try {
         const response = await apiClient().post("/sign-in", { email, password });
-  
+
         const { token, user } = response.data.payload;
-  
+
         setToken(token); // Save the token in state
-  
+
         // Determine the wallet type if wallets exist
         if (user.wallets && user.wallets.length > 0) {
           const wallet = user.wallets[0]; // Use the first wallet (or your preferred logic)
-          setWalletType(wallet.type == "web3-wallet" ? WalletType.WEB3: WalletType.MINIMAL); // Store wallet type in state
+          setWalletType(wallet.type == "web3-wallet" ? WalletType.WEB3 : WalletType.MINIMAL); // Store wallet type in state
           setAddress(wallet.address); // Store wallet address
         } else {
           setWalletType(null); // No wallet
@@ -359,9 +368,8 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setLoading(false);
       }
     },
-    [apiClient]
+    [apiClient],
   );
-  
 
   const signUp = useCallback(
     async (
@@ -373,11 +381,11 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       country: string,
       state: string,
       city: string,
-      address: string
+      address: string,
     ) => {
       setLoading(true);
       setError(null);
-  
+
       try {
         const response = await apiClient().post("/sign-up", {
           email,
@@ -392,15 +400,15 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
             address,
           },
         });
-  
+
         const { token, user } = response.data.payload;
-  
+
         if (user.wallets?.length > 0) {
           setAddress(user.wallets[0].address); // Assuming the first wallet is the primary one
         } else {
           setAddress(walletAddress); // Fallback to the provided wallet address
         }
-  
+
         setToken(token); // Save the token in state
       } catch (err: any) {
         console.error("Error signing up:", err);
@@ -410,9 +418,8 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setLoading(false);
       }
     },
-    [apiClient]
+    [apiClient],
   );
-  
 
   // Fetch account logic
   const fetchAccount = useCallback(async () => {
@@ -429,7 +436,6 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return fetchedAddress;
   }, [isConnected, web3Address, fetchMinimalAccountFromAPI]);
 
-
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
     if (storedToken) {
@@ -437,18 +443,15 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-
   useEffect(() => {
     fetchAccount();
-    
-      if (token) {
-        localStorage.setItem("authToken", token);
-      } else {
-        localStorage.removeItem("authToken");
-      }
-   
-  
-  }, [fetchAccount,token]);
+
+    if (token) {
+      localStorage.setItem("authToken", token);
+    } else {
+      localStorage.removeItem("authToken");
+    }
+  }, [fetchAccount, token]);
 
   return (
     <UserAccountContext.Provider
@@ -473,7 +476,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         signUp,
         sendVerificationEmail,
         getUserAssetsAndPoolsHoldings,
-        verifyCode
+        verifyCode,
       }}
     >
       {children}

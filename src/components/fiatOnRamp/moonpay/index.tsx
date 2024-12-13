@@ -4,20 +4,13 @@ import dynamic from "next/dynamic";
 
 import { useMoonPay } from "@/lib/hooks/useMoonpay";
 
-
-
 const MoonPayBuyWidget = dynamic(
   () => import("@moonpay/moonpay-react").then((mod) => mod.MoonPayBuyWidget),
-  { ssr: false }
+  { ssr: false },
 );
 
 const MoonPayWidget = ({ walletAddress, fiatCurrency, cryptoCurrency, fiatAmount }) => {
-  const {
-    configuration,
-    loading,
-    error,
-    success,
-  } = useMoonPay({
+  const { configuration, loading, error, success } = useMoonPay({
     walletAddress,
     fiatCurrency,
     cryptoCurrency,
@@ -30,9 +23,7 @@ const MoonPayWidget = ({ walletAddress, fiatCurrency, cryptoCurrency, fiatAmount
       <MoonPayBuyWidget {...configuration} />
       {loading && <p className="mt-4 text-blue-500">Processing transaction...</p>}
       {error && <p className="mt-4 text-red-500">Error: {error}</p>}
-      {success && (
-        <p className="mt-4 text-green-500">Transaction completed successfully!</p>
-      )}
+      {success && <p className="mt-4 text-green-500">Transaction completed successfully!</p>}
     </div>
   );
 };

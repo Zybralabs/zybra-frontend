@@ -12,7 +12,7 @@ export function useCalculateGasMargin() {
 
   const calculateGasMargin = async (
     gasLimit: BigNumber,
-    marginPercentage: number = 20
+    marginPercentage: number = 20,
   ): Promise<BigNumber> => {
     if (!provider) {
       throw new Error("No provider available to fetch gas price.");

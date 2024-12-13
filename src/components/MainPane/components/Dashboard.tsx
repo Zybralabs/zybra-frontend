@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
-import TeslaCard from './TeslaCard';
-import TreasuryCard from './TreasuryCard';
+import TeslaCard from "./TeslaCard";
+import TreasuryCard from "./TreasuryCard";
 
 const Dashboard = () => {
   return (
