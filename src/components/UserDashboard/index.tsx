@@ -3,7 +3,18 @@ import { InvestedAssets } from "./invested-assets";
 import ZfiComponent from "./price-chart";
 import { StatsCard } from "./stats-card";
 import { TransactionsComponent } from "./transactions-table";
-
+interface Transaction {
+  type: "Stock" | "Pool";
+  name: string;
+  status: "Withdraw" | "Deposit" | "Take Offer" | "Make Offer";
+  quantity: string;
+  price: string;
+  allocation: string;
+  currency: string;
+  liquidity: string;
+  date: string;
+  logo: string; // Path to the logo image
+}
 // Sample data - replace with real data in production
 const portfolioData = Array.from({ length: 100 }, () => Math.random() * 1000);
 const transactions: Transaction[] = [

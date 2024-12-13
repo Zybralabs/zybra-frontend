@@ -20,12 +20,14 @@ export function StatsCard({ title, value, change, today, icon }: StatsCardProps)
       </div>
       <div className="mt-2 flex items-baseline gap-2">
         <span className="text-2xl font-semibold">{value}</span>
+      </div>
+      <div className="flex items-center">
         <span className={`text-sm ${change.isPositive ? "text-green-400" : "text-red-400"}`}>
           {change.isPositive ? "+" : ""}
           {change.value}
         </span>
+        {today && <div className="ml-1 text-xs text-gray-500">{today}</div>}
       </div>
-      {today && <div className="mt-1 text-xs text-gray-500">{today}</div>}
     </div>
   );
 }
