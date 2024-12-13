@@ -1,8 +1,9 @@
+import React from "react";
 
-import React from 'react';
-
-import TeslaCard from './components/TeslaCard';
-import TreasuryCard from './components/TreasuryCard';
+import PoolCard from "./components/PoolCard";
+import Sidebar from "./components/Sidebar";
+import TeslaCard from "./components/TeslaCard";
+import TreasuryCard from "./components/TreasuryCard";
 
 const Dashboard = () => {
   return (
@@ -14,17 +15,26 @@ const Dashboard = () => {
           <button className="p-button p-button-success">Deposit</button>
         </div>
       </div>
+          <PoolCard />
 
       <div className="p-grid p-fluid">
-        <div className="p-col-12 p-md-6 p-lg-4">
-          <TreasuryCard />
+        <div className="p-col-12 p-md-6 p-lg-4">{/* <TreasuryCard /> */}
         </div>
-        <div className="p-col-12 p-md-6 p-lg-4">
-          <TeslaCard />
-        </div>
+        <div className="p-col-12 p-md-6 p-lg-4">{/* <TeslaCard /> */}</div>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+const App = () => {
+  return (
+    <div className="min-h-screen flex bg-dark text-white">
+      {/* <Sidebar /> */}
+      <div className="flex-1">
+        <Dashboard />
+      </div>
+    </div>
+  );
+};
+
+export default App;

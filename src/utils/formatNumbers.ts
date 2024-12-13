@@ -15,12 +15,12 @@ const TWO_DECIMALS: NumberFormatOptions = {
   minimumFractionDigits: 2,
 };
 
-const THREE_DECIMALS: NumberFormatOptions = {
+export const THREE_DECIMALS: NumberFormatOptions = {
   maximumFractionDigits: 3,
   minimumFractionDigits: 3,
 };
 
-const NO_DECIMALS: NumberFormatOptions = {
+export const NO_DECIMALS: NumberFormatOptions = {
   maximumFractionDigits: 0,
   minimumFractionDigits: 0,
 };
