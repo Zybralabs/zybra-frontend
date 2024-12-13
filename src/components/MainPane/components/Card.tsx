@@ -1,6 +1,21 @@
 import React from "react";
 
-const Card = ({ data }) => {
+interface CardData {
+  status: "Active" | "Inactive";
+  title: string;
+  tvl?: string;
+  volume?: string;
+  apy?: string;
+  price?: string;
+  marketCap?: string;
+  change?: string;
+}
+
+interface CardProps {
+  data: CardData;
+}
+
+const Card: React.FC<CardProps> = ({ data }) => {
   return (
     <div className="bg-card p-4 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-4">
@@ -24,7 +39,11 @@ const Card = ({ data }) => {
           </p>
           <p>
             APY:{" "}
-            <span className={`font-bold ${data.apy.startsWith("-") ? "text-red" : "text-green"}`}>
+            <span
+              className={`font-bold ${
+                data.apy?.startsWith("-") ? "text-red" : "text-green"
+              }`}
+            >
               {data.apy}
             </span>
           </p>
