@@ -11,6 +11,7 @@ import {
   safeWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+import type { Transport } from "viem";
 import { createConfig, http } from "wagmi";
 import {
   mainnet,
