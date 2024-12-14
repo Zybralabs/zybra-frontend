@@ -1,4 +1,5 @@
 "use client";
+
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   argentWallet,
@@ -10,7 +11,6 @@ import {
   safeWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-import type { Transport } from "viem";
 import { createConfig, http } from "wagmi";
 import {
   mainnet,
@@ -31,19 +31,17 @@ import {
   bscTestnet,
 } from "wagmi/chains";
 
-import linea_logo from "../public/img/linea_logo.png";
-import lineaTesnet_logo from "../public/img/lineaTesnet_logo.png";
-import zksync_logo from "../public/img/zksync_logo.svg";
+// Use relative paths for icons from the `public` folder
+const customZkSyncSepoliaTestnet = { ...zkSyncSepoliaTestnet, iconUrl: "/img/zksync_logo.svg" };
+const customLinea = { ...linea, iconUrl: "/img/linea_logo.png" };
+const customLineaTestnet = { ...lineaTestnet, iconUrl: "/img/lineaTesnet_logo.png" };
 
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
-console.log("Env Project ID:", process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID);
-
 if (!walletConnectProjectId) {
-  throw new Error(
-    "WalletConnect project ID is not defined. Please check your environment variables.",
-  );
+  throw new Error("WalletConnect project ID is not defined.");
 }
 
+// Wallet connectors
 const connectors = connectorsForWallets(
   [
     {
@@ -63,11 +61,7 @@ const connectors = connectorsForWallets(
   { appName: "Next-Web3-Boilerplate", projectId: walletConnectProjectId },
 );
 
-// Fix missing icons
-const customZkSyncSepoliaTestnet = { ...zkSyncSepoliaTestnet, iconUrl: zksync_logo.src };
-const customLinea = { ...linea, iconUrl: linea_logo.src };
-const customLineaTestnet = { ...lineaTestnet, iconUrl: lineaTesnet_logo.src };
-
+// Transport configuration
 const transports: Record<number, Transport> = {
   [mainnet.id]: http(),
   [sepolia.id]: http(),
@@ -86,6 +80,8 @@ const transports: Record<number, Transport> = {
   [bsc.id]: http(),
   [bscTestnet.id]: http(),
 };
+
+// Wagmi configuration
 export const wagmiConfig = createConfig({
   chains: [
     mainnet,
@@ -107,5 +103,5 @@ export const wagmiConfig = createConfig({
   ],
   connectors,
   transports,
-  ssr: true,
+  ssr: true, // Enable SSR for Wagmi
 });
