@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { Contract } from "@ethersproject/contracts";
+
 import { Web3Provider } from "@ethersproject/providers";
 
 // eslint-disable-next-line import/order
@@ -81,10 +82,10 @@ export function useContract<T extends Contract = Contract>(
     try {
       return new Contract(address, ABI, withSignerIfPossible ? provider.getSigner() : provider);
     } catch (error) {
-      logger.warn("useContract", "Failed to initialize contract", {
-        error,
-        address,
-      });
+      // logger.warn("useContract", "Failed to initialize contract", {
+      //   error,
+      //   address,
+      // });
       return null;
     }
   }, [address, ABI, provider, withSignerIfPossible]) as T;
@@ -147,7 +148,7 @@ export function useENSResolverContract(address: string | undefined) {
 }
 
 export function useUniswapQouter(chainId: number) {
-  return useContract(QOUTER_ADDRESS[chainId ?? ChainId.Testnet], QuoterABI, true, chainId);
+  return useContract(QOUTER_ADDRESS[chainId ?? ChainId.Testnet], QuoterABI, true);
 }
 
 export function useCentrifugeRouterContract(withSignerIfPossible = true, chainId?: number) {

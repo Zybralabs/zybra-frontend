@@ -17,7 +17,10 @@ type ReplaceChainId<T> = T extends { chainId: number }
     ? Omit<T, "chainId"> & { chainId: ChainId | undefined }
     : T;
 
-type UseAccountReturnType = ReplaceChainId<UseAccountReturnTypeWagmi> & {
+type UseAccountReturnType = Omit<
+  ReplaceChainId<UseAccountReturnTypeWagmi>,
+  "isConnected"
+> & {
   isConnected: boolean;
   walletType: WalletType | null;
 };

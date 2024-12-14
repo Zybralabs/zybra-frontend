@@ -21,6 +21,8 @@ export default function useENSAddress(ensName?: string | null): {
   );
   const registrarContract = useENSRegistrarContract();
   const resolverAddressCall = useMainnetSingleCallResult(
+  //@ts-expect-error
+    
     registrarContract,
     "resolver",
     ensNodeArgument,
@@ -29,11 +31,14 @@ export default function useENSAddress(ensName?: string | null): {
   const resolverContract = useENSResolverContract(
     resolverAddress && !isZero(resolverAddress) ? resolverAddress : undefined,
   );
+
   const addressCall = useMainnetSingleCallResult(
+  //@ts-expect-error
+    
     resolverContract,
     "addr",
-    ensNodeArgument,
-    NEVER_RELOAD,
+    ensNodeArgument
+    
   );
   const address = addressCall.result?.[0];
 

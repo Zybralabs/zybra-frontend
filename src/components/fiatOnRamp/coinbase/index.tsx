@@ -1,10 +1,23 @@
+import React from "react";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { useCoinbasePay } from "@/lib/hooks/useCoinbase";
 
-const CoinbaseWidget = ({ assets = ["ETH", "USDC", "BTC"], onSuccess, onExit, onEvent }) => {
+interface CoinbaseWidgetProps {
+  assets?: string[];
+  onSuccess?: () => void;
+  onExit?: () => void;
+  onEvent?: (event: any) => void; // Replace 'any' with a more specific type if known
+}
+
+const CoinbaseWidget: React.FC<CoinbaseWidgetProps> = ({
+  assets = ["ETH", "USDC", "BTC"],
+  onSuccess,
+  onExit,
+  onEvent,
+}) => {
   const { address } = useUserAccount();
   const { openCoinbasePay, loading, error, success } = useCoinbasePay({
-    addresses: [address],
+    addresses: address ? { [address]: ["ethereum", "base"] } : {}, // Convert to Record<string, string[]>
     assets,
     onSuccess,
     onExit,

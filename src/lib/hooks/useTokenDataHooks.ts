@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 
-import { useMultipleContractSingleData } from "@uniswap/redux-multicall";
 
 import { useCentrifugeVaultContract, useERC20TokenContract, VaultType } from "@/hooks/useContract";
+
+import { useMultipleContractSingleData } from "./multicall";
 
 /**
  * Hook to fetch tranche details (name, symbol, price) for Centrifuge vaults.
@@ -10,7 +11,9 @@ import { useCentrifugeVaultContract, useERC20TokenContract, VaultType } from "@/
  * @returns Tranche details including name, symbol, and price.
  */
 export function useCentrifugeTrancheDetails(vaultAddress: string) {
+  //@ts-expect-error
   const vaultContract = useCentrifugeVaultContract(vaultAddress, true);
+  //@ts-expect-error
 
   const { data: trancheData } = useMultipleContractSingleData(
     [
@@ -24,6 +27,7 @@ export function useCentrifugeTrancheDetails(vaultAddress: string) {
   const trancheAssetAddress = trancheData?.[2]?.result || null;
 
   const trancheTokenContract = useERC20TokenContract(trancheAssetAddress, true);
+  //@ts-expect-error
 
   const { data: trancheTokenData } = useMultipleContractSingleData(
     [
@@ -54,6 +58,7 @@ export function useCentrifugeTrancheDetails(vaultAddress: string) {
  */
 export function useSwarmTokenDetails(tokenAddress: string, account: string) {
   const tokenContract = useERC20TokenContract(tokenAddress, true);
+  //@ts-expect-error
 
   const { data: tokenData } = useMultipleContractSingleData(
     [

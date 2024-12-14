@@ -1,20 +1,12 @@
-import { type FC, type ChangeEvent, type MouseEvent, useEffect, useState } from "react";
+import { type FC, useEffect } from "react";
 
 import { useSignMessageHook, useNotify } from "@/hooks";
 
 const SignMessage: FC = () => {
-  const { signature, recoveredAddress, error, isPending, signMessage } = useSignMessageHook();
-  const [messageAuth, setMessageAuth] = useState<string>("");
+  const { signature, recoveredAddress, error } = useSignMessageHook();
   const { notifyError, notifySuccess } = useNotify();
 
-  const handleMessageChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setMessageAuth(e.target.value);
-  };
 
-  const handleSignMessage = (e: MouseEvent<HTMLButtonElement>): void => {
-    e.preventDefault();
-    signMessage({ message: messageAuth });
-  };
 
   useEffect(() => {
     if (signature && recoveredAddress) {

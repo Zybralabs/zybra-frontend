@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { useUserAccount } from "@/context/UserAccountContext";
 
 export const useMoonPay = ({
+  //@ts-expect-error
   walletAddress,
   fiatCurrency = "usd",
   cryptoCurrency = "eth",

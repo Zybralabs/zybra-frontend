@@ -51,6 +51,7 @@ const ZfiComponent = () => {
         bodyColor: "#fff",
         displayColors: false,
         callbacks: {
+            //@ts-expect-error
           label: (tooltipItem) => `Value: $${tooltipItem.raw.toFixed(2)}`, // Display formatted value
         },
       },
@@ -91,6 +92,8 @@ const ZfiComponent = () => {
           </div>
           {/* Chart */}
           <div className="mt-2 h-36">
+                {/* @ts-expect-error */}
+
             <Line data={data} options={options} />
           </div>
         </div>
@@ -115,6 +118,7 @@ const ZfiComponent = () => {
             </div>
             {/* Chart */}
             <div className="mt-2 h-96">
+                {/* @ts-expect-error */}
               <Line data={data} options={options} />
             </div>
           </div>

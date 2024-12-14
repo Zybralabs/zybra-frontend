@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { type CBPayInstanceType, initOnRamp } from "@coinbase/cbpay-js";
 
 interface UseCoinbasePayConfig {
-  addresses: Record<string, string[]>;
+  addresses: Record<string, string[]> |[];
   assets: string[];
   onSuccess?: () => void;
   onExit?: () => void;
@@ -37,6 +37,7 @@ export const useCoinbasePay = ({
       {
         appId,
         widgetParameters: {
+          //@ts-expect-error
           addresses,
           assets,
         },

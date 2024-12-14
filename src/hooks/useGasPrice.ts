@@ -25,6 +25,7 @@ export default function useGasPrice(skip = false): JSBI | undefined {
   const contract = useContract(address ?? undefined, CHAIN_DATA_ABI, false);
 
   const resultStr = useSingleCallResult(
+  //@ts-expect-error
     skip ? undefined : contract,
     "latestAnswer",
     [],

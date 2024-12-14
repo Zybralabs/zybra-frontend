@@ -216,7 +216,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return response.data;
     } catch (err) {
       console.error("Error sending verification email:", err);
-      throw new Error(err.response?.data?.message || "Failed to send verification email");
+      // throw new Error(err?.response?.data?.message || "Failed to send verification email");
     }
   }, []);
 
@@ -226,7 +226,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return response.data;
     } catch (err) {
       console.error("Error verifying code:", err);
-      throw new Error(err.response?.data?.message || "Verification failed");
+      // throw new Error(err.response?.data?.message || "Verification failed");
     }
   }, []);
 

@@ -72,27 +72,35 @@ export const BlockProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     if (!publicClient) return;
-
-    const onBlock = async (blockNumber: number) => {
-      setLatestBlock(blockNumber);
-
+  
+    const onBlock = async (blockNumber: bigint) => {
+      setLatestBlock(Number(blockNumber));
+  
+      const isHexString = (str: string): str is `0x${string}` =>
+        /^0x[0-9a-fA-F]+$/.test(str);
+  
       const pendingTxs = transactions.filter((tx) => tx.status === "pending");
       for (const tx of pendingTxs) {
+        if (!isHexString(tx.hash)) {
+          console.warn(`Skipping invalid transaction hash: ${tx.hash}`);
+          continue;
+        }
+  
         try {
           const receipt = await publicClient.getTransactionReceipt({ hash: tx.hash });
           if (receipt) {
-            updateTransactionStatus(tx.hash, receipt.status === 1 ? "confirmed" : "failed");
+            updateTransactionStatus(tx.hash, receipt.status === "success" ? "confirmed" : "failed");
           }
         } catch (err) {
           console.error(`Error checking transaction ${tx.hash}:`, err);
         }
       }
     };
-
-    const unsubscribe = publicClient.watchBlockNumber({ onBlock });
+  
+    const unsubscribe = publicClient.watchBlockNumber({ onBlockNumber:onBlock });
     return () => unsubscribe();
   }, [publicClient, transactions]);
-
+  
   useEffect(() => {
     const fetchMainnetBlock = async () => {
       try {

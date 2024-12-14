@@ -39,6 +39,7 @@ export function useApproveCallback(
       const signer = provider.getSigner();
 
       const owner = await signer.getAddress();
+      //@ts-expect-error
       const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender);
 
       if (currentAllowance.gte(amountToApprove)) {

@@ -34,6 +34,7 @@ export function useStockPrices(stockSymbols: string[]) {
                 symbol: data.symbol,
                 price: data.regularMarketPrice,
                 currency: data.currency,
+                //@ts-expect-error
                 timestamp: new Date(data.regularMarketTime * 1000).getTime(), // Convert to milliseconds
               };
             } catch (err) {

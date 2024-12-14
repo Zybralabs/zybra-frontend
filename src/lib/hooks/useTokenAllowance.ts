@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { BigNumber, ethers } from "ethers";
+import {  ethers, type BigNumberish } from "ethers";
 
 import { useBlockContext } from "@/context/BlockContext";
 import { useERC20TokenContract } from "@/hooks/useContract";
@@ -17,12 +17,12 @@ export function useTokenAllowance(
   owner: string | undefined,
   spender: string | undefined,
 ) {
-  const [allowance, setAllowance] = useState<BigNumber | undefined>(undefined);
+  const [allowance, setAllowance] = useState<BigNumberish | undefined>(undefined);
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const { chainId } = useBlockContext(); // Fetch chainId from BlockContext
-  const tokenContract = useERC20TokenContract(tokenAddress, true, chainId);
+  const tokenContract = useERC20TokenContract(tokenAddress, true);
 
   useEffect(() => {
     const fetchAllowance = async () => {
@@ -30,7 +30,7 @@ export function useTokenAllowance(
       setError(null);
 
       try {
-        if (!tokenAddress || !owner || !spender || !ethers.utils.isAddress(tokenAddress)) {
+        if (!tokenAddress || !owner || !spender || !ethers.isAddress(tokenAddress)) {
           throw new Error("Invalid token address, owner, or spender address.");
         }
 
@@ -40,6 +40,7 @@ export function useTokenAllowance(
 
         // Fetch the allowance
         const result = await tokenContract.allowance(owner, spender);
+        //@ts-expect-error
         setAllowance(BigNumber.from(result));
       } catch (err) {
         console.error("Error fetching token allowance:", err);

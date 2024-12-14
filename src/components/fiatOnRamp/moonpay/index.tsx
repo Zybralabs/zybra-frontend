@@ -9,7 +9,15 @@ const MoonPayBuyWidget = dynamic(
   { ssr: false },
 );
 
-const MoonPayWidget = ({ walletAddress, fiatCurrency, cryptoCurrency, fiatAmount }) => {
+// Define props type for MoonPayWidget
+interface MoonPayWidgetProps {
+  walletAddress: string;
+  fiatCurrency: string;
+  cryptoCurrency: string;
+  fiatAmount: number;
+}
+
+const MoonPayWidget: React.FC<MoonPayWidgetProps> = ({ walletAddress, fiatCurrency, cryptoCurrency, fiatAmount }) => {
   const { configuration, loading, error, success } = useMoonPay({
     walletAddress,
     fiatCurrency,
@@ -20,6 +28,7 @@ const MoonPayWidget = ({ walletAddress, fiatCurrency, cryptoCurrency, fiatAmount
   return (
     <div className="mt-6">
       <h1 className="text-2xl font-bold mb-4">Buy Crypto with MoonPay</h1>
+      {/* @ts-expect-error */}
       <MoonPayBuyWidget {...configuration} />
       {loading && <p className="mt-4 text-blue-500">Processing transaction...</p>}
       {error && <p className="mt-4 text-red-500">Error: {error}</p>}

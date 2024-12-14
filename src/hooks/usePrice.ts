@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { ethers } from "ethers";
 
-import { USDC_ADDRESS } from "@/constant/addresses";
+import { ChainId, USDC_ADDRESS } from "@/constant/addresses";
 import { useBlockContext } from "@/context/BlockContext";
 
 import { useUniswapQouter } from "./useContract"; // Custom hook for connecting contracts
@@ -20,7 +20,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { chainId } = useBlockContext();
-  const quoterContract = useUniswapQouter(chainId);
+  const quoterContract = useUniswapQouter(chainId?? ChainId.Testnet);
 
   useEffect(() => {
     const fetchTokenPrice = async () => {
@@ -28,7 +28,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
       setError(null);
 
       try {
-        if (!ethers.utils.isAddress(tokenAddress)) {
+        if (!ethers.isAddress(tokenAddress)) {
           throw new Error("Invalid token address");
         }
 
@@ -40,19 +40,19 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
         const FEE_TIER = 3000;
 
         // 1 token equivalent in Wei
-        const tokenAmountInWei = ethers.utils.parseUnits("1", tokenDecimals);
+        const tokenAmountInWei = ethers.parseUnits("1", tokenDecimals);
 
         // Get price quote from Uniswap Quoter
         const quotedAmountOut = await quoterContract.callStatic.quoteExactInputSingle(
           tokenAddress,
-          USDC_ADDRESS[chainId],
+          USDC_ADDRESS[chainId?? ChainId.Testnet],
           FEE_TIER,
           tokenAmountInWei,
           0,
         );
 
         // Convert quoted amount (in USDC's decimals)
-        const priceInUSDC = ethers.utils.formatUnits(quotedAmountOut, 6);
+        const priceInUSDC = ethers.formatUnits(quotedAmountOut, 6);
 
         setPrice(parseFloat(priceInUSDC));
       } catch (err) {

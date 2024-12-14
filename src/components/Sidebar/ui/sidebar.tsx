@@ -9,13 +9,13 @@ import { PanelLeft } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 import { Button } from "./button";
-import { Sheet, SheetContent } from "./sheet";
+// import { Sheet, SheetContent } from "./sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
+// const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
@@ -160,6 +160,7 @@ const Sidebar = React.forwardRef<
     },
     ref,
   ) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
     if (collapsible === "none") {

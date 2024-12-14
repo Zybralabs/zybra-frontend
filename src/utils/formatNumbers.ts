@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from "react";
 
-import { formatUnits } from "@ethersproject/units";
-import { BigNumber } from "ethers";
+import { formatUnits, type BigNumberish } from "ethers";
 
 // Default locale and fiat currency constants
 const DEFAULT_LOCALE = "en-US";
@@ -65,7 +64,7 @@ function formatPercent(
 
 // Utility for formatting Ethereum values (BigNumber)
 function formatEther(
-  input: BigNumber | string | number | null | undefined,
+  input: BigNumberish | string | number | null | undefined,
   decimals: number = 18,
 ): string {
   if (input === null || input === undefined) {
@@ -97,7 +96,7 @@ export function useFormatter() {
   );
 
   const formatEtherWithLocale = useCallback(
-    (input: BigNumber | string | number | null | undefined, decimals: number = 18) =>
+    (input: BigNumberish | string | number | null | undefined, decimals: number = 18) =>
       formatEther(input, decimals),
     [],
   );

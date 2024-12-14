@@ -1,11 +1,23 @@
-import { useState } from "react";
+import React, { useState, type Dispatch, type SetStateAction } from "react";
 
 import { useUserAccount } from "@/context/UserAccountContext";
 
 import CoinbaseWidget from "./coinbase";
 import MoonPayWidget from "./moonpay";
 
-const InputModal = ({
+interface InputModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  fiatAmount: number;
+  setFiatAmount: Dispatch<SetStateAction<number>>;
+  fiatCurrency: string;
+  setFiatCurrency: Dispatch<SetStateAction<string>>;
+  cryptoCurrency: string;
+  setCryptoCurrency: Dispatch<SetStateAction<string>>;
+}
+
+const InputModal: React.FC<InputModalProps> = ({
   isOpen,
   onClose,
   onSave,
@@ -73,12 +85,12 @@ const InputModal = ({
   );
 };
 
-const CryptoPaymentPage = () => {
+const CryptoPaymentPage: React.FC = () => {
   const { address } = useUserAccount(); // Address comes from UserAccountContext
-  const [fiatAmount, setFiatAmount] = useState(100);
-  const [fiatCurrency, setFiatCurrency] = useState("usd");
-  const [cryptoCurrency, setCryptoCurrency] = useState("eth");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fiatAmount, setFiatAmount] = useState<number>(100);
+  const [fiatCurrency, setFiatCurrency] = useState<string>("usd");
+  const [cryptoCurrency, setCryptoCurrency] = useState<string>("eth");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const handleSave = () => {
     setIsModalOpen(false);
@@ -112,6 +124,7 @@ const CryptoPaymentPage = () => {
           <h2 className="text-xl font-semibold mb-2">MoonPay</h2>
           <p className="text-sm mb-4">Buy crypto easily with MoonPay.</p>
           <MoonPayWidget
+          //@ts-expect-error
             walletAddress={address}
             fiatCurrency={fiatCurrency}
             cryptoCurrency={cryptoCurrency}

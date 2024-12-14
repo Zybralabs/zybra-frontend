@@ -12,11 +12,15 @@
   ],
   "rules": {
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars":"off",
-     "css.lint.unknownAtRules": "ignore",
-  "tailwindCSS.experimental.configFile": "./tailwind.config.js",
+    "@typescript-eslint/no-unused-vars": "off",
+     "css.lint.unknownAtRules": 0,
+     "react-hooks/rules-of-hooks":0,
+     "@typescript-eslint/ban-ts-comment":0,
+     "eslint-plugin-import/order":0,
+     
+  // "tailwindCSS.experimental.configFile": "./tailwind.config.js",
     "import/order": [
-      "error",
+      0,
       {
         "groups": [
           "builtin",

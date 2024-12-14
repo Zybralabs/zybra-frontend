@@ -2,25 +2,30 @@ import { useMemo } from "react";
 
 import type { ChainId } from "@/constant/addresses";
 
-export function getChainInfo(chainId: number) {
-  const CHAIN_INFO = {
-    1: {
-      name: "Ethereum Mainnet",
-      blockPerMainnetEpochForChainId: 1,
-    },
-    11155111: {
-      name: "Sepolia Testnet",
-      blockPerMainnetEpochForChainId: 1,
-    },
-    137: {
-      name: "Polygon Mainnet",
-      blockPerMainnetEpochForChainId: 1,
-    },
-    // Add other chains as needed
-  };
+type ChainInfo = {
+  name: string;
+  blockPerMainnetEpochForChainId: number;
+};
 
+const CHAIN_INFO: { [key: number]: ChainInfo } = {
+  1: {
+    name: "Ethereum Mainnet",
+    blockPerMainnetEpochForChainId: 1,
+  },
+  11155111: {
+    name: "Sepolia Testnet",
+    blockPerMainnetEpochForChainId: 1,
+  },
+  137: {
+    name: "Polygon Mainnet",
+    blockPerMainnetEpochForChainId: 1,
+  },
+};
+
+export function getChainInfo(chainId: number): ChainInfo {
   return CHAIN_INFO[chainId] || { name: "Unknown", blockPerMainnetEpochForChainId: 1 };
 }
+
 
 export function useSupportedChainId(chainId: number | undefined): ChainId | undefined {
   // Define a list of supported Chain IDs

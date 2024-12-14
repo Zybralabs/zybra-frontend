@@ -106,7 +106,7 @@ export default function TeslaCard() {
         {/* Expiry */}
         <div className="flex justify-between items-center pt-0">
           <div className="text-gray-400">Expiry</div>
-          <div className="text-lg ml-6">Dec 11, '26 at 9:36 PM</div>
+          <div className="text-lg ml-6">Dec 11, 26 at 9:36 PM</div>
         </div>
         <button className="px-6 py-3 rounded-2xl bg-[#001620] text-white text-sm flex items-center hover:bg-[#001220] transition-colors">
           Take Offer
