@@ -3,6 +3,8 @@ import { useBlockContext } from "@/context/BlockContext";
 import type { SkipFirst } from "@/types/tuple";
 
 import multicall from "../state/multicall";
+import type { Contract } from "ethers";
+import { useMemo } from "react";
 
 export { NEVER_RELOAD } from "@uniswap/redux-multicall"; // Re-export for convenience
 export type { CallStateResult } from "@uniswap/redux-multicall"; // Re-export for convenience
@@ -44,9 +46,33 @@ export function useSingleContractMultipleData(
   return multicall.hooks.useSingleContractMultipleData(
     chainId ?? ChainId.Testnet,
     latestBlock,
-    ...args,
+    ...args
   );
 }
+
+
+export function useSingleContractMultipleCalls(
+  contract: Contract | null,
+  methods: string[],
+  params: any[][],
+) {
+  const results = useMemo(() => {
+    if (!contract || methods.length !== params.length) {
+      console.error("Contract must be provided and methods/params must have matching lengths.");
+      return [];
+    }
+
+    // Map over methods and parameters to call useSingleCallResult for each
+    return methods.map((method, index) => {
+      const methodParams = params[index] ?? [];
+      return useSingleCallResult(contract, method, methodParams);
+    });
+  }, [contract, methods, params]);
+
+  return results;
+}
+
+
 
 /**
  * Hook to call a single contract on Mainnet using multicall.

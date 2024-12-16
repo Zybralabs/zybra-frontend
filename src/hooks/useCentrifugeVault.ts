@@ -1,4 +1,4 @@
-import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
+import { useSingleCallResult, useSingleContractMultipleCalls, useSingleContractMultipleData } from "@/lib/hooks/multicall";
 
 import { useCentrifugeVaultContract } from "./useContract";
 
@@ -15,40 +15,40 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
   const safeContract = centrifugeVaultContract;
 
   // --- Read Functions (Single Call) ---
-  //@ts-expect-error
+  
   const maxDepositResult = useSingleCallResult(safeContract, "maxDeposit", [vaultAddress]);
-  //@ts-expect-error
+  
   
   const maxRedeemResult = useSingleCallResult(safeContract, "maxRedeem", [vaultAddress]);
   const collateralAssetPriceResult = useSingleCallResult(
-  //@ts-expect-error
+  
     
     safeContract,
     "getCollateralAssetPrice",
     [],
   );
-  //@ts-expect-error
+  
 
   const trancheAssetPriceResult = useSingleCallResult(safeContract, "getTrancheAssetPrice", [
     vaultAddress,
   ]);
-  //@ts-expect-error
+  
 
   const isVaultResult = useSingleCallResult(safeContract, "isVault", [vaultAddress]);
   const poolTotalCirculationResult = useSingleCallResult(
-  //@ts-expect-error
+  
     
     safeContract,
     "getPoolTotalCirculation",
     [],
   );
-  //@ts-expect-error
+  
 
   const userTrancheAssetResult = useSingleCallResult(safeContract, "getUserTrancheAsset", [
     vaultAddress,
     "0x0000000000000000000000000000000000000000", // Placeholder user address
   ]);
-  //@ts-expect-error
+  
 
   const borrowedResult = useSingleCallResult(safeContract, "getBorrowed", [
     vaultAddress,
@@ -56,9 +56,9 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
   ]);
 
   // --- Batch Read Function ---
-  const batchDataResults = useSingleContractMultipleData(
-  //@ts-expect-error
-   
+
+  // Batch Call Example
+  const batchDataResults = useSingleContractMultipleCalls(
     safeContract,
     [
       "maxDeposit",
@@ -71,25 +71,22 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
       "getBorrowed",
     ],
     [
-      [vaultAddress],
-      [vaultAddress],
-      [],
-      [vaultAddress],
-      [vaultAddress],
-      [],
-      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
-      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address
+      [vaultAddress], // For maxDeposit
+      [vaultAddress], // For maxRedeem
+      [], // No arguments for getCollateralAssetPrice
+      [vaultAddress], // For getTrancheAssetPrice
+      [vaultAddress], // For isVault
+      [], // No arguments for getPoolTotalCirculation
+      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address for getUserTrancheAsset
+      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address for getBorrowed
     ],
   );
+  
 
-  // --- State-Changing Functions ---
   const handleTransaction = async (methodName: string, args: any[] = [], overrides: any = {}) => {
-    if (!centrifugeVaultContract) {
-      console.error("CentrifugeVault contract is not connected.");
-      return null;
-    }
-
     try {
+      if (!centrifugeVaultContract) throw new Error("CentrifugeVault contract is not connected.");
+
       const tx = await centrifugeVaultContract[methodName](...args, overrides);
       console.log(`Transaction ${methodName} sent:`, tx.hash);
 
@@ -97,7 +94,7 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
       console.log(`Transaction ${methodName} confirmed:`, receipt);
       return receipt;
     } catch (error) {
-      console.error(`Error sending transaction ${methodName}:`, error);
+      console.error(`Error in transaction ${methodName}:`, error);
       return null;
     }
   };

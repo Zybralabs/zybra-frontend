@@ -6,7 +6,7 @@ export interface StockPrice {
   symbol: string;
   price: number;
   currency: string;
-  timestamp: number;
+  timestamp: number | null; // Allow null if `regularMarketTime` is undefined
 }
 
 /**
@@ -34,8 +34,9 @@ export function useStockPrices(stockSymbols: string[]) {
                 symbol: data.symbol,
                 price: data.regularMarketPrice,
                 currency: data.currency,
-                //@ts-expect-error
-                timestamp: new Date(data.regularMarketTime * 1000).getTime(), // Convert to milliseconds
+                timestamp: data.regularMarketTime
+                  ? new Date(data.regularMarketTime * 1000).getTime() // Convert to milliseconds
+                  : null, // Fallback to null if `regularMarketTime` is undefined
               };
             } catch (err) {
               console.error(`Failed to fetch price for ${symbol}:`, err);

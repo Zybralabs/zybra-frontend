@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, type SetStateAction, type Dispatch } from "react";
 
 import axios from "axios";
 
@@ -12,6 +12,8 @@ interface UserAccountContextProps {
   address: string | null;
   walletType: WalletType | null;
   token: string | null;
+  user: string | null;
+  setUser:Dispatch<SetStateAction<number>>;
   loading: boolean;
   error: string | null;
   // API actions
@@ -75,6 +77,7 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   address: null,
   walletType: null,
   token: null,
+  user: null,
   loading: false,
   error: null,
   getUserProfile: async () => {
@@ -125,6 +128,9 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   getUserAssetsAndPoolsHoldings: async () => {
     throw new Error("UserAccountContext not initialized");
   },
+  setUser: async () => {
+    throw new Error("UserAccountContext not initialized");
+  }
 });
 
 export const useUserAccount = () => useContext(UserAccountContext);
@@ -140,6 +146,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [address, setAddress] = useState<string | null>(null);
   const [walletType, setWalletType] = useState<WalletType | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -467,6 +474,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         getKYCStatus,
         addWallet,
         getWallets,
+        user, setUser,
         createAbstractWallet,
         executeTransaction,
         addTransaction,

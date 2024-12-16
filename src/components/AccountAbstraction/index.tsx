@@ -26,7 +26,7 @@
 //       const txHash = await executeTransaction(
 //         "0xMinimalAccountAddress", // User's MinimalAccount
 //         "0xRecipientAddress", // Recipient address
-//         ethers.parseEther("0.1"), // Value in wei
+//         ethers.utils.parseEther("0.1"), // Value in wei
 //         "0x", // Optional function data
 //       );
 //       console.log("Transaction Hash:", txHash);

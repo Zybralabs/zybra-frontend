@@ -15,19 +15,19 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
   const safeContractAddress = useMemo(() => contractAddress, [contractAddress]);
 
   // Read Functions with `useSingleCallResult`
-//@ts-expect-error
+
   const pendingReward = useSingleCallResult(stakingContract, "pendingReward", [
     safeContractAddress,
   ]);
-//@ts-expect-error
+
 
   const totalStaked = useSingleCallResult(stakingContract, "totalStaked", []);
-//@ts-expect-error
+
 
   const totalProfitDistributed = useSingleCallResult(stakingContract, "totalProfitDistributed", []);
 
   const getCollateralAssetPrice = useSingleCallResult(
-//@ts-expect-error
+
    
     stakingContract,
     "getCollateralAssetPrice",
@@ -36,7 +36,7 @@ export function useLzybraStaking(contractAddress: string, chainId: number) {
 
   // Batch Read Function
   const batchReadData = useSingleContractMultipleData(
-//@ts-expect-error
+
     
     stakingContract,
     ["totalStaked", "totalProfitDistributed", "getCollateralAssetPrice"],

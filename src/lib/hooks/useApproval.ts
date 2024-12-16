@@ -1,135 +1,129 @@
-// import { useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { MaxUint256 } from "@ethersproject/constants";
+import type { TransactionResponse } from "@ethersproject/providers";
+import { BigNumber } from "@ethersproject/bignumber";
 
-// import { MaxUint256 } from "@ethersproject/constants";
-// import type { TransactionResponse } from "@ethersproject/providers";
+import { useERC20TokenContract } from "@/hooks/useContract";
+import { useAccount } from "@/hooks/useAccount";
+import { useTokenAllowance } from "./useTokenAllowance";
+import { useCalculateGasMargin } from "@/utils/calculateGasMargin";
 
-// import { useERC20TokenContract } from "@/hooks/useContract";
+export enum ApprovalState {
+  UNKNOWN = "UNKNOWN",
+  NOT_APPROVED = "NOT_APPROVED",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+}
 
-// import { useTokenAllowance } from "../hooks/useTokenAllowance";
-// import { useCalculateGasMargin } from "@/utils/calculateGasMargin";
-// import { BigNumber } from "@ethersproject/bignumber";
-// import { useAccount } from "@/hooks/useAccount";
+/**
+ * Determines the approval state for a spender.
+ */
+function useApprovalStateForSpender(
+  amountToApprove: BigNumber | undefined,
+  spender: string | undefined,
+  tokenAddress: string,
+  useIsPendingApproval: (tokenAddress: string, spender?: string) => boolean,
+): ApprovalState {
+  const { address: account } = useAccount();
+  const { allowance, isFetching } = useTokenAllowance(tokenAddress, account, spender);
 
-// export enum ApprovalState {
-//   UNKNOWN = "UNKNOWN",
-//   NOT_APPROVED = "NOT_APPROVED",
-//   PENDING = "PENDING",
-//   APPROVED = "APPROVED",
-// }
+  const pendingApproval = useIsPendingApproval(tokenAddress || "", spender);
 
+  return useMemo(() => {
+    if (!amountToApprove || !spender || !tokenAddress) {
+      return ApprovalState.UNKNOWN;
+    }
 
-// function useApprovalStateForSpender(
-//   amountToApprove: BigNumber | undefined,
-//   spender: string | undefined,
-//   tokenAddress: string | undefined,
-//   useIsPendingApproval: (tokenAddress: string, spender?: string) => boolean,
-// ): ApprovalState {
-//   const { address: account } = useAccount();
-// //@ts-expect-error
-//   const { allowance, isFetching } = useTokenAllowance(tokenAddress, account, spender);
-// //@ts-expect-error
+    if (isFetching || allowance === undefined) {
+      return ApprovalState.UNKNOWN;
+    }
+
+    return allowance.lt(amountToApprove)
+      ? pendingApproval
+        ? ApprovalState.PENDING
+        : ApprovalState.NOT_APPROVED
+      : ApprovalState.APPROVED;
+  }, [amountToApprove, pendingApproval, spender, allowance, tokenAddress, isFetching]);
+}
+
+/**
+ * Hook for handling ERC20 approvals.
+ */
+export function useApproval(
+    amountToApprove: BigNumber,
+    spender: string,
+    tokenAddress: string,
+    useIsPendingApproval: (tokenAddress?: string, spender?: string) => boolean,
+  ): [
+    ApprovalState,
+    () => Promise<{
+      response: TransactionResponse;
+      tokenAddress: string;
+      spenderAddress: string;
+      amount: BigNumber;
+    } | undefined>,
+  ] {
+    const { chainId } = useAccount();
   
-//   const pendingApproval = useIsPendingApproval(tokenAddress, spender);
-
-//   return useMemo(() => {
-//     if (!amountToApprove || !spender || !tokenAddress) {
-//       return ApprovalState.UNKNOWN;
-//     }
-
-//     if (isFetching || allowance === undefined) {
-//       return ApprovalState.UNKNOWN;
-//     }
-
-//     return allowance.lt(amountToApprove)
-//       ? pendingApproval
-//         ? ApprovalState.PENDING
-//         : ApprovalState.NOT_APPROVED
-//       : ApprovalState.APPROVED;
-//   }, [amountToApprove, pendingApproval, spender, allowance, tokenAddress, isFetching]);
-// }
-
-// export function useApproval(
-//   amountToApprove: BigNumber,
-//   spender: string,
-//   tokenAddress: string,
-//   useIsPendingApproval: (tokenAddress?: string, spender?: string) => boolean,
-// ): [
-//   ApprovalState,
-//   () => Promise<
-//     | {
-//         response: TransactionResponse;
-//         tokenAddress: string;
-//         spenderAddress: string;
-//         amount: BigNumber;
-//       }
-//     | undefined
-//   >,
-// ] {
-//   const { chainId } = useAccount();
-
-//   const approvalState = useApprovalStateForSpender(
-//     amountToApprove,
-//     spender,
-//     tokenAddress,
-//     useIsPendingApproval,
-//   );
-
-//   const tokenContract = useERC20TokenContract(tokenAddress, true);
-
-//   const approve = useCallback(async () => {
-//     function logFailure(error: Error | string): undefined {
-//       // logger.error("useApproval", error, {
-//       //   tokenAddress,
-//       //   spender,
-//       //   amountToApprove: amountToApprove?.toString(),
-//       //   chainId,
-//       // });
-//       return;
-//     }
-
-//     if (approvalState !== ApprovalState.NOT_APPROVED) {
-//       return logFailure("approve was called unnecessarily");
-//     } else if (!chainId) {
-//       return logFailure("no chainId");
-//     } else if (!tokenAddress) {
-//       return logFailure("no token address");
-//     } else if (!tokenContract) {
-//       return logFailure("token contract is null");
-//     } else if (!amountToApprove) {
-//       return logFailure("missing amount to approve");
-//     } else if (!spender) {
-//       return logFailure("no spender");
-//     }
-
-//     let useExact = false;
-//     const estimatedGas = await tokenContract.estimateGas.approve(spender, MaxUint256).catch(() => {
-//       useExact = true;
-//       return tokenContract.estimateGas.approve(spender, amountToApprove);
-//     });
-//     const {calculateGasMargin} = useCalculateGasMargin()
-//     return tokenContract
-//       .approve(spender, useExact ? amountToApprove : MaxUint256, {
-//         gasLimit: calculateGasMargin(new BigNumber(estimatedGas),10),
-//       })
-//       .then((response) => {
-//         // logger.info("Approval transaction submitted", {
-//         //   tokenAddress,
-//         //   spender,
-//         //   chainId,
-//         // });
-
-//         return {
-//           response,
-//           tokenAddress,
-//           spenderAddress: spender,
-//           amount: amountToApprove,
-//         };
-//       })
-//       .catch((error: Error) => {
-//         logFailure(error);
-//         throw error;
-//       });
-//   }, [approvalState, tokenContract, tokenAddress, amountToApprove, spender, chainId]);
-
-//   return [approvalState, approve];
-// }
+    const approvalState = useApprovalStateForSpender(
+      amountToApprove,
+      spender,
+      tokenAddress,
+      useIsPendingApproval,
+    );
+  
+    const tokenContract = useERC20TokenContract(tokenAddress, true);
+  
+    const approve = useCallback(async () => {
+      if (approvalState !== ApprovalState.NOT_APPROVED) {
+        throw new Error("Approval is not needed.");
+      }
+      if (!chainId) {
+        throw new Error("No chainId detected.");
+      }
+      if (!tokenAddress) {
+        throw new Error("No token address provided.");
+      }
+      if (!tokenContract) {
+        throw new Error("Token contract is not initialized.");
+      }
+      if (!amountToApprove) {
+        throw new Error("No amount to approve.");
+      }
+      if (!spender) {
+        throw new Error("No spender address provided.");
+      }
+  
+      let useExact = false;
+  
+      try {
+        const estimatedGas = await tokenContract.estimateGas
+          .approve(spender, MaxUint256)
+          .catch(() => {
+            useExact = true;
+            return tokenContract.estimateGas.approve(spender, amountToApprove);
+          });
+      
+        // Ensure the utility function is called correctly
+        const calculateGasMargin = useCalculateGasMargin(); // Get the calculateGasMargin function
+        const gasLimitWithMargin = await calculateGasMargin(BigNumber.from(estimatedGas), 5);
+      
+        const response = await tokenContract.approve(spender, useExact ? amountToApprove : MaxUint256, {
+          gasLimit: gasLimitWithMargin,
+        });
+      
+        return {
+          response,
+          tokenAddress,
+          spenderAddress: spender,
+          amount: amountToApprove,
+        };
+      } catch (error) {
+        console.error("Approval transaction failed:", error);
+        throw error;
+      }
+      
+    }, [approvalState, tokenContract, tokenAddress, amountToApprove, spender, chainId]);
+  
+    return [approvalState, approve];
+  }

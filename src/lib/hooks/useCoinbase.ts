@@ -1,9 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
-
+import { useCallback, useEffect, useState } from "react";
 import { type CBPayInstanceType, initOnRamp } from "@coinbase/cbpay-js";
-
 interface UseCoinbasePayConfig {
-  addresses: Record<string, string[]> |[];
+  addresses: Record<string, string[]>; // Updated to match the expected type
   assets: string[];
   onSuccess?: () => void;
   onExit?: () => void;
@@ -37,8 +35,7 @@ export const useCoinbasePay = ({
       {
         appId,
         widgetParameters: {
-          //@ts-expect-error
-          addresses,
+          addresses, // Now conforms to the expected type
           assets,
         },
         onSuccess: () => {

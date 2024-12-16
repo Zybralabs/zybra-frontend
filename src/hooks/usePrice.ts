@@ -28,7 +28,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
       setError(null);
 
       try {
-        if (!ethers.isAddress(tokenAddress)) {
+        if (!ethers.utils.isAddress(tokenAddress)) {
           throw new Error("Invalid token address");
         }
 
@@ -40,7 +40,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
         const FEE_TIER = 3000;
 
         // 1 token equivalent in Wei
-        const tokenAmountInWei = ethers.parseUnits("1", tokenDecimals);
+        const tokenAmountInWei = ethers.utils.parseUnits("1", tokenDecimals);
 
         // Get price quote from Uniswap Quoter
         const quotedAmountOut = await quoterContract.callStatic.quoteExactInputSingle(
@@ -52,7 +52,7 @@ export function useTokenPrice(tokenAddress: string, tokenDecimals: number) {
         );
 
         // Convert quoted amount (in USDC's decimals)
-        const priceInUSDC = ethers.formatUnits(quotedAmountOut, 6);
+        const priceInUSDC = ethers.utils.formatUnits(quotedAmountOut, 6);
 
         setPrice(parseFloat(priceInUSDC));
       } catch (err) {

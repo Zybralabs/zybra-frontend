@@ -1,5 +1,4 @@
-import { useCallback, useState } from "react";
-
+import { useCallback, useState, useEffect } from "react";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Contract } from "@ethersproject/contracts";
 import type { Web3Provider } from "@ethersproject/providers";
@@ -28,18 +27,18 @@ export function useApproveCallback(
 ): [ApprovalState, () => Promise<void>] {
   const [approvalState, setApprovalState] = useState<ApprovalState>(ApprovalState.UNKNOWN);
   const erc20Contract = useERC20TokenContract(tokenAddress, true);
+
   // Function to check current allowance
   const checkAllowance = useCallback(async () => {
-    if (!provider || !spender || !tokenAddress || !amountToApprove) {
+    if (!provider || !spender || !tokenAddress || !amountToApprove || !erc20Contract) {
       setApprovalState(ApprovalState.UNKNOWN);
       return;
     }
 
     try {
       const signer = provider.getSigner();
-
       const owner = await signer.getAddress();
-      //@ts-expect-error
+
       const currentAllowance: BigNumber = await erc20Contract.allowance(owner, spender);
 
       if (currentAllowance.gte(amountToApprove)) {
@@ -51,7 +50,7 @@ export function useApproveCallback(
       console.error("Error checking allowance:", error);
       setApprovalState(ApprovalState.UNKNOWN);
     }
-  }, []);
+  }, [provider, spender, tokenAddress, amountToApprove, erc20Contract]);
 
   // Function to send approval transaction
   const approveCallback = useCallback(async () => {
@@ -81,7 +80,7 @@ export function useApproveCallback(
   }, [provider, spender, tokenAddress, amountToApprove]);
 
   // Automatically check allowance on mount/update
-  useCallback(() => {
+  useEffect(() => {
     checkAllowance();
   }, [checkAllowance]);
 

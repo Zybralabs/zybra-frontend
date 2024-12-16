@@ -124,7 +124,7 @@ const CryptoPaymentPage: React.FC = () => {
           <h2 className="text-xl font-semibold mb-2">MoonPay</h2>
           <p className="text-sm mb-4">Buy crypto easily with MoonPay.</p>
           <MoonPayWidget
-          //@ts-expect-error
+          
             walletAddress={address}
             fiatCurrency={fiatCurrency}
             cryptoCurrency={cryptoCurrency}

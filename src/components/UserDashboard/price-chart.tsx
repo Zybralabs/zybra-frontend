@@ -51,7 +51,7 @@ const ZfiComponent = () => {
         bodyColor: "#fff",
         displayColors: false,
         callbacks: {
-            //@ts-expect-error
+            
           label: (tooltipItem) => `Value: $${tooltipItem.raw.toFixed(2)}`, // Display formatted value
         },
       },
