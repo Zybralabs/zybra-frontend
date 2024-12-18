@@ -113,7 +113,7 @@ const Header = () => {
     navigate.push("/userDashboard");
   };
   return (
-    <div className="p-4 bg-[#0a192f] text-white rounded-lg">
+    <div className="py-4 bg-[#0a192f] text-white rounded-lg">
       {/* Header Section */}
       <div className="flex items-center justify-between">
         {/* Profile Section */}
