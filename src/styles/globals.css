@@ -121,3 +121,14 @@
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.7); /* Muted text */
 }
+
+.highcharts-container {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+}

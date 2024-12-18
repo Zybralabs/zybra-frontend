@@ -96,9 +96,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <div className="flex flex-col items-start">
             <span className="font-medium text-white">Desham Neetwa</span>
-            <span className="text-xs font-light text-white/70">
-              desham.neetwa@gmail.com
-            </span>
+            <span className="text-xs font-light text-white/70">desham.neetwa@gmail.com</span>
           </div>
         </button>
       </SidebarFooter>

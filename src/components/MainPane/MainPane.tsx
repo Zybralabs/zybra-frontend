@@ -10,7 +10,8 @@ import PoolCard4 from "./components/PoolCard4";
 const Dashboard = () => {
   return (
     <div className="flex flex-col h-full w-full bg-[#0C1122] text-white p-6">
-      <Header /> {/* Reusable Header Component */}
+      {/* Reusable Header Component */}
+      <Header />
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-2 mt-4">
         <PoolCard />
         <TeslaCard />
