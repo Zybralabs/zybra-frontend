@@ -9,7 +9,7 @@ import { useAccount } from "../hooks/useAccount";
 import { useAccountAbstraction } from "../hooks/useAccountAbstraction";
 
 interface UserAccountContextProps {
-  address: string | null;
+  address: string | undefined;
   walletType: WalletType | null;
   token: string | null;
   user: string | null;
@@ -74,7 +74,7 @@ interface UserAccountContextProps {
 }
 
 const UserAccountContext = createContext<UserAccountContextProps>({
-  address: null,
+  address: "",
   walletType: null,
   token: null,
   user: null,
@@ -143,7 +143,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     error: abstractionError,
   } = useAccountAbstraction();
 
-  const [address, setAddress] = useState<string | null>(null);
+  const [address, setAddress] = useState<string>();
   const [walletType, setWalletType] = useState<WalletType | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any>();
@@ -245,9 +245,8 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         const response = await apiClient().post("/wallet-sign-in", { walletAddress });
 
-        const { token, wallet } = response.data.payload;
-
-        setAddress(wallet.address);
+        setUser(response.data)
+        setAddress(web3Address);
         setWalletType(WalletType.WEB3);
         setToken(token); // Save the token in state
         // Optionally save the token to localStorage or another secure place
@@ -357,6 +356,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const { token, user } = response.data.payload;
 
         setToken(token); // Save the token in state
+        setUser(user)
 
         // Determine the wallet type if wallets exist
         if (user.wallets && user.wallets.length > 0) {
@@ -365,7 +365,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setAddress(wallet.address); // Store wallet address
         } else {
           setWalletType(null); // No wallet
-          setAddress(null); // No wallet address
+          setAddress(undefined); // No wallet address
         }
       } catch (err: any) {
         console.error("Error signing in:", err);

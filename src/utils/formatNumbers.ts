@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 
-import { formatUnits, type BigNumberish } from "ethers";
+import {  type BigNumberish } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 // Default locale and fiat currency constants
 const DEFAULT_LOCALE = "en-US";

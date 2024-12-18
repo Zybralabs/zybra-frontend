@@ -1,9 +1,10 @@
 "use client";
 
 import UserDashboard from "@/components/UserDashboard";
-import { Footer} from "@/components";
+import  Header from "@/components/MainPane/components/Header";
 import { AppSidebar as Sidebar } from "@/components/Sidebar/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/Sidebar/ui/sidebar";
+import { Footer } from "@/components";
 
 export default function Home() {
   return (
@@ -22,6 +23,8 @@ export default function Home() {
 
           {/* Main Content Area */}
           <main className="flex-1 p-0">
+      <Header /> {/* Reusable Header Component */}
+
             <UserDashboard />
           </main>
 

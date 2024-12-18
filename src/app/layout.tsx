@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
+import "@rainbow-me/rainbowkit/styles.css";
 
 import { Providers } from "./providers";
 import "../styles/globals.css";
