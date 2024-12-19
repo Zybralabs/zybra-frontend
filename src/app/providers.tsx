@@ -32,6 +32,7 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider appInfo={appInfo} coolMode modalSize="compact">
           <MoonPayProvider apiKey={moonpay_api_key} debug={true}>
+            
             <BlockProvider>
               <UserAccountProvider>{mounted && children}</UserAccountProvider>
             </BlockProvider>

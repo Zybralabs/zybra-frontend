@@ -79,6 +79,8 @@ export const useMoonPay = ({
 
   // Configuration for MoonPay widget
   const configuration = {
+    environment: 'sandbox',
+    flow: 'buy',
     defaultBaseCurrencyCode: cryptoCurrency,
     quoteCurrencyCode: fiatCurrency,
     refundWalletAddress: walletAddress,

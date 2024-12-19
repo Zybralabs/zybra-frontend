@@ -150,7 +150,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_ZYBRA_BASE_API_URL || "";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_ZYBRA_BASE_API_URL || "";
 
   const apiClient = useCallback(() => {
     return axios.create({
