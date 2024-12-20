@@ -62,11 +62,7 @@ interface UserAccountContextProps {
     password: string,
     firstName: string,
     lastName: string,
-    walletAddress: string,
-    country: string,
-    state: string,
-    city: string,
-    address: string,
+    walletAddress: string
   ) => Promise<void>;
   verifyCode: (email: string, code: number) => Promise<void>;
 
@@ -381,14 +377,10 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const signUp = useCallback(
     async (
       email: string,
-      password: string,
       firstName: string,
-      lastName: string,
-      walletAddress: string,
-      country: string,
-      state: string,
-      city: string,
-      address: string,
+      type: "social" | "email",
+      lastName?: string,
+      password?: string,
     ) => {
       setLoading(true);
       setError(null);
@@ -399,24 +391,14 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
           password,
           first_name: firstName,
           last_name: lastName,
-          wallet_address: walletAddress,
-          profile_details: {
-            country,
-            state,
-            city,
-            address,
-          },
+          wallet_address: web3Address,
+          type
         });
 
         const { token, user } = response.data.payload;
-
-        if (user.wallets?.length > 0) {
-          setAddress(user.wallets[0].address); // Assuming the first wallet is the primary one
-        } else {
-          setAddress(walletAddress); // Fallback to the provided wallet address
-        }
-
+        setAddress(web3Address); // Fallback to the provided wallet address
         setToken(token); // Save the token in state
+        setUser(user); // Save the token in state
       } catch (err: any) {
         console.error("Error signing up:", err);
         setError(err.message || "Sign-up failed");
@@ -430,18 +412,62 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Fetch account logic
   const fetchAccount = useCallback(async () => {
-    if (isConnected && web3Address) {
-      setAddress(web3Address);
-      setWalletType(WalletType.WEB3);
-      return web3Address;
+    try {
+      // Get the token from localStorage
+      const token = localStorage.getItem("authToken");
+  
+      if (!token) {
+        console.warn("No token found in localStorage.");
+        setUser(null);
+        setAddress(null);
+        setWalletType(null);
+        return null;
+      }
+  
+      // Fetch user info and wallet data from the API
+      const response = await apiClient().get("/user-info", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+  
+      // If the API call fails
+      if (!response || response.status !== 200 || !response.data.success) {
+        console.error("Failed to fetch user info:", response?.statusText);
+        setUser(null);
+        setAddress(null);
+        setWalletType(null);
+        return null;
+      }
+  
+      const { payload: userResponse } = response.data;
+  
+      if (!userResponse || !userResponse.wallet) {
+        console.warn("Invalid response or missing wallet information.");
+        setUser(null);
+        setAddress(null);
+        setWalletType(null);
+        return null;
+      }
+  
+      // Save user and wallet details in the state
+      setUser(userResponse);
+      const { wallet } = userResponse;
+      setAddress(wallet.address);
+      setWalletType(wallet.type === "web3-wallet" ? WalletType.WEB3 : WalletType.MINIMAL);
+  
+      console.log(`User and Wallet Loaded: ${userResponse.first_name} - ${wallet.type}: ${wallet.address}`);
+      return userResponse;
+    } catch (error) {
+      console.error("Error fetching account:", error);
+      setUser(null);
+      setAddress(null);
+      setWalletType(null);
+      return null;
     }
-    const fetchedAddress = await fetchMinimalAccountFromAPI();
-    if (fetchedAddress) {
-      setAddress(fetchedAddress);
-      setWalletType(WalletType.MINIMAL);
-    }
-    return fetchedAddress;
-  }, [isConnected, web3Address, fetchMinimalAccountFromAPI]);
+  }, [apiClient]);
+  
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken");
@@ -463,7 +489,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   return (
     <UserAccountContext.Provider
       value={{
-        address,
+        address: web3Address,
         walletType,
         token,
         loading: loading || abstractionLoading,
