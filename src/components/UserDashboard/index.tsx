@@ -1,3 +1,4 @@
+import { useUserAccount } from "@/context/UserAccountContext";
 import PortfolioPerformance from "./area-chart";
 import { InvestedAssets } from "./invested-assets";
 import ZfiComponent from "./price-chart";
@@ -16,7 +17,12 @@ interface Transaction {
   logo: string; // Path to the logo image
 }
 // Sample data - replace with real data in production
-const portfolioData = Array.from({ length: 100 }, () => Math.random() * 1000);
+
+export default function UserDashboard() {
+
+  const { user } = useUserAccount()
+
+  const portfolioData = Array.from({ length: 100 }, () => Math.random() * 1000);
 const transactions: Transaction[] = [
   {
     type: "Stock",
@@ -63,7 +69,6 @@ const investedStocks = [
   { name: "Hamster", amount: "2,545.06", change: "10.21%", isPositive: false },
 ];
 
-export default function UserDashboard() {
   return (
     <main className="min-h-screen bg-[#051220] p-6">
       <div className="mx-auto max-w-7xl">

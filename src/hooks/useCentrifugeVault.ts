@@ -1,6 +1,7 @@
 import { useSingleCallResult, useSingleContractMultipleCalls, useSingleContractMultipleData } from "@/lib/hooks/multicall";
 
 import { useCentrifugeVaultContract } from "./useContract";
+import { useUserAccount } from "@/context/UserAccountContext";
 
 /**
  * Hook to interact with the Centrifuge Vault contract.
@@ -10,7 +11,7 @@ import { useCentrifugeVaultContract } from "./useContract";
 export function useCentrifugeVault(vaultAddress: string, chainId: number) {
   // Ensure the contract is initialized
   const centrifugeVaultContract = useCentrifugeVaultContract(true, chainId);
-
+  const {address} = useUserAccount()
   // Placeholder contract to ensure hooks are always called
   const safeContract = centrifugeVaultContract;
 
@@ -46,13 +47,13 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
 
   const userTrancheAssetResult = useSingleCallResult(safeContract, "getUserTrancheAsset", [
     vaultAddress,
-    "0x0000000000000000000000000000000000000000", // Placeholder user address
+    address, // Placeholder user address
   ]);
   
 
   const borrowedResult = useSingleCallResult(safeContract, "getBorrowed", [
     vaultAddress,
-    "0x0000000000000000000000000000000000000000", // Placeholder user address
+    address, // Placeholder user address
   ]);
 
   // --- Batch Read Function ---
@@ -77,8 +78,8 @@ export function useCentrifugeVault(vaultAddress: string, chainId: number) {
       [vaultAddress], // For getTrancheAssetPrice
       [vaultAddress], // For isVault
       [], // No arguments for getPoolTotalCirculation
-      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address for getUserTrancheAsset
-      [vaultAddress, "0x0000000000000000000000000000000000000000"], // Placeholder user address for getBorrowed
+      [vaultAddress, address], // Placeholder user address for getUserTrancheAsset
+      [vaultAddress, address], // Placeholder user address for getBorrowed
     ],
   );
   

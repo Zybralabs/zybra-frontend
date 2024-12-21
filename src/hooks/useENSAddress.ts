@@ -21,8 +21,6 @@ export default function useENSAddress(ensName?: string | null): {
   );
   const registrarContract = useENSRegistrarContract();
   const resolverAddressCall = useMainnetSingleCallResult(
-  
-    
     registrarContract,
     "resolver",
     ensNodeArgument,
