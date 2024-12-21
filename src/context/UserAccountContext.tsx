@@ -8,11 +8,68 @@ import type { TransactionData } from "@/types";
 import { useAccount } from "../hooks/useAccount";
 import { useAccountAbstraction } from "../hooks/useAccountAbstraction";
 
+
+
+export interface Wallet {
+  _id: string | null;
+  address: string | null;
+  wallet_type: "web3-wallet" | "abstraction-wallet" | null;
+}
+
+// Define KYCDetails type
+export interface KYCDetails {
+  document_type: string | null;
+  document_number: string | null;
+  document_image: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+}
+
+// Define User type
+export interface User {
+  _id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  user_type: "User" | "Admin" | null;
+  email: string | null;
+  type: "email" | "social" | null;
+  verified: boolean | null;
+  profile_status: "complete" | "in-complete" | null;
+  kyc_status: "pending" | "approved" | "rejected" | null;
+  kyc_details: KYCDetails | null;
+  wallets: Wallet[] | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+
+const demoUser: User = {
+  _id: null,
+  first_name: null,
+  last_name: null,
+  user_type: null,
+  email: null,
+  type: null,
+  verified: null,
+  profile_status: null,
+  kyc_status: null,
+  kyc_details: {
+    document_type: null,
+    document_number: null,
+    document_image: null,
+    submitted_at: null,
+    approved_at: null,
+  },
+  wallets: null,
+  created_at: null,
+  updated_at: null,
+};
+
 interface UserAccountContextProps {
-  address: string | undefined;
+  address: string | null | undefined;
   walletType: WalletType | null;
   token: string | null;
-  user: string | null;
+  user: User;
   setUser:Dispatch<SetStateAction<number>>;
   loading: boolean;
   error: string | null;
@@ -39,33 +96,38 @@ interface UserAccountContextProps {
     amount: number;
   }) => Promise<any>;
   addTransaction: (data: TransactionData) => Promise<any>;
-  getTransactions: (walletAddress?: string) => Promise<any>;
+  getTransactions: (userId?: string) => Promise<any>;
   walletSignIn: (walletAddress: string) => Promise<void>;
-  getUserAssetsAndPoolsHoldings: (walletAddress: string) => Promise<{
-    assets: Array<{
-      assetId: string;
-      name: string;
-      symbol: string;
-      totalAmount: number;
-      totalLzybraBorrowed: number;
-    }>;
-    pools: Array<{
-      poolId: string;
-      name: string;
-      totalAmount: number;
-      totalLzybraBorrowed: number;
-    }>;
+  getTotalInvestment: (userId: string) => Promise<void>;
+  getUserAssetsAndPoolsHoldings: (userId: string) => Promise<{
+  assets: Array<{
+    assetId: string;
+    name: string;
+    symbol: string;
+    totalAmount: number;
+    totalLzybraBorrowed: number;
+    createdAt?: string; // Optional if needed in UI
+    updatedAt?: string; // Optional if needed in UI
   }>;
+  pools: Array<{
+    poolId: string;
+    name: string;
+    totalAmount: number;
+    totalLzybraBorrowed: number;
+    createdAt?: string; // Optional if needed in UI
+    updatedAt?: string; // Optional if needed in UI
+  }>;
+}>;
+
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
     email: string,
-    password: string,
     firstName: string,
-    lastName: string,
-    walletAddress: string
+    type: "social" | "email",
+    lastName?: string,
+    password?: string
   ) => Promise<void>;
   verifyCode: (email: string, code: number) => Promise<void>;
-
   sendVerificationEmail: (email: string) => Promise<void>;
 }
 
@@ -73,7 +135,7 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   address: "",
   walletType: null,
   token: null,
-  user: null,
+  user: demoUser,
   loading: false,
   error: null,
   getUserProfile: async () => {
@@ -125,6 +187,9 @@ const UserAccountContext = createContext<UserAccountContextProps>({
     throw new Error("UserAccountContext not initialized");
   },
   setUser: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
+  getTotalInvestment: async () => {
     throw new Error("UserAccountContext not initialized");
   }
 });
@@ -246,7 +311,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setWalletType(WalletType.WEB3);
         setToken(token); // Save the token in state
         // Optionally save the token to localStorage or another secure place
-        localStorage.setItem("authToken", token);
+        token ?localStorage.setItem("authToken", token): null;
       } catch (err: any) {
         console.error("Error signing in with wallet:", err);
         setError(err.message || "Wallet sign-in failed");
@@ -287,49 +352,6 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [apiClient, address],
   );
 
-  const getUserAssetsAndPoolsHoldings = useCallback(async (): Promise<{
-    assets: Array<{
-      assetId: string;
-      name: string;
-      symbol: string;
-      totalAmount: number;
-      totalLzybraBorrowed: number;
-    }>;
-    pools: Array<{
-      poolId: string;
-      name: string;
-      totalAmount: number;
-      totalLzybraBorrowed: number;
-    }>;
-  }> => {
-    if (!address) {
-      throw new Error("User address is required to fetch assets and pools.");
-    }
-
-    const response = await apiClient().get("/user/assets-pools-holdings", {
-      params: { userId: address }, // Pass user ID to the backend
-    });
-
-    const { assets, pools } = response.data.payload;
-
-    // Normalize and ensure all required fields are included
-    const formattedAssets = assets.map((asset: any) => ({
-      assetId: asset._id,
-      name: asset.name,
-      symbol: asset.symbol,
-      totalAmount: asset.totalAmount,
-      totalLzybraBorrowed: asset.totalLzybraBorrowed,
-    }));
-
-    const formattedPools = pools.map((pool: any) => ({
-      poolId: pool._id,
-      name: pool.name,
-      totalAmount: pool.totalAmount,
-      totalLzybraBorrowed: pool.totalLzybraBorrowed,
-    }));
-
-    return { assets: formattedAssets, pools: formattedPools };
-  }, [apiClient, address]);
 
   const getTransactions = useCallback(
     async (walletAddress: any) => {
@@ -410,6 +432,18 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [apiClient],
   );
 
+
+  const getUserAssetsAndPoolsHoldings = useCallback(async (userId: string) => {
+    const response = await apiClient().get(`/holdings`, { params: { userId } });
+    return response.data
+  }, []);
+
+  // Get Total Investment
+  const getTotalInvestment = useCallback(async (userId: string) => {
+    const response =  await apiClient().get(`/investments/total`, { params: { userId } });
+    return response.data 
+  }, []);
+
   // Fetch account logic
   const fetchAccount = useCallback(async () => {
     try {
@@ -419,7 +453,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!token) {
         console.warn("No token found in localStorage.");
         setUser(null);
-        setAddress(null);
+        
         setWalletType(null);
         return null;
       }
@@ -436,7 +470,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!response || response.status !== 200 || !response.data.success) {
         console.error("Failed to fetch user info:", response?.statusText);
         setUser(null);
-        setAddress(null);
+        
         setWalletType(null);
         return null;
       }
@@ -446,7 +480,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!userResponse || !userResponse.wallet) {
         console.warn("Invalid response or missing wallet information.");
         setUser(null);
-        setAddress(null);
+        
         setWalletType(null);
         return null;
       }
@@ -462,7 +496,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (error) {
       console.error("Error fetching account:", error);
       setUser(null);
-      setAddress(null);
+      
       setWalletType(null);
       return null;
     }
@@ -479,11 +513,11 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     fetchAccount();
 
-    if (token) {
-      localStorage.setItem("authToken", token);
-    } else {
-      localStorage.removeItem("authToken");
-    }
+    // if (token) {
+    //   localStorage.setItem("authToken", token);
+    // } else {
+    //   localStorage.removeItem("authToken");
+    // }
   }, [fetchAccount, token]);
 
   return (
@@ -510,6 +544,7 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         signUp,
         sendVerificationEmail,
         getUserAssetsAndPoolsHoldings,
+        getTotalInvestment,
         verifyCode,
       }}
     >
