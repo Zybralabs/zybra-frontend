@@ -1,0 +1,417 @@
+[{
+    "version": 1,
+    "poolId": "1615768079",
+    "pool": {
+        "name": "New Silver Series 3",
+        "icon": {
+            "uri": "ipfs://QmVxA2MaBMUsZMgxBcfg5VdrF4FJAVW26U9s3mY9oH7wMs",
+            "mime": "image/svg+xml"
+        },
+        "asset": {
+            "class": "Private credit",
+            "subClass": "Residential real estate"
+        },
+        "issuer": {
+            "name": "NS Pool 3 LLC",
+            "repName": "Kirill Bensonoff",
+            "description": "Founded in 2018, New Silver is a technology enabled non-bank lender primarily focused on financing residential real estate investments in the United States. Loans are for commercial use only, and are secured by the subject property. Funds are typically used for purchase and construction of single family or small multi-family developments. Typical loan term is 12-24 months.\n",
+            "email": "investors@newsilver.com",
+            "logo": {
+                "uri": "ipfs://QmZB95usKnoSHEwG9s61gYWqgxbYyq7NAdo24XEowqJtFS",
+                "mime": "image/png"
+            },
+            "shortDescription": "A US tech-enabled non-bank lender, offers 12-24 month loans for US real estate investors",
+            "categories": [
+                {
+                    "type": "trustee",
+                    "value": "Ankura Trust ",
+                    "customType": ""
+                },
+                {
+                    "type": "historicalDefaultRate",
+                    "value": "0",
+                    "customType": ""
+                }
+            ]
+        },
+        "links": {
+            "executiveSummary": {
+                "uri": "ipfs://QmRQqb11SnqpSHwPcsgmgGWCv8GKfALgX53KLbvf6iur5Y",
+                "mime": "application/pdf"
+            },
+            "forum": "https://gov.centrifuge.io/tag/newsilver",
+            "website": "https://newsilver.com"
+        },
+        "details": [],
+        "status": "open",
+        "listed": true,
+        "poolFees": [
+            {
+                "name": "Protocol fee (Private Credit & Securities)",
+                "id": 3,
+                "feePosition": "Top of waterfall",
+                "feeType": "fixed"
+            }
+        ],
+        "reports": [
+            {
+                "author": {
+                    "avatar": null,
+                    "name": "Fang Zhang",
+                    "title": "Member of the Centrifuge Credit Group"
+                },
+                "uri": "https://gov.centrifuge.io/t/pop-report-new-silver-ns3/5869"
+            }
+        ],
+        "investorType": "Qualified US and non-US investors",
+        "poolStructure": "Revolving",
+        "poolRatings": []
+    },
+    "pod": {
+        "node": "https://pod-centrifuge.k-f.dev"
+    },
+    "tranches": {
+        "0x6756e091ae798a8e51e12e27ee8facdf": {
+            "minInitialInvestment": "25000000000",
+            "targetAPY": "16"
+        },
+        "0xda64aae939e4d3a981004619f1709d8f": {
+            "minInitialInvestment": "5000000000"
+        }
+    },
+    "adminMultisig": {
+        "signers": [
+            "5F3quVAnmP1uc2v5zLyXLH3JxNLzXeHXDg5j9ScrvbvHGuJW",
+            "5FpnSw6TPjnebvxiQfainnoS5k8gC9h7F2AyQmbVyy6RhM9E",
+            "5GqHmRkfWnKrCgoR2yfdqgsgvQj9X4rfMb7jgP4Lca1f39s9"
+        ],
+        "threshold": 2
+    },
+    "onboarding": {
+        "tranches": {
+            "0x6756e091ae798a8e51e12e27ee8facdf": {
+                "agreement": {
+                    "uri": "https://centrifuge.mypinata.cloud/ipfs/QmNbrzAHKKYtPCoY6g4WfxXnuWRdMdWRXm64LfQz5sYHAw",
+                    "mime": "application/pdf"
+                },
+                "openForOnboarding": false
+            },
+            "0xda64aae939e4d3a981004619f1709d8f": {
+                "agreement": {
+                    "uri": "https://centrifuge.mypinata.cloud/ipfs/QmV3cXT38k45VeEYXQRfRPDza1wLf5pnjxy79D2RudMUrG",
+                    "mime": "application/pdf"
+                },
+                "openForOnboarding": true
+            }
+        },
+        "kycRestrictedCountries": [],
+        "kybRestrictedCountries": [],
+        "podReadAccess": false,
+        "taxInfoRequired": true
+    },
+    "loanTemplates": [
+        {
+            "id": "QmZ1FUqhaUxaRRT3czJJSseLZ1GqCFoQfgszRQybWkBTs1",
+            "createdAt": "2024-07-03T17:12:11.404Z"
+        }
+    ]
+},
+{
+    "version": 1,
+    "poolId": "1615768079",
+    "pool": {
+        "name": "Anemoy Liquid Treasury Fund 1",
+        "icon": {
+            "uri": "ipfs://QmTocPtJYu2sXYoir52dR6iqDjg56v4Tc3sH8fxGNuLDWQ",
+            "mime": "image/svg+xml"
+        },
+        "asset": {
+            "class": "Public credit",
+            "subClass": "US Treasuries"
+        },
+        "issuer": {
+            "name": "Anemoy Capital SPC Limited",
+            "repName": "Martin Quensel",
+            "description": "Anemoy Liquid Treasury Fund 1 is a fully onchain, actively managed US Treasury Yield Fund. It is BVI-licensed and open to non-US Professional Investors. The fund balances monthly, offers daily redemptions, holds US T-Bills with a maximum maturity of 6-months, and focuses on maximizing interest rates and minimizing price and duration risks. US T-Bills are held directly by the fund and AUM can be viewed onchain. The fund issues its shares as tokens to the investors. Investments and redemptions are  processed in USDC stablecoins.",
+            "email": "support@anemoy.io",
+            "logo": {
+                "uri": "ipfs://QmaJVD2b53xYFSRDBxg6X8977fwvyzoDuCxvambe4QvrqT",
+                "mime": "image/png"
+            },
+            "shortDescription": "Anemoy is a fully onchain BVI licensed T-Bill Fund for non-US investors offering daily redemptions",
+            "categories": [
+                {
+                    "type": "Investment manager",
+                    "value": "Anemoy Limited",
+                    "customType": ""
+                },
+                {
+                    "type": "fundAdmin",
+                    "value": "Trident Trust Company (BVI) Ltd."
+                },
+                {
+                    "type": "other",
+                    "value": "StoneX Financial Inc.",
+                    "customType": "Treasury Bill Broker-Dealer"
+                },
+                {
+                    "type": "auditor",
+                    "value": "MHA Cayman ",
+                    "customType": ""
+                }
+            ]
+        },
+        "links": {
+            "executiveSummary": {
+                "uri": "ipfs://QmSPNN2QsqBB9MkiifWQi55iVZ2CLicq7X6EezZwB98uLE",
+                "mime": "application/pdf"
+            },
+            "forum": "https://gov.centrifuge.io/tag/anemoy",
+            "website": "https://www.anemoy.io/"
+        },
+        "details": [],
+        "status": "open",
+        "listed": true,
+        "assetOriginators": {
+            "0x5dbb2cec05b6bda775f7945827b887b0e7b5245eae8b4ef266c60820c9377185": {
+                "withdrawAddresses": [
+                    {
+                        "location": {
+                            "evm": 1
+                        },
+                        "address": "0x1a3b234fb570f93eb2244796f0527f834cd30294"
+                    }
+                ]
+            }
+        },
+        "poolFees": [
+            {
+                "name": "Protocol fee (Public Securities)",
+                "id": 1
+            },
+            {
+                "name": "Management fee",
+                "id": 2
+            }
+        ],
+        "reports": [
+            {
+                "author": {
+                    "avatar": null,
+                    "name": "Mark Hergenroeder",
+                    "title": "Facilitator of the Centrifuge Credit Group"
+                },
+                "uri": "https://gov.centrifuge.io/t/pop-anemoy-liquid-treasury-fund-1/5651/10"
+            }
+        ],
+        "investorType": "Non-US Professional Investors",
+        "poolStructure": "Revolving",
+        "poolRatings": [
+            {
+                "agency": "Moody's",
+                "value": "Aa-bf",
+                "reportUrl": "https://www.moodys.com/research/Moodys-Ratings-assigns-a-Aa-bf-Bond-Fund-rating-to-Anemoy-Assessment-Announcement--PR_495362",
+                "reportFile": {
+                    "uri": "ipfs://QmTXxiVMuBmYQtWQyJmj74m6XDzUsRNRhnMGo4HZMVyJUF",
+                    "mime": "application/pdf"
+                }
+            },
+            {
+                "agency": "Particula",
+                "value": "A+",
+                "reportUrl": "https://particula.io/particula-rating-report-anemoy-ltf-september-2024/",
+                "reportFile": {
+                    "uri": "ipfs://QmcXB2znzrJXLkqUuS69VS4KffyENSvpXTkhysvPtjvN9D",
+                    "mime": "application/pdf"
+                }
+            }
+        ]
+    },
+    "pod": {
+        "node": "https://pod-centrifuge.k-f.dev"
+    },
+    "tranches": {
+        "0x97aa65f23e7be09fcd62d0554d2e9273": {
+            "minInitialInvestment": "500000000000"
+        }
+    },
+    "onboarding": {
+        "tranches": {
+            "0x97aa65f23e7be09fcd62d0554d2e9273": {
+                "openForOnboarding": true
+            }
+        },
+        "kycRestrictedCountries": [
+            "us",
+            "um"
+        ],
+        "kybRestrictedCountries": [
+            "us"
+        ],
+        "externalOnboardingUrl": "https://www.anemoy.io/funds/ltf#get-access",
+        "podReadAccess": true,
+        "taxInfoRequired": true
+    },
+    "loanTemplates": [
+        {
+            "id": "QmZHBAAWrts9wjVcLH3ujvDPu1gBHKJa1EsMSQDoPVppwv",
+            "createdAt": "2023-11-09T11:54:04.327Z"
+        },
+        {
+            "id": "QmZHBAAWrts9wjVcLH3ujvDPu1gBHKJa1EsMSQDoPVppwv",
+            "createdAt": "2023-11-09T12:01:54.032Z"
+        },
+        {
+            "id": "QmYhNkqfyPzz9huxLLvoVuJJXM4GZBtSUU6JqgGRrLGR8P",
+            "createdAt": "2023-11-20T19:16:21.245Z"
+        },
+        {
+            "id": "QmV3osTVzd8Nr2SEmrMaxbAWNG1XwwxoHunayXzMziPPWT",
+            "createdAt": "2024-09-11T15:47:05.903Z"
+        }
+    ],
+    "adminMultisig": {
+        "signers": [
+            "0x8c2b234b97c2dd3d898b7db63fce77e1d23347ba4fdcee35b5983dabcbd0232c",
+            "0x9e72a7f9db14eb4ca2d509096b47fc435a3a937c8de146b91344014583494149",
+            "0xfc229e81a4f745589db0702fa3315274d1bec3b8f32a81df460fedb2bc76c373"
+        ],
+        "threshold": 2
+    }
+},
+{
+    "version": 1,
+    "poolId": "1615768079",
+    "pool": {
+        "name": "Anemoy DeFi Yield Fund 1 SP",
+        "icon": {
+            "uri": "ipfs://QmXsJBW3kNT4XGUeQ33T1qS1ibdbHYrhArxvwdSqdmaWrG",
+            "mime": "image/svg+xml"
+        },
+        "asset": {
+            "class": "Private credit",
+            "subClass": "Digital assets"
+        },
+        "issuer": {
+            "name": "Anemoy Capital SPC Limited",
+            "repName": "Martin Quensel",
+            "description": "The Anemoy DeFi Yield Fund (DYF) is an actively managed diversified portfolio of the most successful market-neutral DeFi yield farming strategies. It is under the same structure as the Anemoy Liquid Treasury Fund, a  BVI-licensed professional fund open to non-US professional investors. \n\nThe fund balances monthly with a monthly NAV, offering monthly redemptions, and simple exposure to a growing number of underlying funds through a single token investment. Investments and redemptions are processed in USDC stablecoins.\n",
+            "email": "support@anemoy.io",
+            "logo": {
+                "uri": "ipfs://QmaJVD2b53xYFSRDBxg6X8977fwvyzoDuCxvambe4QvrqT",
+                "mime": "image/png"
+            },
+            "shortDescription": "A BVI-licensed fund investing in diversified market-neutral DeFi yield strategies",
+            "categories": [
+                {
+                    "type": "Investment manager",
+                    "value": "Anemoy Limited",
+                    "customType": ""
+                },
+                {
+                    "type": "fundAdmin",
+                    "value": "Trident Trust Company (BVI) Ltd."
+                },
+                {
+                    "type": "auditor",
+                    "value": "MHA Cayman ",
+                    "customType": ""
+                }
+            ]
+        },
+        "links": {
+            "executiveSummary": {
+                "uri": "ipfs://QmQ8dG71aoSc49PPwo8pLfSxqAuTkJNvJFiSeTJ7tCbkP2",
+                "mime": "application/pdf"
+            },
+            "forum": "https://gov.centrifuge.io/t/cp110-pop-anemoy-defi-yield-fund-1/6400",
+            "website": "https://www.anemoy.io/"
+        },
+        "details": [],
+        "status": "open",
+        "listed": true,
+        "poolFees": [
+            {
+                "name": "Protocol fee (Private Credit & Securities)",
+                "id": 4,
+                "feePosition": "Top of waterfall",
+                "feeType": "fixed"
+            },
+            {
+                "id": 5,
+                "name": "Management fee",
+                "feePosition": "Top of waterfall"
+            }
+        ],
+        "reports": [
+            {
+                "author": {
+                    "avatar": null,
+                    "name": "N/A",
+                    "title": "N/A"
+                },
+                "uri": "https://gov.centrifuge.io/tag/anemoy"
+            }
+        ],
+        "assetOriginators": {
+            "0xa603a71154177ca2eb258bdf161efd5d5a1f74d0ac94d57ef281c91604a5b7a2": {
+                "withdrawAddresses": [
+                    {
+                        "location": {
+                            "evm": 1
+                        },
+                        "address": "0x82b2bf95ae84e3c3e2a83b24383e4d4758114239"
+                    },
+                    {
+                        "location": "centrifuge",
+                        "address": "0x3a579d9e7c300776cf4393bb2473018c03d5fe24cdd1a1f5f3a2227b36276370"
+                    }
+                ]
+            }
+        },
+        "investorType": "Non-US professional investors",
+        "poolStructure": "Revolving",
+        "poolRatings": []
+    },
+    "pod": {
+        "node": "https://pod-centrifuge.k-f.dev"
+    },
+    "tranches": {
+        "0x4859c6f181b1b993c35b313bedb949cf": {
+            "minInitialInvestment": "500000000000",
+            "targetAPY": "15"
+        }
+    },
+    "adminMultisig": {
+        "signers": [
+            "0x3a579d9e7c300776cf4393bb2473018c03d5fe24cdd1a1f5f3a2227b36276370",
+            "0x8c2b234b97c2dd3d898b7db63fce77e1d23347ba4fdcee35b5983dabcbd0232c",
+            "0x9e72a7f9db14eb4ca2d509096b47fc435a3a937c8de146b91344014583494149",
+            "0xfc229e81a4f745589db0702fa3315274d1bec3b8f32a81df460fedb2bc76c373"
+        ],
+        "threshold": 2
+    },
+    "onboarding": {
+        "tranches": {
+            "0x4859c6f181b1b993c35b313bedb949cf": {
+                "openForOnboarding": true
+            }
+        },
+        "kycRestrictedCountries": [
+            "us"
+        ],
+        "kybRestrictedCountries": [
+            "us"
+        ],
+        "externalOnboardingUrl": "https://www.anemoy.io/funds/ltf#get-access",
+        "podReadAccess": false,
+        "taxInfoRequired": false
+    },
+    "loanTemplates": [
+        {
+            "id": "QmNWQmVE8MKkoRAXBmKZLwH83P6rHwAfT1EK7xhDzWDYbk",
+            "createdAt": "2024-06-28T19:32:53.807Z"
+        }
+    ]
+}
+]

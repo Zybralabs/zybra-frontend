@@ -1,0 +1,134 @@
+{
+    "version": 1,
+    "pool": {
+        "name": "Anemoy DeFi Yield Fund 1 SP",
+        "icon": {
+            "uri": "ipfs://QmXsJBW3kNT4XGUeQ33T1qS1ibdbHYrhArxvwdSqdmaWrG",
+            "mime": "image/svg+xml"
+        },
+        "asset": {
+            "class": "Private credit",
+            "subClass": "Digital assets"
+        },
+        "issuer": {
+            "name": "Anemoy Capital SPC Limited",
+            "repName": "Martin Quensel",
+            "description": "The Anemoy DeFi Yield Fund (DYF) is an actively managed diversified portfolio of the most successful market-neutral DeFi yield farming strategies. It is under the same structure as the Anemoy Liquid Treasury Fund, a  BVI-licensed professional fund open to non-US professional investors. \n\nThe fund balances monthly with a monthly NAV, offering monthly redemptions, and simple exposure to a growing number of underlying funds through a single token investment. Investments and redemptions are processed in USDC stablecoins.\n",
+            "email": "support@anemoy.io",
+            "logo": {
+                "uri": "ipfs://QmaJVD2b53xYFSRDBxg6X8977fwvyzoDuCxvambe4QvrqT",
+                "mime": "image/png"
+            },
+            "shortDescription": "A BVI-licensed fund investing in diversified market-neutral DeFi yield strategies",
+            "categories": [
+                {
+                    "type": "Investment manager",
+                    "value": "Anemoy Limited",
+                    "customType": ""
+                },
+                {
+                    "type": "fundAdmin",
+                    "value": "Trident Trust Company (BVI) Ltd."
+                },
+                {
+                    "type": "auditor",
+                    "value": "MHA Cayman ",
+                    "customType": ""
+                }
+            ]
+        },
+        "links": {
+            "executiveSummary": {
+                "uri": "ipfs://QmQ8dG71aoSc49PPwo8pLfSxqAuTkJNvJFiSeTJ7tCbkP2",
+                "mime": "application/pdf"
+            },
+            "forum": "https://gov.centrifuge.io/t/cp110-pop-anemoy-defi-yield-fund-1/6400",
+            "website": "https://www.anemoy.io/"
+        },
+        "details": [],
+        "status": "open",
+        "listed": true,
+        "poolFees": [
+            {
+                "name": "Protocol fee (Private Credit & Securities)",
+                "id": 4,
+                "feePosition": "Top of waterfall",
+                "feeType": "fixed"
+            },
+            {
+                "id": 5,
+                "name": "Management fee",
+                "feePosition": "Top of waterfall"
+            }
+        ],
+        "reports": [
+            {
+                "author": {
+                    "avatar": null,
+                    "name": "N/A",
+                    "title": "N/A"
+                },
+                "uri": "https://gov.centrifuge.io/tag/anemoy"
+            }
+        ],
+        "assetOriginators": {
+            "0xa603a71154177ca2eb258bdf161efd5d5a1f74d0ac94d57ef281c91604a5b7a2": {
+                "withdrawAddresses": [
+                    {
+                        "location": {
+                            "evm": 1
+                        },
+                        "address": "0x82b2bf95ae84e3c3e2a83b24383e4d4758114239"
+                    },
+                    {
+                        "location": "centrifuge",
+                        "address": "0x3a579d9e7c300776cf4393bb2473018c03d5fe24cdd1a1f5f3a2227b36276370"
+                    }
+                ]
+            }
+        },
+        "investorType": "Non-US professional investors",
+        "poolStructure": "Revolving",
+        "poolRatings": []
+    },
+    "pod": {
+        "node": "https://pod-centrifuge.k-f.dev"
+    },
+    "tranches": {
+        "0x4859c6f181b1b993c35b313bedb949cf": {
+            "minInitialInvestment": "500000000000",
+            "targetAPY": "15"
+        }
+    },
+    "adminMultisig": {
+        "signers": [
+            "0x3a579d9e7c300776cf4393bb2473018c03d5fe24cdd1a1f5f3a2227b36276370",
+            "0x8c2b234b97c2dd3d898b7db63fce77e1d23347ba4fdcee35b5983dabcbd0232c",
+            "0x9e72a7f9db14eb4ca2d509096b47fc435a3a937c8de146b91344014583494149",
+            "0xfc229e81a4f745589db0702fa3315274d1bec3b8f32a81df460fedb2bc76c373"
+        ],
+        "threshold": 2
+    },
+    "onboarding": {
+        "tranches": {
+            "0x4859c6f181b1b993c35b313bedb949cf": {
+                "openForOnboarding": true
+            }
+        },
+        "kycRestrictedCountries": [
+            "us"
+        ],
+        "kybRestrictedCountries": [
+            "us"
+        ],
+        "externalOnboardingUrl": "https://www.anemoy.io/funds/ltf#get-access",
+        "podReadAccess": false,
+        "taxInfoRequired": false
+    },
+    "loanTemplates": [
+        {
+            "id": "QmNWQmVE8MKkoRAXBmKZLwH83P6rHwAfT1EK7xhDzWDYbk",
+            "createdAt": "2024-06-28T19:32:53.807Z"
+        }
+    ]
+}

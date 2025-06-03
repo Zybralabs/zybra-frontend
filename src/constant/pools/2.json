@@ -1,0 +1,162 @@
+{
+    "version": 1,
+    "pool": {
+        "name": "Anemoy Liquid Treasury Fund 1",
+        "icon": {
+            "uri": "ipfs://QmTocPtJYu2sXYoir52dR6iqDjg56v4Tc3sH8fxGNuLDWQ",
+            "mime": "image/svg+xml"
+        },
+        "asset": {
+            "class": "Public credit",
+            "subClass": "US Treasuries"
+        },
+        "issuer": {
+            "name": "Anemoy Capital SPC Limited",
+            "repName": "Martin Quensel",
+            "description": "Anemoy Liquid Treasury Fund 1 is a fully onchain, actively managed US Treasury Yield Fund. It is BVI-licensed and open to non-US Professional Investors. The fund balances monthly, offers daily redemptions, holds US T-Bills with a maximum maturity of 6-months, and focuses on maximizing interest rates and minimizing price and duration risks. US T-Bills are held directly by the fund and AUM can be viewed onchain. The fund issues its shares as tokens to the investors. Investments and redemptions are  processed in USDC stablecoins.",
+            "email": "support@anemoy.io",
+            "logo": {
+                "uri": "ipfs://QmaJVD2b53xYFSRDBxg6X8977fwvyzoDuCxvambe4QvrqT",
+                "mime": "image/png"
+            },
+            "shortDescription": "Anemoy is a fully onchain BVI licensed T-Bill Fund for non-US investors offering daily redemptions",
+            "categories": [
+                {
+                    "type": "Investment manager",
+                    "value": "Anemoy Limited",
+                    "customType": ""
+                },
+                {
+                    "type": "fundAdmin",
+                    "value": "Trident Trust Company (BVI) Ltd."
+                },
+                {
+                    "type": "other",
+                    "value": "StoneX Financial Inc.",
+                    "customType": "Treasury Bill Broker-Dealer"
+                },
+                {
+                    "type": "auditor",
+                    "value": "MHA Cayman ",
+                    "customType": ""
+                }
+            ]
+        },
+        "links": {
+            "executiveSummary": {
+                "uri": "ipfs://QmSPNN2QsqBB9MkiifWQi55iVZ2CLicq7X6EezZwB98uLE",
+                "mime": "application/pdf"
+            },
+            "forum": "https://gov.centrifuge.io/tag/anemoy",
+            "website": "https://www.anemoy.io/"
+        },
+        "details": [],
+        "status": "open",
+        "listed": true,
+        "assetOriginators": {
+            "0x5dbb2cec05b6bda775f7945827b887b0e7b5245eae8b4ef266c60820c9377185": {
+                "withdrawAddresses": [
+                    {
+                        "location": {
+                            "evm": 1
+                        },
+                        "address": "0x1a3b234fb570f93eb2244796f0527f834cd30294"
+                    }
+                ]
+            }
+        },
+        "poolFees": [
+            {
+                "name": "Protocol fee (Public Securities)",
+                "id": 1
+            },
+            {
+                "name": "Management fee",
+                "id": 2
+            }
+        ],
+        "reports": [
+            {
+                "author": {
+                    "avatar": null,
+                    "name": "Mark Hergenroeder",
+                    "title": "Facilitator of the Centrifuge Credit Group"
+                },
+                "uri": "https://gov.centrifuge.io/t/pop-anemoy-liquid-treasury-fund-1/5651/10"
+            }
+        ],
+        "investorType": "Non-US Professional Investors",
+        "poolStructure": "Revolving",
+        "poolRatings": [
+            {
+                "agency": "Moody's",
+                "value": "Aa-bf",
+                "reportUrl": "https://www.moodys.com/research/Moodys-Ratings-assigns-a-Aa-bf-Bond-Fund-rating-to-Anemoy-Assessment-Announcement--PR_495362",
+                "reportFile": {
+                    "uri": "ipfs://QmTXxiVMuBmYQtWQyJmj74m6XDzUsRNRhnMGo4HZMVyJUF",
+                    "mime": "application/pdf"
+                }
+            },
+            {
+                "agency": "Particula",
+                "value": "A+",
+                "reportUrl": "https://particula.io/particula-rating-report-anemoy-ltf-september-2024/",
+                "reportFile": {
+                    "uri": "ipfs://QmcXB2znzrJXLkqUuS69VS4KffyENSvpXTkhysvPtjvN9D",
+                    "mime": "application/pdf"
+                }
+            }
+        ]
+    },
+    "pod": {
+        "node": "https://pod-centrifuge.k-f.dev"
+    },
+    "tranches": {
+        "0x97aa65f23e7be09fcd62d0554d2e9273": {
+            "minInitialInvestment": "500000000000"
+        }
+    },
+    "onboarding": {
+        "tranches": {
+            "0x97aa65f23e7be09fcd62d0554d2e9273": {
+                "openForOnboarding": true
+            }
+        },
+        "kycRestrictedCountries": [
+            "us",
+            "um"
+        ],
+        "kybRestrictedCountries": [
+            "us"
+        ],
+        "externalOnboardingUrl": "https://www.anemoy.io/funds/ltf#get-access",
+        "podReadAccess": true,
+        "taxInfoRequired": true
+    },
+    "loanTemplates": [
+        {
+            "id": "QmZHBAAWrts9wjVcLH3ujvDPu1gBHKJa1EsMSQDoPVppwv",
+            "createdAt": "2023-11-09T11:54:04.327Z"
+        },
+        {
+            "id": "QmZHBAAWrts9wjVcLH3ujvDPu1gBHKJa1EsMSQDoPVppwv",
+            "createdAt": "2023-11-09T12:01:54.032Z"
+        },
+        {
+            "id": "QmYhNkqfyPzz9huxLLvoVuJJXM4GZBtSUU6JqgGRrLGR8P",
+            "createdAt": "2023-11-20T19:16:21.245Z"
+        },
+        {
+            "id": "QmV3osTVzd8Nr2SEmrMaxbAWNG1XwwxoHunayXzMziPPWT",
+            "createdAt": "2024-09-11T15:47:05.903Z"
+        }
+    ],
+    "adminMultisig": {
+        "signers": [
+            "0x8c2b234b97c2dd3d898b7db63fce77e1d23347ba4fdcee35b5983dabcbd0232c",
+            "0x9e72a7f9db14eb4ca2d509096b47fc435a3a937c8de146b91344014583494149",
+            "0xfc229e81a4f745589db0702fa3315274d1bec3b8f32a81df460fedb2bc76c373"
+        ],
+        "threshold": 2
+    }
+}
