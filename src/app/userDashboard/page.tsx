@@ -532,98 +532,38 @@ export default function Chart() {
     tooltipText: string;
     amount: number | string;
   }) => {
-    const [position, setPosition] = useState({ top: 0, left: 0 });
-    const [mounted, setMounted] = useState(false);
-    const tooltipRef = useRef<HTMLDivElement>(null);
+    // Only render when visible
+    if (!isVisible) return null;
 
-    // Handle mounting for SSR
-    useEffect(() => {
-      setMounted(true);
-      return () => setMounted(false);
-    }, []);
+    // Use absolute positioning relative to the parent container - this keeps it "sticky" to the card
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -5 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -5 }}
+          transition={{ duration: 0.2 }}
+          className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 max-w-[90vw] p-3 text-sm text-white bg-[#001E33] border border-[#034a70] shadow-2xl rounded-md pointer-events-none"
+          style={{ zIndex: 9999 }}
+        >
+          {/* Arrow pointer */}
+          <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#001E33] border-t border-l border-[#034a70] rotate-45" />
 
-    useEffect(() => {
-      if (isVisible && reference.current) {
-        const updatePosition = () => {
-          if (!reference.current) return;
-          const rect = reference.current.getBoundingClientRect();
-          const tooltipRect = tooltipRef?.current?.getBoundingClientRect();
-          const tooltipWidth = tooltipRect?.width || 256; // Default width if not yet rendered
+          {/* Title */}
+          <div className="font-medium mb-1 text-[#4BB6EE]">{name}</div>
 
-          // Calculate position to center tooltip below the icon
-          let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+          {/* Description */}
+          <div className="text-white text-xs leading-relaxed">
+            {tooltipText}
+          </div>
 
-          // Keep tooltip on screen - adjust if it would go off the edges
-          if (left < 12) {
-            left = 12;
-          } else if (left + tooltipWidth > window.innerWidth - 12) {
-            left = window.innerWidth - tooltipWidth - 12;
-          }
-
-          setPosition({
-            top: rect.bottom + window.scrollY + 10,
-            left: left
-          });
-        };
-
-        // Update position immediately and on resize/scroll
-        updatePosition();
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition);
-
-        return () => {
-          window.removeEventListener('resize', updatePosition);
-          window.removeEventListener('scroll', updatePosition);
-        };
-      }
-    }, [isVisible, reference]);
-
-    // Only render when mounted (client-side) and visible
-    if (!mounted || !isVisible) return null;
-
-    // Create the portal to render the tooltip directly in the body
-    return createPortal(
-      <motion.div
-        ref={tooltipRef}
-        initial={{ opacity: 0, scale: 0.95, y: -5 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -5 }}
-        transition={{ duration: 0.2 }}
-        className="fixed z-[9999] w-64 p-3 text-sm text-white bg-[#001E33] border border-[#034a70] shadow-xl rounded-md"
-        style={{
-          top: `${position.top}px`,
-          left: `${position.left}px`
-        }}
-      >
-        {/* Arrow pointer - positioned dynamically */}
-        <div
-          className="absolute top-0 w-3 h-3 bg-[#001E33] border-t border-l border-[#034a70] transform rotate-45"
-          style={{
-            left: `${reference.current ?
-              Math.max(12, Math.min(
-                reference.current.getBoundingClientRect().left + (reference.current.getBoundingClientRect().width / 2) - position.left - 6,
-                256 - 18
-              )) :
-              12}px`,
-            marginTop: '-1.5px'
-          }}
-        />
-
-        {/* Title */}
-        <div className="font-medium mb-1 text-[#4BB6EE]">{name}</div>
-
-        {/* Description */}
-        <div className="text-white text-xs leading-relaxed" >
-          {tooltipText}
-        </div>
-
-        {/* Current value */}
-        <div className="mt-2 pt-2 border-t border-[#034a70] flex justify-between items-center">
-          <span className="text-xs text-white/70">Current value:</span>
-          <span className="text-xs font-medium text-[#4BB6EE]">{amount}</span>
-        </div>
-      </motion.div>,
-      document.body
+          {/* Current value */}
+          <div className="mt-2 pt-2 border-t border-[#034a70] flex justify-between items-center">
+            <span className="text-xs text-white/70">Current value:</span>
+            <span className="text-xs font-medium text-[#4BB6EE]">{amount}</span>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     );
   };
 
@@ -662,7 +602,10 @@ export default function Chart() {
     const tooltipText = tooltip || defaultTooltips[name as keyof typeof defaultTooltips] || "Information about this statistic";
 
     return (
-      <div className="relative bg-[#012B3F] backdrop-blur-md border border-[#022e45]/60 rounded-xl shadow-[0_4px_16px_rgba(0,10,20,0.25)] p-5">
+      <div
+        className="relative bg-[#012B3F] backdrop-blur-md border border-[#022e45]/60 rounded-xl shadow-[0_4px_16px_rgba(0,10,20,0.25)] p-5"
+        style={{ zIndex: showTooltip ? 10 : 1 }}
+      >
         <div className="flex items-center justify-between">
           <div className="text-sm text-white/70 font-medium">{name}</div>
           <div

@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useEffect, type FC, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, type FC, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { useChainId } from "wagmi";
-import { SupportedChainId, TOKEN_FAUCET_ADDRESS } from "@/constant/addresses";
 import { useRouter } from "next/navigation";
-import { readContract } from '@wagmi/core';
 import { ErrorModal, SuccessModal } from "@/components/Modal";
 import { SOCIAL_LINKS } from "@/constant/social";
 import { Button } from "@/components/ui/button";
-import TokenFaucetABI from "@/abis/TokenFaucetABI.json"; // Create this ABI file based on the contract code
-import { wagmiConfig } from "@/wagmi";
 import FaucetButtons from "@/components/FaucetButtons";
 import { useMintTransactions, type MintableToken } from "@/hooks/useMintTransactions";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
@@ -184,17 +180,26 @@ const TokenFaucet: FC = () => {
   const {
     claimTokens,
     getAvailableTokens,
-    getClaimStatus,
-    canClaimToken: hookCanClaimToken,
-    getRemainingCooldown: hookGetRemainingCooldown,
-    loading: mintLoading,
-    error: mintError,
-    receipt,
-    setError: setMintError,
+    canClaimTokenSync,
+    getRemainingCooldownSync,
   } = useMintTransactions();
 
   // We'll load claim history in the main useEffect below
   // This separate useEffect is removed to prevent duplicate loading
+
+  // Convert TokenInfo to MintableToken for the hook
+  const convertToMintableToken = useCallback((token: TokenInfo): MintableToken => {
+    return {
+      id: token.id,
+      symbol: token.symbol || token.name,
+      name: token.name,
+      amount: token.amount,
+      contractAddress: "", // Will be determined by the hook based on symbol
+      tokenIndex: tokens.findIndex(t => t.id === token.id),
+      cooldownPeriod: "24h",
+      description: token.description,
+    };
+  }, []);
 
   // Save claim history to localStorage
   const updateClaimHistory = (tokenId: string): void => {
@@ -213,99 +218,34 @@ const TokenFaucet: FC = () => {
     }
   };
 
-  // Create a cache for token lookups to avoid repeated find() calls
-  const tokenCache = useMemo(() => {
-    const cache: Record<string, TokenInfo> = {};
-    tokens.forEach(token => {
-      cache[token.id] = token;
-    });
-    return cache;
-  }, []);
-
-  // Enhanced cooldown check with multiple validation layers
+  // Contract-based cooldown check using the hook
   const isOnCooldown = useCallback((tokenId: string): boolean => {
-    // Layer 1: Check localStorage claim history
-    const localStorageCheck = () => {
-      if (!claimHistory[tokenId]) return false;
-      const lastClaim = claimHistory[tokenId];
-      const token = tokenCache[tokenId];
-      if (!token) return false;
+    // Use the synchronous fallback for immediate UI updates
+    // The actual claim will be validated by the contract
+    const token = tokens.find(t => t.id === tokenId);
+    if (!token) return true; // Fail safe
 
-      // Enforce exactly 24 hours (86400000 ms) - no shortcuts
-      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-      return Date.now() < lastClaim + TWENTY_FOUR_HOURS_MS;
-    };
+    const mintableToken = convertToMintableToken(token);
+    return !canClaimTokenSync(mintableToken);
+  }, [convertToMintableToken, canClaimTokenSync]);
 
-    // Layer 2: Additional validation - check if timestamp is reasonable
-    const validateTimestamp = () => {
-      if (!claimHistory[tokenId]) return false;
-      const lastClaim = claimHistory[tokenId];
-      const now = Date.now();
-
-      // Prevent future timestamps (clock manipulation attempts)
-      if (lastClaim > now) {
-        console.warn(`Invalid future timestamp detected for ${tokenId}. Resetting claim history.`);
-        // Reset the invalid timestamp
-        const updatedHistory = { ...claimHistory };
-        delete updatedHistory[tokenId];
-        setClaimHistory(updatedHistory);
-        if (typeof window !== 'undefined' && userAddress) {
-          localStorage.setItem(`claim_history_${userAddress}`, JSON.stringify(updatedHistory));
-        }
-        return false;
-      }
-
-      // Prevent timestamps older than 30 days (data corruption protection)
-      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-      if (lastClaim < now - THIRTY_DAYS_MS) {
-        console.warn(`Very old timestamp detected for ${tokenId}. Allowing claim.`);
-        return false;
-      }
-
-      return true;
-    };
-
-    // Execute both validation layers
-    return validateTimestamp() && localStorageCheck();
-  }, [claimHistory, tokenCache, userAddress]); // Added userAddress dependency
-
-  // Enhanced cooldown remaining calculation with validation
+  // Contract-based cooldown remaining calculation using the hook
   const getCooldownRemaining = useCallback((tokenId: string): string | null => {
     // Check if we need to read the hidden refresh trigger to force updates
     document.getElementById('cooldown-refresh-trigger')?.dataset.timestamp;
 
-    // Early return if no claim history for this token
-    if (!claimHistory[tokenId]) return null;
-
-    const lastClaim = claimHistory[tokenId];
-    const now = Date.now();
-
-    // Validate timestamp integrity
-    if (lastClaim > now) {
-      console.warn(`Future timestamp detected in getCooldownRemaining for ${tokenId}`);
-      return null;
-    }
-
-    // Use cached token instead of find() for better performance
-    const token = tokenCache[tokenId];
+    const token = tokens.find(t => t.id === tokenId);
     if (!token) return null;
 
-    // Enforce exactly 24 hours - no shortcuts or manipulation
-    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-    const remaining = (lastClaim + TWENTY_FOUR_HOURS_MS) - now;
+    const mintableToken = convertToMintableToken(token);
+    const remainingMs = getRemainingCooldownSync(mintableToken);
 
-    if (remaining <= 0) return null;
-
-    // Additional security: Ensure remaining time doesn't exceed 24 hours
-    if (remaining > TWENTY_FOUR_HOURS_MS) {
-      console.warn(`Invalid remaining time calculated for ${tokenId}: ${remaining}ms`);
-      return null;
-    }
+    if (remainingMs <= 0) return null;
 
     // Format as HH:MM:SS with precise calculations
-    const hours = Math.floor(remaining / 3600000);
-    const minutes = Math.floor((remaining % 3600000) / 60000);
-    const seconds = Math.floor((remaining % 60000) / 1000);
+    const hours = Math.floor(remainingMs / 3600000);
+    const minutes = Math.floor((remainingMs % 3600000) / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
 
     // Ensure values are within expected ranges
     if (hours > 24 || minutes > 59 || seconds > 59) {
@@ -314,7 +254,7 @@ const TokenFaucet: FC = () => {
     }
 
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }, [claimHistory, tokenCache]);
+  }, [convertToMintableToken, getRemainingCooldownSync]);
 
   // Simulate claiming tokens
   // Add these to your state variables
@@ -327,34 +267,12 @@ const TokenFaucet: FC = () => {
   const [showFundingHelper, setShowFundingHelper] = useState(false);
 
 
-  // Convert TokenInfo to MintableToken for the hook
-  const convertToMintableToken = useCallback((tokenInfo: TokenInfo): MintableToken => ({
-    id: tokenInfo.id,
-    name: tokenInfo.name,
-    symbol: tokenInfo.symbol || tokenInfo.name,
-    amount: tokenInfo.amount,
-    contractAddress: "", // Will be determined by the hook based on symbol
-    tokenIndex: tokens.findIndex(t => t.id === tokenInfo.id),
-    cooldownPeriod: "24h",
-    description: tokenInfo.description,
-  }), []);
 
-  // Simplified token claiming function using the new hook
+
+  // Enhanced token claiming function using contract-based cooldown checks
   const handleClaimToken = async (tokenId: string): Promise<void> => {
     if (!userAddress) {
       router.push("/signup");
-      return;
-    }
-
-    // Client-side cooldown check
-    if (isOnCooldown(tokenId)) {
-      const remainingTime = getCooldownRemaining(tokenId);
-      setError({
-        title: "Cooldown Active",
-        message: remainingTime
-          ? `This token is on cooldown. Time remaining: ${remainingTime}`
-          : `This token is on cooldown. Please wait for the 24-hour period to complete.`
-      });
       return;
     }
 
@@ -374,10 +292,13 @@ const TokenFaucet: FC = () => {
 
     try {
       const mintableToken = convertToMintableToken(token);
+
+      // The claimTokens function now handles contract-based cooldown checks internally
+      // This ensures the 24-hour cooldown is strictly enforced by the smart contract
       const result = await claimTokens(mintableToken);
 
       if (result.success) {
-        // Update local claim history
+        // Update local claim history for immediate UI feedback
         updateClaimHistory(tokenId);
 
         setSuccess({
@@ -459,291 +380,23 @@ const TokenFaucet: FC = () => {
     setSuccess(null);
   }, []);
 
-  // Use refs to store the current claim history and checking status
-  const claimHistoryRef = useRef(claimHistory);
-  const isCheckingClaimTimesRef = useRef(false);
-
-  // Update the ref whenever the state changes
+  // Simple effect to refresh cooldown display every second
   useEffect(() => {
-    claimHistoryRef.current = claimHistory;
-  }, [claimHistory]);
-
-  const checkContractClaimTimes = useCallback(async () => {
-    // Prevent execution if no user address or contract address
-    if (!userAddress || !TOKEN_FAUCET_ADDRESS[chainId as SupportedChainId]) return;
-
-    // Use a ref to track if we're already checking claim times
-    // This prevents issues with concurrent calls
-    if (isCheckingClaimTimesRef.current) return;
-    isCheckingClaimTimesRef.current = true;
-
-    try {
-      const contractAddress = TOKEN_FAUCET_ADDRESS[chainId as SupportedChainId] as `0x${string}`;
-
-      // Use the enhanced getUserClaimStatus function for better efficiency
-      const claimStatus = await readContract(wagmiConfig, {
-        address: contractAddress,
-        abi: TokenFaucetABI,
-        functionName: "getUserClaimStatus",
-        args: [userAddress],
-      });
-
-      // Extract the claim status data
-      const [canClaim0, canClaim1, canClaim2, timeUntil0, timeUntil1, timeUntil2] = claimStatus as [boolean, boolean, boolean, bigint, bigint, bigint];
-
-      // Use the ref instead of the state directly to avoid dependency cycles
-      const currentHistory = { ...claimHistoryRef.current };
-      let updated = false;
-
-      // Update claim history based on contract data
-      // Order matches MultiTokenFaucet contract: token0=USDX, token1=ZrUSD, token2=ZFI
-      const tokenIds = ['usdx', 'zrusd', 'zfi'];
-      const canClaimArray = [canClaim0, canClaim1, canClaim2];
-      const timeUntilArray = [timeUntil0, timeUntil1, timeUntil2];
-
-      for (let i = 0; i < tokenIds.length; i++) {
-        const tokenId = tokenIds[i];
-        const canClaim = canClaimArray[i];
-        const timeUntil = Number(timeUntilArray[i]);
-
-        // If user cannot claim and there's time remaining, calculate last claim time
-        if (!canClaim && timeUntil > 0) {
-          const lastClaimTime = Date.now() - (24 * 60 * 60 * 1000 - timeUntil * 1000);
-
-          // Update if different from current history
-          if (!currentHistory[tokenId] || Math.abs(currentHistory[tokenId] - lastClaimTime) > 5000) {
-            currentHistory[tokenId] = lastClaimTime;
-            updated = true;
-          }
-        } else if (canClaim && currentHistory[tokenId]) {
-          // If user can claim but we have a claim history, check if cooldown has passed
-          const timeSinceLastClaim = Date.now() - currentHistory[tokenId];
-          if (timeSinceLastClaim < 24 * 60 * 60 * 1000) {
-            // Contract says can claim but our history says shouldn't be able to
-            // Trust the contract and clear the history
-            delete currentHistory[tokenId];
-            updated = true;
-          }
-        }
-      }
-
-      // Update state only if changes were made
-      if (updated) {
-        setClaimHistory(currentHistory);
-        // Save to localStorage as backup
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`claim_history_${userAddress}`, JSON.stringify(currentHistory));
-        }
-      }
-    } catch (err) {
-      console.error("Error reading claim status from contract:", err);
-
-      // Fallback to individual calls if getUserClaimStatus fails
-      try {
-        const currentHistory = { ...claimHistoryRef.current };
-        let updated = false;
-
-        for (let i = 0; i < tokens.length; i++) {
-          const token = tokens[i];
-          const tokenIndex = tokens.findIndex(t => t.id === token.id);
-
-          if (tokenIndex === -1) continue;
-
-          const result = await readContract(wagmiConfig, {
-            address: TOKEN_FAUCET_ADDRESS[chainId as SupportedChainId] as `0x${string}`,
-            abi: TokenFaucetABI,
-            functionName: "lastClaimTime",
-            args: [userAddress, tokenIndex],
-          });
-
-          if (result && Number(result) > 0) {
-            const contractTime = Number(result) * 1000;
-            if (!currentHistory[token.id] || currentHistory[token.id] !== contractTime) {
-              currentHistory[token.id] = contractTime;
-              updated = true;
-            }
-          }
-        }
-
-        if (updated) {
-          setClaimHistory(currentHistory);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(`claim_history_${userAddress}`, JSON.stringify(currentHistory));
-          }
-        }
-      } catch (fallbackErr) {
-        console.error("Fallback claim time check also failed:", fallbackErr);
-      }
-    } finally {
-      // Clear the flag when done
-      isCheckingClaimTimesRef.current = false;
-    }
-  }, [userAddress, chainId]); // Remove claimHistory dependency
-  // Refresh cooldown display every second
-  // Split the effect into two separate effects to reduce dependencies and re-renders
-
-  // First effect: Load data from localStorage and check contract once on mount or when userAddress changes
-  useEffect(() => {
-    // Create refs to track if the component is mounted
-    const isMounted = { current: true };
-    let timerId: NodeJS.Timeout | null = null;
-
-    // First try to load from localStorage for testing or fallback
-    const loadFromLocalStorage = () => {
-      if (typeof window !== 'undefined' && userAddress) {
-        const storedHistory = localStorage.getItem(`claim_history_${userAddress}`);
-        if (storedHistory) {
-          try {
-            // Only update state if component is still mounted
-            if (isMounted.current) {
-              setClaimHistory(JSON.parse(storedHistory));
-            }
-          } catch (error) {
-            console.error("Error parsing stored claim history:", error);
-            localStorage.removeItem(`claim_history_${userAddress}`);
-          }
-        }
+    const updateCooldownDisplay = () => {
+      const forceUpdateElement = document.getElementById('cooldown-refresh-trigger');
+      if (forceUpdateElement) {
+        forceUpdateElement.dataset.timestamp = Date.now().toString();
       }
     };
 
-    // Load initial data
-    loadFromLocalStorage();
-
-    // Then check contract for actual claim times if contract is deployed
-    // Use a timeout to prevent immediate execution which can cause render loops
-    if (userAddress) {
-      timerId = setTimeout(() => {
-        if (isMounted.current) {
-          checkContractClaimTimes();
-        }
-      }, 500);
-    }
-
-    // Cleanup function
-    return () => {
-      isMounted.current = false;
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [userAddress, checkContractClaimTimes]);
-
-  // Second effect: Set up the refresh interval for the cooldown display
-  // This is separated to avoid re-creating the interval on every userAddress change
-  useEffect(() => {
-    // Create a separate mounted ref for this effect
-    const isMounted = { current: true };
-
-    // Use requestAnimationFrame for smoother updates with less overhead
-    let animationFrameId: number | null = null;
-    let lastUpdateTime = 0;
-
-    const updateCooldownDisplay = (timestamp: number) => {
-      if (!isMounted.current) return;
-
-      // Only update every 1000ms (1 second) to reduce overhead
-      if (timestamp - lastUpdateTime >= 1000) {
-        const forceUpdateElement = document.getElementById('cooldown-refresh-trigger');
-        if (forceUpdateElement) {
-          forceUpdateElement.dataset.timestamp = Date.now().toString();
-        }
-        lastUpdateTime = timestamp;
-      }
-
-      // Schedule the next update
-      animationFrameId = requestAnimationFrame(updateCooldownDisplay);
-    };
-
-    // Start the animation frame loop
-    animationFrameId = requestAnimationFrame(updateCooldownDisplay);
-
-    // Cleanup function
-    return () => {
-      isMounted.current = false;
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, []); // Empty dependency array means this only runs once on mount
-
-  // Enhanced contract synchronization to prevent cooldown bypass attempts
-  useEffect(() => {
-    if (!userAddress || !chainId) return;
-
-    const syncWithContract = async () => {
-      try {
-        const contractAddress = TOKEN_FAUCET_ADDRESS[chainId as SupportedChainId] as `0x${string}`;
-
-        // Verify contract cooldown period is exactly 24 hours
-        const contractCooldown = await readContract(wagmiConfig, {
-          address: contractAddress,
-          abi: TokenFaucetABI,
-          functionName: "COOLDOWN_PERIOD",
-        });
-
-        const expectedCooldown = 24 * 60 * 60; // 24 hours in seconds
-        if (Number(contractCooldown) !== expectedCooldown) {
-          console.error(`SECURITY ALERT: Contract cooldown period is ${contractCooldown} seconds, expected ${expectedCooldown} seconds`);
-        }
-
-        // Check each token's last claim time from contract and sync with local storage
-        for (let i = 0; i < tokens.length; i++) {
-          const tokenId = tokens[i].id;
-
-          try {
-            const contractLastClaim = await readContract(wagmiConfig, {
-              address: contractAddress,
-              abi: TokenFaucetABI,
-              functionName: "lastClaimTime",
-              args: [userAddress, i],
-            });
-
-            const contractTime = Number(contractLastClaim) * 1000; // Convert to JS timestamp
-            const localTime = claimHistory[tokenId];
-
-            // If contract has a more recent claim time, update local storage
-            if (contractTime > 0 && (!localTime || Math.abs(contractTime - localTime) > 5000)) {
-              console.log(`Syncing ${tokenId} claim time from contract: ${new Date(contractTime).toISOString()}`);
-              setClaimHistory(prev => {
-                const updated = { ...prev, [tokenId]: contractTime };
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem(`claim_history_${userAddress}`, JSON.stringify(updated));
-                }
-                return updated;
-              });
-            }
-
-            // Additional security: Verify user cannot claim if they're in cooldown
-            if (contractTime > 0) {
-              const timeSinceLastClaim = Date.now() - contractTime;
-              const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-              if (timeSinceLastClaim < cooldownMs) {
-                const canClaimFromContract = await readContract(wagmiConfig, {
-                  address: contractAddress,
-                  abi: TokenFaucetABI,
-                  functionName: "canClaim",
-                  args: [userAddress, i],
-                });
-
-                if (canClaimFromContract) {
-                  console.warn(`SECURITY WARNING: Contract says user can claim ${tokenId} but should be in cooldown`);
-                }
-              }
-            }
-          } catch (tokenError) {
-            console.error(`Error syncing token ${tokenId}:`, tokenError);
-          }
-        }
-      } catch (error) {
-        console.error("Error syncing with contract:", error);
-      }
-    };
-
-    // Sync immediately and then every 60 seconds for security monitoring
-    syncWithContract();
-    const interval = setInterval(syncWithContract, 60000);
+    // Update immediately and then every second
+    updateCooldownDisplay();
+    const interval = setInterval(updateCooldownDisplay, 1000);
 
     return () => clearInterval(interval);
-  }, [userAddress, chainId, claimHistory]);
+  }, []);
+
+
 
   return (
     <div className="flex-1 text-white flex flex-col items-center justify-center py-12 min-h-screen bg-gradient-to-b from-[#001525] to-[#001A20]">

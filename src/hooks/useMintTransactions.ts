@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { useChainId, useWriteContract } from "wagmi";
+import { readContract } from "wagmi/actions";
+import { wagmiConfig } from "@/wagmi";
 import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
 import { ethers } from "ethers";
 import { useUserAccount } from "@/context/UserAccountContext";
@@ -360,11 +362,72 @@ export function useMintTransactions() {
     ]
   );
 
-  // Check if user can claim tokens (cooldown check)
+  // Check if user can claim tokens from contract (authoritative source)
   const canClaimToken = useCallback(
+    async (token: MintableToken): Promise<boolean> => {
+      if (!address || !chainId) {
+        return false;
+      }
+
+      try {
+        const contractAddress = getContractAddress();
+        if (!contractAddress || contractAddress === "0x0000000000000000000000000000000000000000") {
+          console.warn("Invalid contract address for cooldown check");
+          return false;
+        }
+
+        // Use the contract's canClaim function as the authoritative source
+        const canClaim = await readContract(wagmiConfig, {
+          address: contractAddress as `0x${string}`,
+          abi: TokenFaucetABI,
+          functionName: "canClaim",
+          args: [address as `0x${string}`, token.tokenIndex],
+        });
+
+        return Boolean(canClaim);
+      } catch (error) {
+        console.error(`Error checking claim status for ${token.symbol}:`, error);
+        return false; // Fail safe - don't allow claiming if we can't verify
+      }
+    },
+    [address, chainId, getContractAddress]
+  );
+
+  // Get remaining cooldown time from contract
+  const getRemainingCooldown = useCallback(
+    async (token: MintableToken): Promise<number> => {
+      if (!address || !chainId) {
+        return 0;
+      }
+
+      try {
+        const contractAddress = getContractAddress();
+        if (!contractAddress || contractAddress === "0x0000000000000000000000000000000000000000") {
+          return 0;
+        }
+
+        // Get time until next claim from contract
+        const timeUntilNextClaim = await readContract(wagmiConfig, {
+          address: contractAddress as `0x${string}`,
+          abi: TokenFaucetABI,
+          functionName: "timeUntilNextClaim",
+          args: [address as `0x${string}`, token.tokenIndex],
+        });
+
+        return Number(timeUntilNextClaim) * 1000; // Convert seconds to milliseconds
+      } catch (error) {
+        console.error(`Error getting cooldown time for ${token.symbol}:`, error);
+        return 0;
+      }
+    },
+    [address, chainId, getContractAddress]
+  );
+
+  // Synchronous fallback for immediate UI updates (uses cached localStorage)
+  const canClaimTokenSync = useCallback(
     (token: MintableToken): boolean => {
-      // This would typically check the last claim time from the contract
-      // For now, we'll implement a simple localStorage check
+      // This is a fallback for immediate UI updates
+      // The actual claim will still be validated by the contract
       const lastClaimKey = `lastClaim_${token.symbol}_${address}`;
       const lastClaimTime = localStorage.getItem(lastClaimKey);
 
@@ -380,8 +443,8 @@ export function useMintTransactions() {
     [address]
   );
 
-  // Get remaining cooldown time
-  const getRemainingCooldown = useCallback(
+  // Synchronous fallback for immediate UI updates (uses cached localStorage)
+  const getRemainingCooldownSync = useCallback(
     (token: MintableToken): number => {
       const lastClaimKey = `lastClaim_${token.symbol}_${address}`;
       const lastClaimTime = localStorage.getItem(lastClaimKey);
@@ -399,11 +462,13 @@ export function useMintTransactions() {
     [address]
   );
 
-  // Claim tokens with cooldown enforcement
+  // Claim tokens with strict contract-based cooldown enforcement
   const claimTokens = useCallback(
     async (token: MintableToken) => {
-      if (!canClaimToken(token)) {
-        const remainingTime = getRemainingCooldown(token);
+      // First check with contract (authoritative)
+      const canClaim = await canClaimToken(token);
+      if (!canClaim) {
+        const remainingTime = await getRemainingCooldown(token);
         const hours = Math.floor(remainingTime / (60 * 60 * 1000));
         const minutes = Math.floor((remainingTime % (60 * 60 * 1000)) / (60 * 1000));
         const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
@@ -418,7 +483,7 @@ export function useMintTransactions() {
       const result = await handleMintTransaction(token);
 
       if (result.success) {
-        // Update last claim time
+        // Update localStorage as cache for immediate UI feedback
         const lastClaimKey = `lastClaim_${token.symbol}_${address}`;
         localStorage.setItem(lastClaimKey, Date.now().toString());
       }
@@ -466,15 +531,26 @@ export function useMintTransactions() {
     ];
   }, [getContractAddress]);
 
-  // Check claim status for all tokens
-  const getClaimStatus = useCallback(() => {
+  // Check claim status for all tokens (async version)
+  const getClaimStatus = useCallback(async () => {
+    const tokens = getAvailableTokens();
+    const statusPromises = tokens.map(async (token) => ({
+      ...token,
+      canClaim: await canClaimToken(token),
+      remainingCooldown: await getRemainingCooldown(token),
+    }));
+    return Promise.all(statusPromises);
+  }, [getAvailableTokens, canClaimToken, getRemainingCooldown]);
+
+  // Synchronous version for immediate UI updates
+  const getClaimStatusSync = useCallback(() => {
     const tokens = getAvailableTokens();
     return tokens.map(token => ({
       ...token,
-      canClaim: canClaimToken(token),
-      remainingCooldown: getRemainingCooldown(token),
+      canClaim: canClaimTokenSync(token),
+      remainingCooldown: getRemainingCooldownSync(token),
     }));
-  }, [getAvailableTokens, canClaimToken, getRemainingCooldown]);
+  }, [getAvailableTokens, canClaimTokenSync, getRemainingCooldownSync]);
 
   return {
     // Transaction operations
@@ -483,8 +559,15 @@ export function useMintTransactions() {
     // Token information
     getAvailableTokens,
     getClaimStatus,
+    getClaimStatusSync,
+
+    // Contract-based cooldown checks (async - authoritative)
     canClaimToken,
     getRemainingCooldown,
+
+    // Sync fallbacks for immediate UI updates
+    canClaimTokenSync,
+    getRemainingCooldownSync,
 
     // Transaction state
     loading: transactionState.loading || isSendingUserOperation,

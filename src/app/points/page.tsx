@@ -2271,7 +2271,7 @@ const PointsAndQuests: FC = () => {
 </div>
 
           {/* Points & Leaderboard Tab Content */}
-          <TabsContent value="points" className="space-y-8">
+          <TabsContent value="points" className="space-y-6">
             {/* Points Sub-tabs */}
             <Tabs
               defaultValue="profile"
@@ -2279,34 +2279,40 @@ const PointsAndQuests: FC = () => {
               onValueChange={setPointsSubTab}
               className="w-full"
             >
-             <div className="relative mb-8">
-  {/* Subtle divider line */}
-  <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-px bg-[#003354]/30"></div>
+              {/* Sub-tabs Navigation */}
+              <div className="relative mb-8">
+                {/* Subtle background line */}
+                <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-px bg-[#002040]/30"></div>
 
-  <TabsList className="relative z-10 grid grid-cols-3 max-w-sm mx-auto rounded-lg overflow-hidden bg-[#00172D]/80 border border-[#003354]/40">
-    {[
-      { value: "profile", label: "My Profile", icon: User },
-      { value: "history", label: "Points History", icon: History },
-      { value: "leaderboard", label: "Leaderboard", icon: BarChart }
-    ].map(({ value, label, icon: Icon }) => (
-      <TabsTrigger
-        key={value}
-        value={value}
-        className="group px-3 py-2 text-xs font-medium relative transition-all duration-200
-                  data-[state=active]:bg-gradient-to-b data-[state=active]:from-[#0053C3]/30 data-[state=active]:to-[#0053C3]/10
-                  data-[state=active]:text-blue-300 data-[state=active]:shadow-[0_-2px_0_0_#0053C3_inset]"
-      >
-        <div className="flex items-center justify-center gap-1.5">
-          <Icon className="h-3 w-3 opacity-70 group-data-[state=active]:opacity-100" />
-          <span>{label}</span>
-        </div>
+                <TabsList className="relative z-10 grid grid-cols-4 max-w-2xl mx-auto rounded-full overflow-hidden bg-[#001525]/80 border border-[#003354]/40">
+                  {[
+                    { value: "profile", label: "My Profile", icon: User, shortLabel: "Profile" },
+                    { value: "redeem", label: "Redeem", icon: Gift, shortLabel: "Redeem" },
+                    { value: "history", label: "History", icon: History, shortLabel: "History" },
+                    { value: "leaderboard", label: "Leaderboard", icon: BarChart, shortLabel: "Board" }
+                  ].map(({ value, label, icon: Icon, shortLabel }) => (
+                    <TabsTrigger
+                      key={value}
+                      value={value}
+                      className="group relative px-2 py-2 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-sm font-medium"
+                    >
+                      <div className="flex items-center justify-center space-x-1.5">
+                        <Icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110" />
+                        <span className="hidden sm:inline transition-all duration-300">{label}</span>
+                        <span className="sm:hidden text-xs transition-all duration-300">{shortLabel}</span>
+                      </div>
 
-        {/* Subtle hover effect */}
-        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 group-data-[state=active]:bg-transparent transition-colors duration-200"></div>
-      </TabsTrigger>
-    ))}
-  </TabsList>
-</div>
+                      {/* Subtle hover effect for inactive tabs */}
+                      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 group-data-[state=active]:bg-transparent rounded-full transition-all duration-300"></div>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {/* Subtle animated glow under the active tab */}
+                <div className="absolute -bottom-1 left-0 right-0 flex justify-center pointer-events-none">
+                  <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-[#0060df]/60 to-transparent rounded-full"></div>
+                </div>
+              </div>
 
               {/* Points Profile Tab */}
               <TabsContent value="profile" className="space-y-6">
@@ -2435,6 +2441,59 @@ const PointsAndQuests: FC = () => {
                 )}
               </TabsContent>
 
+              {/* Redeem Points Tab */}
+              <TabsContent value="redeem" className="space-y-6">
+                {loading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                  </div>
+                ) : (
+                  <>
+                    {/* User Points Overview */}
+                    <div className="bg-[#001C29] rounded-xl overflow-hidden border border-[#003354]/40 p-5">
+                      <div className="flex flex-col md:flex-row items-center gap-5">
+                        <div className="flex-shrink-0">
+                          <TierIcon tier={userPoints?.tier || 'bronze'} />
+                        </div>
+                        <div className="flex-grow text-center md:text-left">
+                          <div className="text-lg font-medium">
+                            You have <span className="text-blue-400 font-bold">{userPoints?.total_points.toLocaleString() || 0}</span> points to redeem
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">
+                            Your tier: <span className={`text-${userPoints?.tier === 'bronze' ? 'amber' : userPoints?.tier === 'silver' ? 'slate' : userPoints?.tier === 'gold' ? 'yellow' : userPoints?.tier === 'platinum' ? 'cyan' : 'indigo'}-400`}>
+                              {userPoints?.tier ? userPoints.tier.charAt(0).toUpperCase() + userPoints.tier.slice(1) : 'Bronze'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Redemption Options */}
+                    <div className="space-y-5">
+                      <h3 className="text-lg font-medium">Available Rewards</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {redemptionOptions.length > 0 ? (
+                          redemptionOptions.map(option => (
+                            <RedemptionCard
+                              key={option.id}
+                              option={option}
+                              onRedeem={handleRedeemReward}
+                              isRedeeming={redeemingOption === option.id}
+                            />
+                          ))
+                        ) : (
+                          <div className="col-span-full bg-[#001C29] rounded-lg p-6 text-center text-gray-400">
+                            <div className="mb-2 flex justify-center">
+                              <Gift className="w-8 h-8 text-blue-400 opacity-60" />
+                            </div>
+                            <p>No redemption options available yet. Check back soon!</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </TabsContent>
               {/* Points History Tab */}
               <TabsContent value="history" className="space-y-6">
                 {loading ? (
@@ -2733,73 +2792,14 @@ const PointsAndQuests: FC = () => {
           <TabsContent value="rewards" className="space-y-8">
             {/* Rewards Sub-tabs */}
             <Tabs
-              defaultValue="redeem"
+              defaultValue="referral"
               value={redeemSubTab}
               onValueChange={setRedeemSubTab}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-2 max-w-xs mx-auto mb-6">
-                <TabsTrigger value="redeem" className="text-xs">
-                  Redeem Points
-                </TabsTrigger>
-                <TabsTrigger value="referral" className="text-xs">
-                  Referral Program
-                </TabsTrigger>
-              </TabsList>
+             
 
-              {/* Redeem Points Tab */}
-              <TabsContent value="redeem" className="space-y-6">
-                {loading ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                  </div>
-                ) : (
-                  <>
-                    {/* User Points Overview */}
-                    <div className="bg-[#001C29] rounded-xl overflow-hidden border border-[#003354]/40 p-5">
-                      <div className="flex flex-col md:flex-row items-center gap-5">
-                        <div className="flex-shrink-0">
-                          <TierIcon tier={userPoints?.tier || 'bronze'} />
-                        </div>
-                        <div className="flex-grow text-center md:text-left">
-                          <div className="text-lg font-medium">
-                            You have <span className="text-blue-400 font-bold">{userPoints?.total_points.toLocaleString() || 0}</span> points to redeem
-                          </div>
-                          <div className="text-sm text-gray-400 mt-1">
-                            Your tier: <span className={`text-${userPoints?.tier === 'bronze' ? 'amber' : userPoints?.tier === 'silver' ? 'slate' : userPoints?.tier === 'gold' ? 'yellow' : userPoints?.tier === 'platinum' ? 'cyan' : 'indigo'}-400`}>
-                              {userPoints?.tier ? userPoints.tier.charAt(0).toUpperCase() + userPoints.tier.slice(1) : 'Bronze'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Redemption Options */}
-                    <div className="space-y-5">
-                      <h3 className="text-lg font-medium">Available Rewards</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {redemptionOptions.length > 0 ? (
-                          redemptionOptions.map(option => (
-                            <RedemptionCard
-                              key={option.id}
-                              option={option}
-                              onRedeem={handleRedeemReward}
-                              isRedeeming={redeemingOption === option.id}
-                            />
-                          ))
-                        ) : (
-                          <div className="col-span-full bg-[#001C29] rounded-lg p-6 text-center text-gray-400">
-                            <div className="mb-2 flex justify-center">
-                              <Gift className="w-8 h-8 text-blue-400 opacity-60" />
-                            </div>
-                            <p>No redemption options available yet. Check back soon!</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </TabsContent>
+            
 
               {/* Referral Program Tab */}
               <TabsContent value="referral" className="space-y-6">

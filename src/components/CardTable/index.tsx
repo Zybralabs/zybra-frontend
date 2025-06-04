@@ -23,8 +23,22 @@ const CardTable: React.FC<CardTableProps> = ({ title, data, onPopup, isLoading =
           <PopupIcon />
         </i>
       </div>
-      <table className="w-full">
-        {hasData && (
+
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="py-8 flex justify-center items-center">
+          <LoadingSpinner />
+        </div>
+      ) : !hasData ? (
+        /* Empty State - positioned properly within the card */
+        <div className="py-8 text-center">
+          <div className="text-sm text-midGrey">
+            No assets purchased
+          </div>
+        </div>
+      ) : (
+        /* Table with data */
+        <table className="w-full">
           <thead>
             <tr className="text-midGrey text-sm capitalize">
               {Object.keys(data[0]).map((item, i) => (
@@ -34,26 +48,8 @@ const CardTable: React.FC<CardTableProps> = ({ title, data, onPopup, isLoading =
               ))}
             </tr>
           </thead>
-        )}
-        <tbody>
-          {isLoading ? (
-            <tr>
-              <td colSpan={hasData ? Object.keys(data[0]).length : 3} className="py-6 text-center">
-                <div className="flex justify-center items-center">
-                  <LoadingSpinner />
-                </div>
-              </td>
-            </tr>
-          ) : !hasData ? (
-            <tr>
-              <td colSpan={3} className="py-6 text-center">
-                <div className="text-sm text-midGrey">
-                  No assets purchased
-                </div>
-              </td>
-            </tr>
-          ) : (
-            data.map((row, j) => (
+          <tbody>
+            {data.map((row, j) => (
               <tr key={j}>
                 <td className="text-sm capitalize pb-4">
                   <div className="flex items-center gap-2">
@@ -71,10 +67,10 @@ const CardTable: React.FC<CardTableProps> = ({ title, data, onPopup, isLoading =
                   {row.change}
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
