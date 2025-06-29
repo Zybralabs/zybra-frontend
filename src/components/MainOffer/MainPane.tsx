@@ -19,10 +19,9 @@ import { OffersQuery } from "@/hooks/useSwarmQl";
 import { useSwarmVault } from "@/hooks/useSwarmVault";
 import keyFormatterSnakeToCamel from "../../../utils/snakeToCamel";
 import type { TradingPair } from "./types/trading";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { accountType } from "@/config";
 import { WalletType } from "@/constant/account/enum";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 
 export default function OfferInterface() {
   const chainId = useChainId();
@@ -37,12 +36,14 @@ export default function OfferInterface() {
     status: "all",
   });
 
-  // Account Kit integration
-  const { client } = useSmartAccountClient({ type: accountType });
-  const { sendUserOperationAsync, sendUserOperationResult } = useSendUserOperation({
+  // Use centralized smart account client with gas sponsorship
+  const {
     client,
-    waitForTxn: true,
-  });
+    isGasSponsored,
+    isClientReady,
+    sendUserOperationAsync,
+    sendUserOperationResult,
+  } = useSmartAccountClientSafe();
   const [allFilters, setAllFilters] = useState<{
     toSell: string[] | [];
     toBuy: string[] | [];

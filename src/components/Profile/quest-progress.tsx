@@ -30,6 +30,46 @@ export default function QuestProgress() {
     trackEarnedBadges 
   } = useUserAccount();
 
+  // Map badge ID to SVG image - EXACT MATCH with API badge IDs
+  const getBadgeImage = (badgeId: string) => {
+    const badgeImageMap: Record<string, string> = {
+      // Login and streak badges (exact API names from console)
+      'first_login': '/icons/testnetconnected.svg',
+      'daily_login': '/icons/testnetconnected.svg',
+      'streak_3_day': '/icons/3daystreaker.svg',
+      'streak_5_day': '/icons/5daysachiever.svg',
+      'streak_7_day': '/icons/7daysmaster.svg',
+      'testnet_connected': '/icons/testnetconnected.svg',
+
+      // Product usage badges (exact API names from console)
+      'testnet_staker': '/icons/testnetstaker.svg',
+      'testnet_lender': '/icons/testnetlender.svg',
+      'zrusd_minter': '/icons/ZrUSDMinter.svg',
+      'asset_swapper': '/icons/assetswapper.svg',
+      'power_user': '/icons/poweruser.svg',
+      'super_staker': '/icons/testnetstaker.svg',
+
+      // Achievement badges (exact API names from console)
+      'profile_complete': '/icons/profilecomplete.svg',
+      'completionist': '/icons/completionist.svg',
+      'test_pilot': '/icons/testpilot.svg',
+      'zy_og': '/icons/ZyOG.svg',
+
+      // Social engagement badges (exact API names from console)
+      'dazzle_up': '/icons/dazzleup.svg',
+      'zybra_promoter': '/icons/shareyouryield.svg',
+      'zybra_evangelist': '/icons/thread.svg',
+      'zybra_referrer': '/icons/referafriend.svg',
+      'community_participant': '/icons/AMA participation.svg',
+
+      // Special badges (exact API names from console)
+      'feature_explorer': '/icons/completemodules.svg',
+      'zybra_master': '/icons/ZyOG.svg',
+      'prize_entrant': '/icons/drawentry.svg'
+    };
+    return badgeImageMap[badgeId] || null;
+  };
+
   // Helper function to get badge category style
   const getCategoryStyle = (category: string) => {
     const styles: Record<string, string> = {
@@ -177,7 +217,15 @@ export default function QuestProgress() {
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center
                     ${badge.earned ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-md' : 'bg-[#002132] opacity-60'}
                   `}>
-                    <Trophy className="w-5 h-5 text-white" />
+                    {getBadgeImage(badge.id) ? (
+                      <img
+                        src={getBadgeImage(badge.id)!}
+                        alt={badge.title}
+                        className="w-10 h-10"
+                      />
+                    ) : (
+                      <Trophy className="w-5 h-5 text-white" />
+                    )}
                   </div>
                   
                   <div className="flex-1">

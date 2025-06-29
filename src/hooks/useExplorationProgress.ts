@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUserAccount } from '@/context/UserAccountContext';
+import { useTransactionContext } from '@/context/TransactionContext';
 import { useAccount } from 'wagmi';
 import { usePathname } from 'next/navigation';
 
@@ -32,10 +33,12 @@ export const useExplorationProgress = () => {
   const {
     user,
     zrusdBorrowed,
-    getTransactions,
     getUserAssetsAndPoolsHoldings,
     trackFeatureUsage
   } = useUserAccount();
+
+  // Use shared transaction context instead of direct API calls
+  const { transactions: transactionsFromContext } = useTransactionContext();
 
   // State for tracking completed steps
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -195,14 +198,16 @@ export const useExplorationProgress = () => {
 
       setIsLoading(true);
       try {
-        // Load transactions
-        const txResponse = await getTransactions();
-        if (txResponse?.payload && Array.isArray(txResponse.payload)) {
-          setTransactions(txResponse.payload);
-        } else {
-          // Set empty array if no valid payload
-          setTransactions([]);
-        }
+        // Use transactions from context instead of direct API call
+        console.log("Using transactions from context for exploration progress");
+        const mappedTransactions = (transactionsFromContext || []).map(tx => ({
+          id: tx.tx_hash || `tx-${Date.now()}`,
+          type: tx.type || 'unknown',
+          asset: tx.metadata?.assetSymbol,
+          amount: tx.amount,
+          status: tx.status
+        }));
+        setTransactions(mappedTransactions);
 
         // Load holdings
         const holdingsResponse = await getUserAssetsAndPoolsHoldings();
@@ -227,7 +232,7 @@ export const useExplorationProgress = () => {
     };
 
     loadUserData();
-  }, [address, getTransactions, getUserAssetsAndPoolsHoldings]);
+  }, [address, transactionsFromContext, getUserAssetsAndPoolsHoldings]);
 
   // Check completion status of steps
   useEffect(() => {

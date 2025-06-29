@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowLeftRightIcon, BarChart2, FileText, User2, Activity, HandHelping, Menu, X, ChevronDown, LayoutDashboard, ArrowLeft, TrendingUp, Droplets, ShoppingCart } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { WalletModal } from "../Modal";
 import { useUserAccount } from "@/context/UserAccountContext";
@@ -101,13 +101,13 @@ const navigation = [
     submenu: [
       {
         title: "Stocks",
-        href: "/swap",
+        href: "/swap?tab=stock&subTab=deposit",
         description: "Trade stocks and equity markets",
         icon: TrendingUp,
       },
       {
         title: "Pools",
-        href: "/swap?tab=pool",
+        href: "/swap?tab=pool&subTab=deposit",
         description: "Investment pools and liquidity provision",
         icon: Droplets,
       },
@@ -145,6 +145,7 @@ export function AppHeader({ ...props }: React.HTMLAttributes<HTMLElement>) {
   const { user, address, zfi_balance, balanceLoading, walletType, loading, token } = useUserAccount();
   const { push } = useRouter();
   const pathName = usePathname();
+  const searchParams = useSearchParams();
 
   // Check if user is authenticated - need both user data and address
   const isAuthenticated = !!user && !!address && !!token;
@@ -152,6 +153,23 @@ export function AppHeader({ ...props }: React.HTMLAttributes<HTMLElement>) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 0);
   const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null);
+
+  // Auto-open submenu when on a submenu page
+  React.useEffect(() => {
+    // Check if we're on a page that should have an open submenu
+    if (pathName.includes('/swap') || pathName === '/stake' || pathName === '/lending') {
+      if (pathName.includes('/swap')) {
+        setOpenSubmenu('Swap');
+      } else if (pathName === '/stake') {
+        setOpenSubmenu('Earn');
+      } else if (pathName === '/lending') {
+        setOpenSubmenu('Earn');
+      }
+    } else {
+      // Close submenu when navigating away from submenu pages
+      setOpenSubmenu(null);
+    }
+  }, [pathName, searchParams]);
 
 
 
@@ -246,7 +264,27 @@ export function AppHeader({ ...props }: React.HTMLAttributes<HTMLElement>) {
 // For items with submenu
 if (item.hasSubmenu && item.submenu) {
   const isSubmenuOpen = openSubmenu === item.title;
-  const isActive = item.submenu.some(subItem => pathName === subItem.href);
+  // Enhanced active state detection for submenu items
+  const isActive = item.submenu.some(subItem => {
+    // Direct path match
+    if (pathName === subItem.href) return true;
+
+    // For swap routes, check if current path starts with /swap and matches the expected tab
+    if (subItem.href.includes('/swap')) {
+      const currentTab = searchParams?.get('tab');
+
+      // Default stocks page (no tab parameter or tab=stock)
+      if (subItem.href === '/swap' && (pathName === '/swap' && (!currentTab || currentTab === 'stock'))) return true;
+
+      // Pool tab
+      if (subItem.href.includes('tab=pool') && pathName.includes('/swap') && currentTab === 'pool') return true;
+
+      // Buy tab
+      if (subItem.href.includes('tab=buy') && pathName.includes('/swap') && currentTab === 'buy') return true;
+    }
+
+    return false;
+  });
 
   return (
     <div key={item.title} className="relative h-full submenu-container group">
@@ -295,7 +333,27 @@ if (item.hasSubmenu && item.submenu) {
           }}
         >
           {item.submenu.map(subItem => {
-            const isSubItemActive = pathName === subItem.href;
+            // Enhanced submenu item active state detection
+            const isSubItemActive = (() => {
+              // Direct path match
+              if (pathName === subItem.href) return true;
+
+              // For swap routes, check if current path starts with /swap and matches the expected tab
+              if (subItem.href.includes('/swap')) {
+                const currentTab = searchParams?.get('tab');
+
+                // Default stocks page (no tab parameter or tab=stock)
+                if (subItem.href === '/swap' && pathName === '/swap' && (!currentTab || currentTab === 'stock')) return true;
+
+                // Pool tab
+                if (subItem.href.includes('tab=pool') && pathName.includes('/swap') && currentTab === 'pool') return true;
+
+                // Buy tab
+                if (subItem.href.includes('tab=buy') && pathName.includes('/swap') && currentTab === 'buy') return true;
+              }
+
+              return false;
+            })();
             const SubIcon = subItem.icon;
 
             return (
@@ -495,7 +553,7 @@ if (item.hasSubmenu && item.submenu) {
 
       {/* Mobile Menu - Improved for all screen sizes */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[9999] bg-darkGrassGreen/95 backdrop-blur-sm md:hidden" style={{ overflowY: 'auto' }}>
+        <div className="mobile-menu fixed inset-0 z-[9999] bg-darkGrassGreen/95 backdrop-blur-sm md:hidden" style={{ overflowY: 'auto' }}>
           <div className="flex flex-col h-full">
             {/* Header with back button */}
             <div className="flex items-center justify-between px-4 h-[68px] border-b border-white/10">
@@ -517,13 +575,33 @@ if (item.hasSubmenu && item.submenu) {
               </div>
             )}
 
-            <div className="flex flex-col flex-1 overflow-y-auto">
-              <nav className="flex-1 px-4 pt-4 pb-4 space-y-2">
+            <div className="flex flex-col flex-1 overflow-y-auto mobile-menu-safe-area">
+              <nav className="flex-1 px-4 pt-6 pb-4 space-y-3">
                 {navigation.map((item) => {
                   // For items with submenu
                   if (item.hasSubmenu && item.submenu) {
                     const isSubmenuOpen = openSubmenu === item.title;
-                    const isActive = item.submenu.some(subItem => pathName === subItem.href);
+                    // Enhanced active state detection for submenu items (mobile)
+                    const isActive = item.submenu.some(subItem => {
+                      // Direct path match
+                      if (pathName === subItem.href) return true;
+
+                      // For swap routes, check if current path starts with /swap and matches the expected tab
+                      if (subItem.href.includes('/swap')) {
+                        const currentTab = searchParams?.get('tab');
+
+                        // Default stocks page (no tab parameter or tab=stock)
+                        if (subItem.href === '/swap' && pathName === '/swap' && (!currentTab || currentTab === 'stock')) return true;
+
+                        // Pool tab
+                        if (subItem.href.includes('tab=pool') && pathName.includes('/swap') && currentTab === 'pool') return true;
+
+                        // Buy tab
+                        if (subItem.href.includes('tab=buy') && pathName.includes('/swap') && currentTab === 'buy') return true;
+                      }
+
+                      return false;
+                    });
 
                     return (
                       <div key={item.title} className="space-y-1 submenu-container">
@@ -548,7 +626,27 @@ if (item.hasSubmenu && item.submenu) {
                         {isSubmenuOpen && (
                           <div className="space-y-1 mt-2 animate-fadeInSubmenu">
                             {item.submenu.map(subItem => {
-                              const isSubItemActive = pathName === subItem.href;
+                              // Enhanced submenu item active state detection (mobile)
+                              const isSubItemActive = (() => {
+                                // Direct path match
+                                if (pathName === subItem.href) return true;
+
+                                // For swap routes, check if current path starts with /swap and matches the expected tab
+                                if (subItem.href.includes('/swap')) {
+                                  const currentTab = searchParams?.get('tab');
+
+                                  // Default stocks page (no tab parameter or tab=stock)
+                                  if (subItem.href === '/swap' && pathName === '/swap' && (!currentTab || currentTab === 'stock')) return true;
+
+                                  // Pool tab
+                                  if (subItem.href.includes('tab=pool') && pathName.includes('/swap') && currentTab === 'pool') return true;
+
+                                  // Buy tab
+                                  if (subItem.href.includes('tab=buy') && pathName.includes('/swap') && currentTab === 'buy') return true;
+                                }
+
+                                return false;
+                              })();
                               const SubIcon = subItem.icon;
                               return (
                                 <Link
@@ -596,7 +694,7 @@ if (item.hasSubmenu && item.submenu) {
               </nav>
 
               {/* Mobile Footer with User Info */}
-              <div className="p-4 mt-auto border-t border-white/10">
+              <div className="p-4 mt-auto border-t border-white/10 pt-6">
                 {isAuthenticated ? (
                   <div className="space-y-4">
                     {/* User Profile Section */}

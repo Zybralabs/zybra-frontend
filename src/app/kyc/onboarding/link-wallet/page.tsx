@@ -18,46 +18,8 @@ interface Network {
   chainId: number;
 }
 
-const Button = ({
-  children,
-  onClick,
-  className = "",
-  disabled = false,
-  variant = "default",
-}: any) => {
-  const baseStyle =
-    "px-4 py-4 rounded font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4BB6EE]";
-  const variantStyles = {
-    default: "bg-darkGreen text-white hover:bg-[#013853]",
-    outline: "border border-gray-300 hover:bg-gray-50",
-    ghost: "hover:bg-gray-100",
-  };
-  return (
-    <button
-      className={`${baseStyle} ${variantStyles[variant as keyof typeof variantStyles]} ${className}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, className = "" }: any) => (
-  <div className={`rounded-lg ${className}`}>{children}</div>
-);
-
-const CardHeader = ({ children, className = "" }: any) => (
-  <div className={`px-0 py-4 border-b border-gray-700 ${className}`}>{children}</div>
-);
-
-const CardContent = ({ children, className = "" }: any) => (
-  <div className={`px-0 py-4 ${className}`}>{children}</div>
-);
-
-const CardTitle = ({ children, className = "" }: any) => (
-  <h2 className={`text-3xl font-semibold ${className}`}>{children}</h2>
-);
+// Import the properly typed components
+import { Button, Card, CardHeader, CardContent, CardTitle } from "@/components/Kyc/Card";
 
 export default function WalletConnect() {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -114,8 +76,8 @@ export default function WalletConnect() {
           method: "wallet_switchEthereumChain",
           params: [{ chainId: `0x${network.chainId.toString(16)}` }],
         });
-      } catch (switchError: any) {
-        if (switchError.code === 4902) {
+      } catch (switchError: unknown) {
+        if ((switchError as any).code === 4902) {
           throw new Error(`Please add the ${network.name} network to your wallet`);
         }
         throw switchError;
@@ -127,8 +89,8 @@ export default function WalletConnect() {
 
       setCurrentStep("investor-type");
       router.push("/kyc/onboarding/investor-type");
-    } catch (error: any) {
-      console.error("Connection Failed:", error.message || "Failed to connect wallet");
+    } catch (error: unknown) {
+      console.error("Connection Failed:", (error as Error).message || "Failed to connect wallet");
     } finally {
       setIsConnecting(false);
     }

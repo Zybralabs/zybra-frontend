@@ -1191,11 +1191,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       <SuccessModal
         isOpen={success != null && success.txHash != null}
         onClose={() => setSuccess(null)}
-        title="Success"
-        message={
-          success?.message || "Transaction Successfull"
-        }
-        txHash={approvalReceipt || receipt}
+        title={success?.title || "Success"}
+        message={success?.message || "Transaction Successful"}
+        txHash={success?.txHash}
         chainId={chainId}
       />
     </div>

@@ -49,33 +49,33 @@ export default function TVLDashboardPage() {
   }, [refetchMetrics, refetchBreakdown, metricsLoading, breakdownLoading]);
 
   return (
-    <div className="flex flex-col container justify-center overflow-x-hidden mt-6">
-      <div className="w-full">
+    <div className="flex flex-col container justify-center overflow-x-hidden mt-6 px-2 sm:px-4">
+      <div className="w-full max-w-full">
         <DashboardUserHeader />
 
         <div className="mt-6 mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">TVL Dashboard</h1>
-              <p className="text-gray-400 mt-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-white">TVL Dashboard</h1>
+              <p className="text-sm sm:text-base text-gray-400 mt-1">
                 Monitor the Total Value Locked across the Zybra Finance ecosystem
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => refreshAllData()}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                 disabled={metricsLoading || breakdownLoading}
               >
                 <RefreshCw className={`h-4 w-4 ${(metricsLoading || breakdownLoading) ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
+                <span className="hidden sm:inline">Refresh</span>
               </button>
               <button
                 onClick={() => setShowDebugInfo(!showDebugInfo)}
-                className={`flex items-center gap-1 px-3 py-1.5 ${showDebugInfo ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded-lg transition-colors`}
+                className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 ${showDebugInfo ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded-lg transition-colors text-sm`}
               >
                 <Bug className="h-4 w-4" />
-                <span>Debug</span>
+                <span className="hidden sm:inline">Debug</span>
               </button>
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function TVLDashboardPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 overflow-x-hidden">
           {/* TVL Overview Card */}
           <TVLOverviewCard
             data={tvlMetrics}
@@ -109,7 +109,7 @@ export default function TVLDashboardPage() {
           />
 
           {/* Top Assets and Pools */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <TVLTopAssetsCard
               data={tvlBreakdown}
               loading={breakdownLoading}

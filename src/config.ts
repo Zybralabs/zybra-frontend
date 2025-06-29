@@ -11,6 +11,7 @@ import baseLogo from "@centrifuge/fabric/assets/logos/base.svg";
 import ethereumLogo from "@centrifuge/fabric/assets/logos/ethereum.svg";
 import { SupportedChainId } from "./constant/addresses";
 import type { Chain } from "viem";
+import { ENV_CONFIG } from "./utils/env";
 
 type EnvironmentConfig = {
   name: string;
@@ -213,39 +214,62 @@ export function getAlchemyRpcUrl(chain: SupportedChainId): string {
 }
 
 export function getGasManagerPolicyId(chainId: number): string | undefined {
-
+  switch (chainId) {
+    case baseSepolia.id: // Base Sepolia (84532)
       return process.env.NEXT_PUBLIC_ALCHEMY_GAS_MANAGER_POLICY_ID;
-  
+    case sepolia.id: // Ethereum Sepolia (11155111)
+      return process.env.NEXT_PUBLIC_ALCHEMY_GAS_MANAGER_POLICY_ID;
+    case arbitrumSepolia.id: // Arbitrum Sepolia (421614)
+      return process.env.NEXT_PUBLIC_ARBITRUM_GAS_MANAGER_POLICY_ID;
+    case polygon.id: // Polygon Mainnet (137)
+      return process.env.NEXT_PUBLIC_POLYGON_GAS_MANAGER_POLICY_ID;
+    case mainnet.id: // Ethereum Mainnet (1)
+      return process.env.NEXT_PUBLIC_MAINNET_GAS_MANAGER_POLICY_ID;
+    // Legacy support for your existing chain IDs
+    case SupportedChainId.Testnet: // Base Sepolia
+      return process.env.NEXT_PUBLIC_ALCHEMY_GAS_MANAGER_POLICY_ID;
+    case SupportedChainId.Mainnet: // Ethereum Sepolia
+      return process.env.NEXT_PUBLIC_SEPOLIA_GAS_MANAGER_POLICY_ID;
+    case SupportedChainId.Polygon_Mainnet: // Polygon
+      return process.env.NEXT_PUBLIC_POLYGON_GAS_MANAGER_POLICY_ID;
+    default:
+      console.warn(`No gas manager policy configured for chain ID: ${chainId}`);
+      return undefined;
+  }
 }
 // [!region create-accounts-config]
 // NOTE: feel free to change the chain here!
 
 
 export const alchemy_config = createConfig({
-  // Global transport for all chains
-  transport: alchemy({ 
-    apiKey: "1dUe6zHAjXocqykmyQks8EmNvFiPJ0p3" 
+  // Global transport for all chains - use environment variable
+  transport: alchemy({
+    apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "1dUe6zHAjXocqykmyQks8EmNvFiPJ0p3"
   }),
   // Default chain
   chain: baseSepolia,
-  // Chain specific configurations
+  // Chain specific configurations with gas manager policies
   chains: [
-    // {
-    //   chain: arbitrumSepolia,
-    //   policyId: process.env.NEXT_PUBLIC_ARBITRUM_GAS_MANAGER_POLICY_ID || undefined,
-    // },
+    {
+      chain: arbitrumSepolia,
+      policyId: process.env.NEXT_PUBLIC_ARBITRUM_GAS_MANAGER_POLICY_ID || undefined,
+    },
     {
       chain: baseSepolia,
       policyId: process.env.NEXT_PUBLIC_BASE_GAS_MANAGER_POLICY_ID || undefined,
     },
-    // {
-    //   chain: polygon,
-    //   policyId: process.env.NEXT_PUBLIC_SEPOLIA_GAS_MANAGER_POLICY_ID || undefined,
-    // },
-    // {
-    //   chain: mainnet,
-    //   policyId: process.env.NEXT_PUBLIC_SEPOLIA_GAS_MANAGER_POLICY_ID || undefined,
-    // }
+    {
+      chain: sepolia,
+      policyId: process.env.NEXT_PUBLIC_SEPOLIA_GAS_MANAGER_POLICY_ID || undefined,
+    },
+    {
+      chain: polygon,
+      policyId: process.env.NEXT_PUBLIC_POLYGON_GAS_MANAGER_POLICY_ID || undefined,
+    },
+    {
+      chain: mainnet,
+      policyId: process.env.NEXT_PUBLIC_MAINNET_GAS_MANAGER_POLICY_ID || undefined,
+    }
   ],
   // Signer connection config
   signerConnection: {
@@ -270,5 +294,6 @@ export const accountType: SupportedAccountTypes = "LightAccount";
 type SmartAccountClientOptions = z.infer<typeof SmartAccountClientOptsSchema>;
 export const accountClientOptions: Partial<SmartAccountClientOptions> = {
   txMaxRetries: 20,
+  
 };
 // [!endregion other-config-vars]

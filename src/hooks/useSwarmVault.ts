@@ -1,9 +1,9 @@
 import { useMemo, useCallback, useState } from "react";
 import { useDotVc2, useSwarmVaultContract } from "./useContract";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
 import { Contract, ethers } from "ethers";
 import { WalletType } from "@/constant/account/enum";
 import { useUserAccount } from "@/context/UserAccountContext";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 import { useSingleCallResult, useSingleContractMultipleData } from "@/lib/hooks/multicall";
 import SwarmVaultBaseABI from "../abis/SwarmZybraVault.json";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -173,7 +173,7 @@ function getTransactionParams(methodName: string, args: any[]) {
 }
 
 /**
- * Gets borrowed ZRUSD amount based on method name and parameters
+ * Gets borrowed ZrUSD amount based on method name and parameters
  */
 function getZRUSDBorrowed(methodName: string, params: any) {
   switch (methodName) {
@@ -234,18 +234,17 @@ export function useSwarmVault(chainId: number) {
     confirmations: 2,
   });
 
-  // ====== ACCOUNT KIT HOOKS ======
-  const { client } = useSmartAccountClient({
-    type: accountType,
-    opts,
-  });
-
+  // ====== ACCOUNT KIT HOOKS WITH REAL GAS SPONSORSHIP ======
   const {
-    sendUserOperationAsync,
+    client,
+    isGasSponsored,
+    isClientReady,
+    executeTransaction,
+    executeSponsoredTransaction,
     sendUserOperationResult,
     isSendingUserOperation,
-    error: sendUserOperationError,
-  } = useSendUserOperation({ client: undefined, waitForTxn: true });
+    sendUserOperationError,
+  } = useSmartAccountClientSafe();
 
   // ====== CONSOLIDATED ERROR AND LOADING STATE ======
   const isLoading = transactionState.loading || isPending || isSendingUserOperation;
@@ -274,9 +273,9 @@ export function useSwarmVault(chainId: number) {
       
       // Extract parameters and prepare transaction data
       const params = getTransactionParams(methodName, args);
-      const contractArgs = args.slice(0, -1); // Remove symbol from args
-      const assetSymbol = args[args.length - 1]; // Last arg is asset symbol
-      
+      const contractArgs = methodName === "deposit" ? args.slice(0, -2) : args.slice(0, -1); // Remove symbol from args
+      const assetSymbol = methodName === "deposit" ? args[args.length - 2] :  args[args.length - 1] ; // Last arg is asset symbol
+      console.log({ contractArgs });
       // Prepare transaction data
       const transactionData: TransactionData = {
         type: "stock",
@@ -308,53 +307,105 @@ export function useSwarmVault(chainId: number) {
           
           txHash = tx;
         } 
-        // MINIMAL WALLET (ACCOUNT ABSTRACTION) TRANSACTION FLOW
+        // MINIMAL WALLET (ACCOUNT ABSTRACTION) TRANSACTION FLOW WITH REAL GAS SPONSORSHIP
         else if (walletType === WalletType.MINIMAL) {
+          // Check if client is ready first
+          if (!isClientReady) {
+            throw new Error("Smart account client is not ready. Please ensure your wallet is connected and try again.");
+          }
+
+          if (!executeTransaction) {
+            throw new Error("Enhanced transaction execution not available");
+          }
+
           if (!swarmVaultContract.interface) {
             throw new Error("Contract interface not available");
           }
-          
-          const data = swarmVaultContract.interface.encodeFunctionData(
-            methodName, contractArgs
-          ) as `0x${string}`;
-          
-          const target = (await swarmVaultContract.getAddress()) as `0x${string}`;
+
+          //@ts-ignore
+          const target = (await swarmVaultContract?.address) as `0x${string}`;
           const value = overrides.value ? BigInt(overrides.value) : 0n;
 
-          const userOp = await sendUserOperationAsync({
-            uo: { target, data, value },
-          });
-          
-          if (sendUserOperationResult && userOp.hash) {
-            txHash = sendUserOperationResult.hash;
+          // Create real transaction data for gas sponsorship
+          const realTransactionData = {
+            target,
+            data: swarmVaultContract.interface.encodeFunctionData(
+              methodName, contractArgs
+            ) as `0x${string}`,
+            value,
+            abi: SwarmVaultBaseABI,
+            functionName: methodName,
+            args: contractArgs,
+          };
+
+          // Execute with real gas sponsorship
+          let userOp;
+          if (isGasSponsored) {
+            try {
+              console.log("Attempting real gas sponsorship for SwarmVault transaction...");
+              userOp = await executeSponsoredTransaction(realTransactionData, {
+                waitForTxn: true
+              });
+            } catch (sponsorError) {
+              console.warn("Real gas sponsorship failed for SwarmVault, falling back:", sponsorError);
+              userOp = await executeTransaction(realTransactionData, {
+                waitForTxn: true
+              });
+            }
+          } else {
+            userOp = await executeTransaction(realTransactionData, {
+              waitForTxn: true
+            });
+          }
+
+          console.log("SwarmVault transaction result:", userOp);
+
+          // Extract transaction hash from various possible result formats
+          if (userOp) {
+            if (typeof userOp === 'string') {
+              txHash = userOp;
+            } else if (userOp.hash) {
+              txHash = userOp.hash;
+            } else if (typeof userOp === 'object' && 'transactionHash' in userOp && userOp.transactionHash) {
+              txHash = userOp.transactionHash as string;
+            } else if (sendUserOperationResult?.hash) {
+              txHash = sendUserOperationResult.hash;
+            }
           }
         }
 
         // If transaction was successful, process it
         if (txHash) {
+          console.log("Transaction successful with hash:", txHash);
+
           // Update transaction data with success info and add to history
           const updatedTransactionData = {
             ...transactionData,
             tx_hash: txHash,
             ZRUSD_borrowed: getZRUSDBorrowed(methodName, params),
           };
-          
+
           await addTransaction(updatedTransactionData);
-          
-          // Update transaction state
-          setTransactionState(prev => ({ 
-            ...prev, 
-            loading: false, 
-            receipt: txHash 
+
+          // Update transaction state with success
+          setTransactionState(prev => ({
+            ...prev,
+            loading: false,
+            receipt: txHash,
+            error: null
           }));
-          
+
           // Process post-transaction actions
           await handlePostTransaction(
-            methodName, 
-            args, 
-            assetSymbol, 
+            methodName,
+            args,
+            assetSymbol,
             txHash
           );
+
+          return txHash; // Return the transaction hash for success handling
+        } else {
+          throw new Error("Transaction was submitted but no hash was returned");
         }
       } catch (err) {
         console.error(`Error in ${methodName}:`, err);
@@ -366,13 +417,17 @@ export function useSwarmVault(chainId: number) {
       }
     },
     [
-      chainId, 
-      walletType, 
-      swarmVaultContract, 
-      writeContractAsync, 
-      sendUserOperationAsync, 
-      sendUserOperationResult, 
-      addTransaction
+      chainId,
+      walletType,
+      swarmVaultContract,
+      writeContractAsync,
+      executeTransaction,
+      sendUserOperationResult,
+      addTransaction,
+      isClientReady,
+      executeTransaction,
+      executeSponsoredTransaction,
+      isGasSponsored,
     ],
   );
 
@@ -389,7 +444,7 @@ export function useSwarmVault(chainId: number) {
       if (methodName === "deposit" || (methodName === "withdraw" && args.length < 3)) {
         const offerId = await dotVc2Contract?.currentOfferId();
         if (!offerId) return;
-        
+        console.log({offerId});
         // Extract parameters based on method type
         let sellAmount, sellCurrency, buyAmount, buyCurrency, 
             depositAssetAddress, withdrawalAssetAddress, offerParams;
@@ -551,6 +606,7 @@ export function useSwarmVault(chainId: number) {
       depositzrusdDebt: number,
       withdrawalAmount?: number,
       withdrawalSymbol?: string,
+      depositSymbol?: string,
       minPrice?: number,
       maxPrice?: number,
       offerParams?: {
@@ -591,6 +647,7 @@ export function useSwarmVault(chainId: number) {
         offer || {},
         toWei(depositzrusdDebt),
         withdrawalSymbol,
+        depositSymbol
       ]);
     },
 

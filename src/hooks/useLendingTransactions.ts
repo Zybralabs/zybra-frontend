@@ -1,16 +1,15 @@
 import { useCallback, useState } from "react";
 import { useChainId, useWriteContract } from "wagmi";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { parseUnits } from "viem";
+import { parseUnits, encodeFunctionData } from "viem";
 import { ethers } from "ethers";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { WalletType } from "@/constant/account/enum";
 import { SupportedChainId, LENDING_POOL_ADDRESS } from "@/constant/addresses";
-import { accountType, accountClientOptions as opts } from "@/config";
 import LendingPoolABI from "@/abis/LendingPoolABI.json";
 import ERC20ABI from "@/abis/ERC20.json";
 import type { TransactionData } from "@/types";
 import { TransactionStatus } from "@/constant/transactionStatus";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 
 export interface LendingAsset {
   id: string;
@@ -39,18 +38,17 @@ export function useLendingTransactions() {
   // Web3 wallet hooks
   const { writeContractAsync } = useWriteContract();
 
-  // Account Kit hooks
-  const { client } = useSmartAccountClient({
-    type: accountType,
-    opts,
-  });
-
+  // Use centralized smart account client with real gas sponsorship (safe version)
   const {
-    sendUserOperationAsync,
+    client,
+    isGasSponsored,
+    isClientReady,
+    executeTransaction,
+    executeSponsoredTransaction,
     sendUserOperationResult,
     isSendingUserOperation,
-    error: sendUserOperationError,
-  } = useSendUserOperation({ client: client, waitForTxn: true });
+    sendUserOperationError,
+  } = useSmartAccountClientSafe();
 
   // Map lending actions to backend transaction statuses
   const getTransactionStatus = (action: string) => {
@@ -134,9 +132,31 @@ export function useLendingTransactions() {
         }
         // MINIMAL WALLET (ACCOUNT ABSTRACTION) TRANSACTION FLOW
         else if (walletType === WalletType.MINIMAL) {
+          // Wait for client to be ready with timeout
+          let retryCount = 0;
+          const maxRetries = 10; // 2 seconds total wait time
+          const retryDelay = 200; // 200ms between retries
+
+          while (!isClientReady && retryCount < maxRetries) {
+            console.log(`Waiting for smart account client to be ready for ${action}... (attempt ${retryCount + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            retryCount++;
+          }
+
+          // Final check if client is ready
+          if (!isClientReady) {
+            throw new Error("Smart account client is not ready after waiting. Please ensure your wallet is connected and try again.");
+          }
+
+          if (!executeTransaction) {
+            throw new Error("Execute transaction function is not available. Please try again.");
+          }
+
           if (!client) {
             throw new Error("Smart account client not available");
           }
+
+          console.log("Smart account client validation passed for lending transaction");
 
           let functionName: string;
           let args: any[];
@@ -175,27 +195,58 @@ export function useLendingTransactions() {
           }
 
           try {
-            // Encode function data for user operation
-            const iface = new ethers.Interface(LendingPoolABI);
-            const data = iface.encodeFunctionData(functionName, args) as `0x${string}`;
-            const target = lendingPoolAddress as `0x${string}`;
+            // Create real transaction data for gas sponsorship
+            const realTransactionData = {
+              target: lendingPoolAddress as `0x${string}`,
+              data: encodeFunctionData({
+                abi: LendingPoolABI,
+                functionName,
+                args,
+              }),
+              value: 0n,
+              abi: LendingPoolABI,
+              functionName,
+              args,
+            };
 
-            const userOp = await sendUserOperationAsync({
-              uo: { target, data, value: 0n },
-            });
-
-            console.log("Account Kit lending user operation result:", userOp);
-
-            // Get transaction hash from the result
-            if (userOp && userOp.hash) {
-              txHash = userOp.hash;
-              console.log("Account Kit lending transaction hash:", txHash);
-            } else if (sendUserOperationResult?.hash) {
-              txHash = sendUserOperationResult.hash;
-              console.log("Account Kit lending transaction hash from result:", txHash);
+            // Execute with enhanced transaction system
+            let userOp;
+            if (isGasSponsored) {
+              try {
+                console.log("Attempting real gas sponsorship for lending...");
+                userOp = await executeSponsoredTransaction(realTransactionData, {
+                  waitForTxn: true
+                });
+              } catch (sponsorError) {
+                console.warn("Real gas sponsorship failed, falling back to regular transaction:", sponsorError);
+                userOp = await executeTransaction(realTransactionData, {
+                  waitForTxn: true
+                });
+              }
             } else {
-              throw new Error("No transaction hash received from Account Kit");
+              userOp = await executeTransaction(realTransactionData, {
+                waitForTxn: true
+              });
             }
+
+            console.log("Account Kit lending transaction result:", userOp);
+
+            // Extract transaction hash from various possible result formats
+            if (userOp) {
+              if (typeof userOp === 'string') {
+                txHash = userOp;
+              } else if (userOp.hash) {
+                txHash = userOp.hash;
+              } else if (sendUserOperationResult?.hash) {
+                txHash = sendUserOperationResult.hash;
+              }
+            }
+
+            if (!txHash) {
+              throw new Error("Transaction was submitted but no hash was returned");
+            }
+
+            console.log("Account Kit lending transaction hash:", txHash);
           } catch (accountKitError) {
             console.error("Account Kit lending transaction failed:", accountKitError);
 
@@ -261,9 +312,14 @@ export function useLendingTransactions() {
       walletType,
       address,
       writeContractAsync,
-      sendUserOperationAsync,
+      executeTransaction,
       sendUserOperationResult,
       addTransaction,
+      client,
+      isClientReady,
+      executeTransaction,
+      executeSponsoredTransaction,
+      isGasSponsored,
     ]
   );
 
@@ -309,9 +365,31 @@ export function useLendingTransactions() {
         }
         // MINIMAL WALLET APPROVAL
         else if (walletType === WalletType.MINIMAL) {
+          // Wait for client to be ready with timeout
+          let retryCount = 0;
+          const maxRetries = 10; // 2 seconds total wait time
+          const retryDelay = 200; // 200ms between retries
+
+          while (!isClientReady && retryCount < maxRetries) {
+            console.log(`Waiting for smart account client to be ready for approval... (attempt ${retryCount + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            retryCount++;
+          }
+
+          // Final check if client is ready
+          if (!isClientReady) {
+            throw new Error("Smart account client is not ready after waiting. Please ensure your wallet is connected and try again.");
+          }
+
+          if (!executeTransaction) {
+            throw new Error("Execute transaction function is not available. Please try again.");
+          }
+
           if (!client) {
             throw new Error("Smart account client not available");
           }
+
+          console.log("Smart account client validation passed for approval transaction");
 
           console.log("Executing Account Kit approval:", {
             tokenAddress: asset.tokenAddress,
@@ -319,33 +397,59 @@ export function useLendingTransactions() {
             amount: maxApproval,
           });
 
-          const iface = new ethers.Interface(ERC20ABI);
-          const data = iface.encodeFunctionData("approve", [
-            lendingPoolAddress,
-            amountInWei,
-          ]) as `0x${string}`;
-
           try {
-            const userOp = await sendUserOperationAsync({
-              uo: {
-                target: asset.tokenAddress,
-                data,
-                value: 0n,
-              },
-            });
+            // Create real transaction data for gas sponsorship
+            const realTransactionData = {
+              target: asset.tokenAddress,
+              data: encodeFunctionData({
+                abi: ERC20ABI,
+                functionName: "approve",
+                args: [lendingPoolAddress, amountInWei],
+              }),
+              value: 0n,
+              abi: ERC20ABI,
+              functionName: "approve",
+              args: [lendingPoolAddress, amountInWei],
+            };
 
-            console.log("Account Kit approval user operation result:", userOp);
-
-            // Get transaction hash from the result
-            if (userOp && userOp.hash) {
-              txHash = userOp.hash;
-              console.log("Account Kit approval transaction hash:", txHash);
-            } else if (sendUserOperationResult?.hash) {
-              txHash = sendUserOperationResult.hash;
-              console.log("Account Kit approval transaction hash from result:", txHash);
+            // Execute with enhanced transaction system
+            let userOp;
+            if (isGasSponsored) {
+              try {
+                console.log("Attempting real gas sponsorship for approval...");
+                userOp = await executeSponsoredTransaction(realTransactionData, {
+                  waitForTxn: true
+                });
+              } catch (sponsorError) {
+                console.warn("Real gas sponsorship failed for approval, falling back:", sponsorError);
+                userOp = await executeTransaction(realTransactionData, {
+                  waitForTxn: true
+                });
+              }
             } else {
-              throw new Error("No transaction hash received from Account Kit");
+              userOp = await executeTransaction(realTransactionData, {
+                waitForTxn: true
+              });
             }
+
+            console.log("Account Kit approval transaction result:", userOp);
+
+            // Extract transaction hash from various possible result formats
+            if (userOp) {
+              if (typeof userOp === 'string') {
+                txHash = userOp;
+              } else if (userOp.hash) {
+                txHash = userOp.hash;
+              } else if (sendUserOperationResult?.hash) {
+                txHash = sendUserOperationResult.hash;
+              }
+            }
+
+            if (!txHash) {
+              throw new Error("Transaction was submitted but no hash was returned");
+            }
+
+            console.log("Account Kit approval transaction hash:", txHash);
           } catch (accountKitError) {
             console.error("Account Kit approval failed:", accountKitError);
 
@@ -408,10 +512,14 @@ export function useLendingTransactions() {
       walletType,
       address,
       writeContractAsync,
-      sendUserOperationAsync,
+      executeTransaction,
       sendUserOperationResult,
       addTransaction,
       client,
+      isClientReady,
+      executeTransaction,
+      executeSponsoredTransaction,
+      isGasSponsored,
     ]
   );
 

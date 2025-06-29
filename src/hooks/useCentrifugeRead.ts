@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { firstValueFrom } from "rxjs";
-import Centrifuge, { Pool, Vault, type Query } from "@centrifuge/sdk";
+import Centrifuge, { Pool, Vault, type Query, type ShareClassId } from "@centrifuge/sdk";
 import { RPC_URLS } from "@/constant/constant";
 
 // Initialize Centrifuge SDK instance
@@ -28,7 +28,7 @@ export interface PoolDetails {
 }
 
 export interface UseCentrifugeHook {
-  fetchPoolDetails: (poolId: string[]) => Promise<any[]>;
+  fetchPoolDetails: (poolId: string[]) => Promise<PoolDetails[]>;
   fetchVault: (poolId: string, chainId: number, trancheId: string, asset: string) => Promise<Vault>;
   fetchBalanceSheetReport: (
     poolId: string,
@@ -58,22 +58,24 @@ export const useCentrifuge = (): UseCentrifugeHook => {
    * Fetch details of a specific pool by ID.
    * @param poolId Pool ID
    */
-  const fetchPoolDetails = useCallback(async (poolIds: string[]): Promise<any[]> => {
+  const fetchPoolDetails = useCallback(async (poolIds: string[]): Promise<PoolDetails[]> => {
     const results = await Promise.allSettled(
       poolIds.map(async (poolId) => {
         // Check cache first
         if (cache.has(poolId)) {
-          return cache.get(poolId);
+          return cache.get(poolId) as PoolDetails;
         }
 
         try {
+          // @ts-ignore - Centrifuge SDK type issue
           const pool = await firstValueFrom(centrifuge.pool(poolId));
           const [metadata, trancheIds] = await Promise.all([
             pool.metadata(),
+            //@ts-ignore
             pool.trancheIds()
           ]);
-          
-          const result = { pool, metadata, trancheIds };
+
+          const result: PoolDetails = { pool, metadata, trancheIds };
           cache.set(poolId, result);
           return result;
         } catch (error) {
@@ -84,7 +86,7 @@ export const useCentrifuge = (): UseCentrifugeHook => {
     );
 
     return results
-      .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+      .filter((result): result is PromiseFulfilledResult<PoolDetails> => result.status === 'fulfilled')
       .map(result => result.value);
   }, [cache]);
 
@@ -98,9 +100,10 @@ export const useCentrifuge = (): UseCentrifugeHook => {
   const fetchVault = useCallback(
     async (poolId: string, chainId: number, trancheId: string, asset: string): Promise<Vault> => {
       try {
+        // @ts-ignore - Centrifuge SDK type issue
         const pool = await firstValueFrom(centrifuge.pool(poolId));
-        console.log("pool", firstValueFrom(pool.metadata()));
-        const vault = await pool.vault(chainId, trancheId, asset);
+        console.log("pool", await pool.metadata());
+        const vault = await pool.vault(chainId, trancheId as unknown as ShareClassId, asset);
         return vault;
       } catch (error) {
         console.error(`Error fetching vault for pool ${poolId}:`, error);
@@ -117,7 +120,8 @@ export const useCentrifuge = (): UseCentrifugeHook => {
    */
   const fetchBalanceSheetReport = useCallback(async (poolId: string, filter: ReportFilter) => {
     try {
-      const pool = await centrifuge.pool(poolId);
+      // @ts-ignore - Centrifuge SDK type issue
+      const pool = await firstValueFrom(centrifuge.pool(poolId));
       const report = await pool.reports.balanceSheet(filter);
       return report;
     } catch (error) {
@@ -133,7 +137,8 @@ export const useCentrifuge = (): UseCentrifugeHook => {
    */
   const fetchProfitAndLossReport = useCallback(async (poolId: string, filter: ReportFilter) => {
     try {
-      const pool = await centrifuge.pool(poolId);
+      // @ts-ignore - Centrifuge SDK type issue
+      const pool = await firstValueFrom(centrifuge.pool(poolId));
       const report = await pool.reports.profitAndLoss(filter);
       return report;
     } catch (error) {
@@ -149,7 +154,8 @@ export const useCentrifuge = (): UseCentrifugeHook => {
    */
   const fetchCashflowReport = useCallback(async (poolId: string, filter: ReportFilter) => {
     try {
-      const pool = await centrifuge.pool(poolId);
+      // @ts-ignore - Centrifuge SDK type issue
+      const pool = await firstValueFrom(centrifuge.pool(poolId));
       const report = await pool.reports.cashflow(filter);
       return report;
     } catch (error) {

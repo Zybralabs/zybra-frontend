@@ -64,65 +64,81 @@ export default function UploadPicture() {
   };
 
   return (
-    <div className="space-y-6">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle>Upload Profile Picture</CardTitle>
+    <div className="w-full h-full flex flex-col">
+      {/* Header */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 px-0">
+        <CardTitle className="text-2xl md:text-3xl">Upload Profile Picture</CardTitle>
       </CardHeader>
-      {/* <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-white">Upload Document Picture</h1>
-        <p className="text-gray-400">Please upload a clear picture of your selected document</p>
-      </div> */}
 
-      <div
-        className={`relative h-[400px] rounded-lg border-2 border-dashed transition-colors ${
-          isDragging
-            ? "border-teal-400 bg-[rgba(1,56,83,0.1)]"
-            : "border-gray-700 bg-[rgba(28,37,54,0.8)]"
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {preview ? (
-          <div className="relative h-full">
-            <img
-              src={preview || "/placeholder.svg"}
-              alt="Document preview"
-              className="h-full w-full object-contain p-4"
-            />
-            <button
-              onClick={removeImage}
-              className="absolute right-2 top-2 rounded-full bg-gray-900 p-1 text-gray-400 hover:text-white"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center">
-            <Upload className="mb-4 h-10 w-10 text-gray-400" />
-            <p className="mb-2 text-gray-400">Drag and drop your document here</p>
-            <p className="mb-4 text-sm text-gray-500">or</p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="ghost"
-              className="border-gray-700 py-2 bg-[#013853] text-gray-300 hover:bg-[#044A6C] hover:text-white"
-            >
-              Choose File
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-        )}
+      {/* Content */}
+      <div className="flex-1 space-y-6 md:space-y-8">
+        <p className="text-base md:text-xl text-gray-400 leading-relaxed">
+          Please upload a clear picture of your selected document. Make sure all text is readable and the image is well-lit.
+        </p>
+
+        {/* Upload area - responsive height */}
+        <div
+          className={`relative h-[250px] sm:h-[300px] md:h-[400px] rounded-lg border-2 border-dashed transition-all duration-200 ${
+            isDragging
+              ? "border-teal-400 bg-[rgba(1,56,83,0.1)] scale-[1.02]"
+              : "border-gray-700 bg-[rgba(28,37,54,0.8)]"
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {preview ? (
+            <div className="relative h-full">
+              <img
+                src={preview || "/placeholder.svg"}
+                alt="Document preview"
+                className="h-full w-full object-contain p-2 md:p-4 rounded-lg"
+              />
+              <button
+                onClick={removeImage}
+                className="absolute right-2 top-2 rounded-full bg-gray-900/80 p-2 text-gray-400 hover:text-white hover:bg-gray-900 transition-colors duration-200 touch-manipulation"
+                aria-label="Remove image"
+              >
+                <X className="h-4 w-4 md:h-5 md:w-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+              <Upload className="mb-3 md:mb-4 h-8 w-8 md:h-10 md:w-10 text-gray-400" />
+              <p className="mb-2 text-sm md:text-base text-gray-400">
+                <span className="hidden sm:inline">Drag and drop your document here</span>
+                <span className="sm:hidden">Tap to upload your document</span>
+              </p>
+              <p className="mb-4 text-xs md:text-sm text-gray-500">or</p>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="ghost"
+                className="border-gray-700 py-2 md:py-3 px-4 md:px-6 bg-[#013853] text-gray-300 hover:bg-[#044A6C] hover:text-white transition-colors duration-200 touch-manipulation text-sm md:text-base"
+              >
+                Choose File
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {/* Upload tips */}
+              <div className="mt-4 text-xs text-gray-500 max-w-xs">
+                <p>Supported formats: JPG, PNG, PDF</p>
+                <p>Max file size: 10MB</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex justify-between absolute bottom-0 w-[90%] ">
+      {/* Navigation buttons - fixed at bottom */}
+      <div className="flex justify-between items-center pt-6 mt-auto">
         <BackButton />
-        <NextButton handleClick={handleNext} />
+        <NextButton handleClick={handleNext} disable={!preview} />
       </div>
     </div>
   );

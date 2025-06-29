@@ -5,7 +5,7 @@
   "author": "Your Name <your-email@example.com>",
   "license": "MIT",
   "private": true,
-  "homepage": "https://zybra-finance.com",
+  "homepage": "https://app.zybra.finance",
   "bugs": "https://github.com/your-repo/zybra-finance/issues",
   "repository": {
     "type": "git",
@@ -14,12 +14,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:netlify": "npm run clean && npm run debug && next build",
     "start": "next start",
     "prettier": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "prepare": "husky install",
     "test": "jest",
     "format": "prettier --write .",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "debug": "node scripts/debug-build.js",
+    "clean": "node scripts/clean-build.js"
   },
   "dependencies": {
     "@aa-sdk/ethers": "^4.11.0",
@@ -106,19 +109,18 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.174.0",
-    "viem": "^2.28.0",
+    "viem": "^2.31.3",
     "wagmi": "^2.15.2",
     "yahoo-finance2": "^2.13.2",
     "zod": "^3.24.1",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
-    "@coinbase/coinbase-sdk": "^0.1.1",
     "@jest/types": "*",
     "@testing-library/jest-dom": "^6.2.3",
     "@testing-library/react": "^14.1.2",
     "@types/ms.macro": "^2.0.3",
-    "@types/node": "^20.12.7",
+    "@types/node": "^24.0.3",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.174.0",
@@ -140,6 +142,12 @@
     "resolve-from": "^5.0.0",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.4.5"
+  },
+  "resolutions": {
+    "@solana/codecs-numbers": "^2.0.0",
+    "@solana/codecs-core": "^2.0.0",
+    "@solana/codecs-strings": "^2.0.0",
+    "@solana/codecs-data-structures": "^2.0.0"
   },
   "keywords": [
     "nextjs",

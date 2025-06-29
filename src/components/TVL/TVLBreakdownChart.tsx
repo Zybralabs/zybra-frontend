@@ -140,49 +140,51 @@ const TVLBreakdownChart: React.FC<TVLBreakdownChartProps> = ({
   };
 
   return (
-    <div className="bg-[#012b3f] rounded-2xl p-6 shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold text-white">TVL Breakdown</h2>
+    <div className="bg-[#012b3f] rounded-2xl p-4 sm:p-6 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-white truncate">TVL Breakdown</h2>
           {usedFallback && (
-            <span className="text-xs text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded">Simplified Data</span>
+            <span className="text-xs text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded whitespace-nowrap">Simplified Data</span>
           )}
         </div>
-        <div className="flex gap-2 text-sm">
+        <div className="flex gap-1 sm:gap-2 text-sm overflow-x-auto scrollbar-hide">
           <button
             onClick={() => onPeriodChange('7d')}
-            className={`px-3 py-1 rounded ${currentPeriod === '7d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
+            className={`px-2 sm:px-3 py-1 rounded whitespace-nowrap flex-shrink-0 ${currentPeriod === '7d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
           >
             7D
           </button>
           <button
             onClick={() => onPeriodChange('30d')}
-            className={`px-3 py-1 rounded ${currentPeriod === '30d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
+            className={`px-2 sm:px-3 py-1 rounded whitespace-nowrap flex-shrink-0 ${currentPeriod === '30d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
           >
             30D
           </button>
           <button
             onClick={() => onPeriodChange('90d')}
-            className={`px-3 py-1 rounded ${currentPeriod === '90d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
+            className={`px-2 sm:px-3 py-1 rounded whitespace-nowrap flex-shrink-0 ${currentPeriod === '90d' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
           >
             90D
           </button>
           <button
             onClick={() => onPeriodChange('1y')}
-            className={`px-3 py-1 rounded ${currentPeriod === '1y' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
+            className={`px-2 sm:px-3 py-1 rounded whitespace-nowrap flex-shrink-0 ${currentPeriod === '1y' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
           >
             1Y
           </button>
           <button
             onClick={() => onPeriodChange('all')}
-            className={`px-3 py-1 rounded ${currentPeriod === 'all' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
+            className={`px-2 sm:px-3 py-1 rounded whitespace-nowrap flex-shrink-0 ${currentPeriod === 'all' ? 'bg-blue-500 text-white' : 'bg-[#001a29] text-gray-300'}`}
           >
             All
           </button>
         </div>
       </div>
 
-      <HighchartsReact highcharts={Highcharts} options={options} />
+      <div className="overflow-hidden">
+        <HighchartsReact highcharts={Highcharts} options={options} />
+      </div>
     </div>
   );
 };

@@ -2,10 +2,10 @@ import { useMemo, useCallback, useState, useEffect } from "react";
 import { useSingleCallResult } from "@/lib/hooks/multicall";
 import { Contract } from "ethers";
 import { useZFIStakingContract } from "./useContract";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { WalletType } from "@/constant/account/enum";
 import { useTransactionAdder } from "@/state/transactions/hooks";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 import {
  TransactionType,
  type CollectFeesStakingTransactionInfo,
@@ -18,7 +18,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import ZfiStakingABI from "../abis/ZfiStaking.json";
 import { ZFI_STAKING_ADDRESS, SupportedChainId } from "@/constant/addresses";
 import { toWei } from "./formatting";
-import { accountType , accountClientOptions as opts } from "@/config";
+
 
 
 export function useZRUSDStaking(user: string, chainId: number) {
@@ -50,19 +50,17 @@ export function useZRUSDStaking(user: string, chainId: number) {
    hash
  });
 
-   const { client } = useSmartAccountClient({
-       type: accountType,
-       opts,
-     });
-
-
- // Account Kit hooks for minimal wallet
- const {
-  sendUserOperationAsync,
-   sendUserOperationResult,
-   isSendingUserOperation,
-   error: isSendUserOperationError,
- } = useSendUserOperation({ client: client, waitForTxn: true });
+  // Use centralized smart account client with real gas sponsorship (safe version)
+  const {
+    client,
+    isGasSponsored,
+    isClientReady,
+    sendUserOperationAsync,
+    sendUserOperationResult,
+    isSendingUserOperation,
+    sendUserOperationError: isSendUserOperationError,
+    executeTransaction,
+  } = useSmartAccountClientSafe();
 
  // Read contract data using multicall
  const pendingRewardResult = useSingleCallResult(stakingContract, "totalStaked", [undefined]);
@@ -173,6 +171,17 @@ export function useZRUSDStaking(user: string, chainId: number) {
          }
 
         else if (walletType === WalletType.MINIMAL) {
+         // Check if client is ready first
+         if (!isClientReady) {
+           throw new Error("Smart account client is not ready. Please ensure your wallet is connected and try again.");
+         }
+
+         if (!executeTransaction) {
+           throw new Error("Enhanced transaction execution not available");
+         }
+
+         console.log("Smart account client validation passed for staking transaction");
+
          // Encode function data for user operation
          const iface = stakingContract.interface;
          const data = iface.encodeFunctionData(methodName, args) as `0x${string}`;
@@ -181,22 +190,39 @@ export function useZRUSDStaking(user: string, chainId: number) {
          const target =  stakingContract?.address as `0x${string}`;
          const value = overrides.value || 0n;
 
-         // Send user operation and wait for result
-         const userOpResult = await sendUserOperationAsync({
-           uo: {
-             target,
-             data: data as `0x${string}`,
-             value: value ? BigInt(value) : 0n
-           },
+         // Create real transaction data for gas sponsorship
+         const realTransactionData = {
+           target,
+           data,
+           value,
+           abi: ZfiStakingABI,
+           functionName: methodName,
+           args,
+         };
+
+         // Execute with enhanced transaction system
+         const userOpResult = await executeTransaction(realTransactionData, {
+           waitForTxn: true
          });
 
-         console.log("User operation result:", userOpResult);
+         console.log("Enhanced transaction result:", userOpResult);
 
-         // The userOpResult should contain the transaction hash
-         if (userOpResult && userOpResult.hash) {
+         // Extract transaction hash from various possible result formats
+         let txHash: string | null = null;
+         if (userOpResult) {
+           if (typeof userOpResult === 'string') {
+             txHash = userOpResult;
+           } else if (userOpResult.hash) {
+             txHash = userOpResult.hash;
+           } else if (sendUserOperationResult?.hash) {
+             txHash = sendUserOperationResult.hash;
+           }
+         }
+
+         if (txHash) {
           transactionData = {
             ...transactionData,
-            tx_hash: userOpResult.hash,
+            tx_hash: txHash,
             ZRUSD_borrowed: methodName === 'stake' ? Number(args[0]) : undefined
           };
 
@@ -204,10 +230,10 @@ export function useZRUSDStaking(user: string, chainId: number) {
           await addTransaction(transactionData);
 
           // Set receipt with the transaction hash
-          setReceipt(userOpResult.hash);
-          return { success: true, receipt: userOpResult.hash };
+          setReceipt(txHash);
+          return { success: true, receipt: txHash };
          } else {
-           throw new Error("User operation failed - no transaction hash received");
+           throw new Error("Transaction was submitted but no hash was returned");
          }
        }
 
@@ -226,7 +252,8 @@ export function useZRUSDStaking(user: string, chainId: number) {
      transactionInfoConstructors,
      writeContractAsync,
      addTransaction,
-     sendUserOperationAsync
+     sendUserOperationAsync,
+     isClientReady
    ]
  );
 

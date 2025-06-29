@@ -15,10 +15,9 @@ import { ErrorModal, SuccessModal } from "@/components/Modal";
 import { SupportedChainId, SWARM_VAULT_ADDRESS, USDC_ADDRESS } from "@/constant/addresses";
 import { toWei } from "@/hooks/formatting";
 import { ApprovalState, useApproveCallback } from "@/hooks/useApproveCallback";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { accountType } from "@/config";
 import { WalletType } from "@/constant/account/enum";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 
 interface Asset {
   symbol: string;
@@ -59,12 +58,14 @@ export default function TakeOffer({ params }: { params: Promise<{ offerId: strin
   });
   const [showFundingHelper, setShowFundingHelper] = useState(false);
 
-  // Account Kit integration
-  const { client } = useSmartAccountClient({ type: accountType });
-  const { sendUserOperationAsync, sendUserOperationResult } = useSendUserOperation({
+  // Use centralized smart account client with gas sponsorship
+  const {
     client,
-    waitForTxn: true,
-  });
+    isGasSponsored,
+    isClientReady,
+    sendUserOperationAsync,
+    sendUserOperationResult,
+  } = useSmartAccountClientSafe();
 
   // Destructure state for convenience
   const {

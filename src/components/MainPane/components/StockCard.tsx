@@ -1,24 +1,6 @@
-import { SwarmIcon, TeslaFilledIcon } from "@/components/Icons";
+import { SwarmIcon } from "@/components/Icons";
 import { useStockIcon } from "@/hooks/useStockIcon";
 import { formatAmount, formatNumber } from "@/utils/formatters";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-type PoolCardType = {
-  active?: boolean;
-  status?: string;
-  name?: string;
-  symbol?: string;
-  icon?: React.ReactNode;
-  offerUrl?: string;
-  change: string;
-  price: number;
-  quantity: number;
-  ZrUSD: number;
-  marketCap: number;
-  expiry: string;
-  address: string;
-};
 const DemoIcon = ({ className }: { className?: string }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#0078D4" fillOpacity="0.2" stroke="#0078D4" strokeWidth="2"/>
@@ -96,18 +78,9 @@ export default function StockCard({
           </div>
         </div>
 
-        {/* Company Logo */}
-        <div className="flex-shrink-0 bg-[#00304a]/30 rounded-full p-1 w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center">
-          <svg 
-            width="16" 
-            height="16" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-3 h-3 sm:w-4 sm:h-4"
-          >
-            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#FFFFFF" fillOpacity="0.2" stroke="#FFFFFF" strokeWidth="2"/>
-          </svg>
+        {/* Swarm Logo */}
+        <div className="flex-shrink-0 bg-[#00304a]/30 rounded-full p-1 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+          <SwarmIcon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
       </div>
 

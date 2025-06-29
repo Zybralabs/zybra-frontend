@@ -1,0 +1,14 @@
+[build]
+  publish = ".next"
+  command = "yarn install --ignore-engines && npm run build:netlify"
+
+[build.environment]
+  NODE_VERSION = "18.18.0"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NODE_OPTIONS = "--max-old-space-size=8192"
+  YARN_IGNORE_ENGINES = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  DISABLE_NETLIFY_PLUGIN_NEXTJS = "true"
+  NETLIFY_SKIP_FRAMEWORK_DETECTION = "true"
+  NEXT_PRIVATE_STANDALONE = "true"
+  NEXT_TELEMETRY_DISABLED = "1"

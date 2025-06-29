@@ -170,6 +170,7 @@ export interface Quest {
 export interface LeaderboardEntry {
   user_id: string;
   username: string;
+  wallet_address: string;
   name: string;
   total_points: number;
   tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
@@ -314,6 +315,27 @@ interface UserAccountContextProps {
       } | null;
     };
   }>;
+  checkUserEndorsement: (userAddress: string) => Promise<{
+    success: boolean;
+    payload: {
+      address: string;
+      is_endorsed: boolean;
+      checked_at?: string;
+    };
+  }>;
+  endorseUser: (userAddress: string) => Promise<{
+    success: boolean;
+    message?: string;
+    payload?: {
+      address: string;
+      endorsed: boolean;
+      transaction_hash?: string;
+      block_number?: number;
+      timestamp?: string;
+      gas_used?: string;
+      status?: string;
+    };
+  }>;
   claimDailyLoginPoints: () => Promise<{
     payload: {
       points_awarded: number;
@@ -385,6 +407,7 @@ interface UserAccountContextProps {
   }>;
   trackProfileCompletion: (has_wallet: boolean, has_email_optin: boolean) => Promise<any>;
   trackWalletConnection: (wallet_address: string, has_testnet_assets?: boolean) => Promise<any>;
+  storeEmailOptin: (email: string, quest_id: string) => Promise<any>;
   verifySocialShare: (platform: string, post_url: string, action_type: string) => Promise<any>;
   trackReferral: (referral_code: string, referred_user_id: string, action_completed?: boolean) => Promise<any>;
   trackFeatureUsage: (feature_name: string) => Promise<any>;
@@ -759,6 +782,9 @@ const UserAccountContext = createContext<UserAccountContextProps>({
   trackWalletConnection: function (wallet_address: string, has_testnet_assets?: boolean): Promise<any> {
     throw new Error("Function not implemented.");
   },
+  storeEmailOptin: function (email: string, quest_id: string): Promise<any> {
+    throw new Error("Function not implemented.");
+  },
   verifySocialShare: function (platform: string, post_url: string, action_type: string): Promise<any> {
     throw new Error("Function not implemented.");
   },
@@ -817,6 +843,12 @@ const UserAccountContext = createContext<UserAccountContextProps>({
     throw new Error("UserAccountContext not initialized");
   },
   getSimpleTVLBreakdown: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
+  checkUserEndorsement: async () => {
+    throw new Error("UserAccountContext not initialized");
+  },
+  endorseUser: async () => {
     throw new Error("UserAccountContext not initialized");
   }
 });
@@ -1212,6 +1244,55 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
             // Update the user state with the authentication data
             setUserData(updatedUser);
 
+            // QUEST INTEGRATION: Track login quest completion immediately after successful authentication
+            // This ensures all login types (wallet, email, Google, Apple OAuth) trigger quest completion
+            console.log("Triggering login quest tracking after successful authentication");
+            try {
+              // Create API client with the new token for quest tracking
+              const questApiClient = axios.create({
+                baseURL: `${API_BASE_URL}/api/v1`,
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                  "x-api-key": API_KEY
+                },
+                withCredentials: true
+              });
+
+              // Track login points and quest completion
+              // This handles both first-time login and daily login quests automatically
+              questApiClient.post("/quests/track/login")
+                .then((questResponse) => {
+                  console.log("Login quest tracking successful:", questResponse.data);
+                  if (questResponse.data?.payload) {
+                    const { points_awarded, is_first_login, current_streak } = questResponse.data.payload;
+                    if (points_awarded > 0) {
+                      console.log(`Awarded ${points_awarded} points for login. First login: ${is_first_login}, Current streak: ${current_streak}`);
+                    }
+                  }
+                })
+                .catch((questError) => {
+                  console.error("Login quest tracking failed (non-critical):", questError);
+                  // Don't throw error - quest tracking failure shouldn't break authentication
+                });
+
+              // Track wallet connection quest if this is a wallet-based login
+              if (wallet_type === "web3-wallet" || wallet_type === "abstraction-wallet") {
+                questApiClient.post("/quests/track/wallet", {
+                  wallet_address: address,
+                  has_testnet_assets: false // Could be enhanced to check for testnet assets
+                })
+                  .then((walletQuestResponse) => {
+                    console.log("Wallet connection quest tracking successful:", walletQuestResponse.data);
+                  })
+                  .catch((walletQuestError) => {
+                    console.error("Wallet connection quest tracking failed (non-critical):", walletQuestError);
+                  });
+              }
+            } catch (questTrackingError) {
+              console.error("Quest tracking setup failed (non-critical):", questTrackingError);
+              // Don't throw error - quest tracking failure shouldn't break authentication
+            }
+
             // Show success message
             alertModalOpenHandler({
               isSuccess: true,
@@ -1261,6 +1342,69 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [authenticateFromDb, loading, apiClient, alertModalOpenHandler, token],
   );
 
+  // Quest tracking functions - defined before addTransaction to avoid dependency issues
+  // Track feature usage
+  const trackFeatureUsage = useCallback(async (feature_name: string): Promise<unknown> => {
+    try {
+      const response = await apiClient().post("/quests/track/feature", {
+        feature_name
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error tracking feature usage:", error);
+      return null;
+    }
+  }, [apiClient]);
+
+  // Track multi-pool staking and lending for "Super Staker" badge
+  const trackMultiPoolActivity = useCallback(async () => {
+    try {
+      const response = await apiClient().get("/quests/track/multi-pool");
+      return response.data;
+    } catch (error) {
+      console.error("Error tracking multi-pool activity:", error);
+      return null;
+    }
+  }, [apiClient]);
+
+  // Track completed quests for "Completionist" badge
+  const trackCompletedQuests = useCallback(async () => {
+    try {
+      const response = await apiClient().get("/quests/track/quest-completion");
+      return response.data;
+    } catch (error) {
+      console.error("Error tracking completed quests:", error);
+      return null;
+    }
+  }, [apiClient]);
+
+  // Track earned badges for "ZyOG" badge
+  const trackEarnedBadges = useCallback(async () => {
+    try {
+      const response = await apiClient().get("/quests/track/earned-badges");
+      return response.data;
+    } catch (error) {
+      console.error("Error tracking earned badges:", error);
+      return null;
+    }
+  }, [apiClient]);
+
+  // Map transaction types to feature names for quest tracking
+  const getFeatureNameFromTransaction = useCallback((data: TransactionData): string => {
+    switch (data.type) {
+      case 'zybra':
+        if (data.metadata?.action === 'supply') return 'lend_zrusd';
+        if (data.metadata?.action === 'borrow') return 'lend_zrusd';
+        if (data.metadata?.action === 'withdraw') return 'lend_zrusd';
+        if (data.metadata?.action === 'repay') return 'lend_zrusd';
+        return 'lend_zrusd';
+      case 'pool': return 'stake_tokens';
+      case 'swap': return 'swap_assets';
+      case 'mint': return 'mint_zrusd';
+      default: return data.type;
+    }
+  }, []);
+
   const addTransaction = useCallback(
     async (data: TransactionData) => {
       console.log("_____________________dumbodumbo");
@@ -1274,13 +1418,45 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (!data?.metadata?.assetSymbol) {
           throw new Error("Asset is required.");
         }
+
+        // Add transaction to backend
         const response = await apiClient().post("/user/transaction", data);
+
+        // Track quest progress for this transaction
+        if (response.data?.success) {
+          try {
+            // Track feature usage for quest progress
+            await trackFeatureUsage(getFeatureNameFromTransaction(data));
+
+            // Track multi-pool activity for Super Staker badge
+            await trackMultiPoolActivity();
+
+            // Complete referral if this is the user's first qualifying action
+            try {
+              await completeReferral();
+              console.log("Referral completion attempted for transaction");
+            } catch (referralError) {
+              // Silent fail - user might not have a pending referral
+              console.log("No pending referral to complete");
+            }
+
+            // Track completed quests and earned badges
+            await trackCompletedQuests();
+            await trackEarnedBadges();
+
+            console.log("Quest progress tracked for transaction");
+          } catch (questError) {
+            console.error("Error tracking quest progress for transaction:", questError);
+            // Don't throw - transaction was successful, quest tracking is secondary
+          }
+        }
+
         return response.data;
       } catch (err) {
         console.log("error is coming add transaction");
       }
     },
-    [apiClient],
+    [apiClient, trackFeatureUsage, trackMultiPoolActivity, trackCompletedQuests, trackEarnedBadges, getFeatureNameFromTransaction],
   );
 
   const getTransactions = useCallback(async () => {
@@ -1457,14 +1633,45 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
           throw new Error(`No address returned from ${payload.authProviderId} authentication`);
         }
       } catch (err: Error | unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Sign-in failed";
         console.error("Error signing in:", err);
+
+        // Enhanced error handling for OAuth failures
+        let errorTitle = "Authentication Failed";
+        let errorMessage = "Authentication failed. Please try again.";
+
+        if (err instanceof Error) {
+          if (err.message.includes("popup") || err.message.includes("blocked")) {
+            errorTitle = "Popup Blocked";
+            errorMessage = "Please allow popups for this site and try again.";
+          } else if (err.message.includes("network") || err.message.includes("fetch")) {
+            errorTitle = "Network Error";
+            errorMessage = "Please check your internet connection and try again.";
+          } else if (err.message.includes("cancelled") || err.message.includes("closed")) {
+            errorTitle = "Sign-In Cancelled";
+            errorMessage = `${payload.authProviderId === 'google' ? 'Google' : 'Apple'} sign-in was cancelled. Please try again.`;
+          } else if (err.message.includes("unauthorized") || err.message.includes("access_denied")) {
+            errorTitle = "Access Denied";
+            errorMessage = `${payload.authProviderId === 'google' ? 'Google' : 'Apple'} sign-in was denied. Please check your account permissions.`;
+          } else if (err.message.includes("rate limit") || err.message.includes("too many")) {
+            errorTitle = "Rate Limit Exceeded";
+            errorMessage = "Too many authentication attempts. Please wait a few minutes before trying again.";
+          } else if (err.message.includes("service unavailable") || err.message.includes("503")) {
+            errorTitle = "Service Unavailable";
+            errorMessage = `${payload.authProviderId === 'google' ? 'Google' : 'Apple'} authentication service is temporarily unavailable. Please try again later.`;
+          } else if (err.message.includes("No address returned")) {
+            errorTitle = "Authentication Error";
+            errorMessage = `Failed to get account information from ${payload.authProviderId === 'google' ? 'Google' : 'Apple'}. Please try again.`;
+          } else {
+            errorMessage = err.message;
+          }
+        }
+
         setError(errorMessage);
 
         // Show error message
         alertModalOpenHandler({
           isError: true,
-          title: "Authentication Error",
+          title: errorTitle,
           message: errorMessage
         });
 
@@ -1637,6 +1844,32 @@ export const UserAccountProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return response.data;
   }, [apiClient]);
 
+  // Check if user is endorsed via zybra-be backend
+  const checkUserEndorsement = useCallback(async (userAddress: string) => {
+    try {
+      console.log("Checking user endorsement status via zybra-be backend:", userAddress);
+      const response = await apiClient().get(`/endorse/check?address=${userAddress}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error checking user endorsement:", error);
+      return { success: false, payload: { is_endorsed: false } };
+    }
+  }, [apiClient]);
+
+  // Endorse user via zybra-be backend
+  const endorseUser = useCallback(async (userAddress: string) => {
+    try {
+      console.log("Endorsing user via zybra-be backend:", userAddress);
+      const response = await apiClient().post('/endorse', {
+        address: userAddress
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error endorsing user:", error);
+      throw error;
+    }
+  }, [apiClient]);
+
   // Cache for leaderboard data to prevent redundant API calls
   const leaderboardCache = useRef<{
     points: { [key: string]: { data: any, timestamp: number } };
@@ -1805,13 +2038,28 @@ const trackWalletConnection = useCallback(async (wallet_address: string, has_tes
   }
 }, [apiClient]);
 
+// Store email opt-in for quests
+const storeEmailOptin = useCallback(async (email: string, quest_id: string): Promise<unknown> => {
+  try {
+    const response = await apiClient().post("/quests/track/email-optin", {
+      email,
+      quest_id
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error storing email opt-in:", error);
+    return null;
+  }
+}, [apiClient]);
+
 // Verify social share
-const verifySocialShare = useCallback(async (platform: string, post_url: string, action_type: string): Promise<unknown> => {
+const verifySocialShare = useCallback(async (platform: string, post_url: string, action_type: string, quest_id?: string): Promise<unknown> => {
   try {
     const response = await apiClient().post("/quests/track/social", {
       platform,
       post_url,
-      action_type
+      action_type,
+      quest_id
     });
     return response.data;
   } catch (error) {
@@ -1835,19 +2083,6 @@ const trackReferral = useCallback(async (referral_code: string, referred_user_id
   }
 }, [apiClient]);
 
-// Track feature usage
-const trackFeatureUsage = useCallback(async (feature_name: string): Promise<unknown> => {
-  try {
-    const response = await apiClient().post("/quests/track/feature", {
-      feature_name
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error tracking feature usage:", error);
-    return null;
-  }
-}, [apiClient]);
-
 // Track AMA participation
 const trackAMAParticipation = useCallback(async (ama_id: string, asked_question: boolean = false): Promise<unknown> => {
   try {
@@ -1862,10 +2097,9 @@ const trackAMAParticipation = useCallback(async (ama_id: string, asked_question:
   }
 }, [apiClient]);
 
-
 const trackLoginStreak = useCallback(async () => {
   try {
-    const response = await apiClient().get("/quests/track/login-streak");
+    const response = await apiClient().post("/quests/track/login-streak");
     return response.data;
   } catch (error) {
     console.error("Error tracking login streak:", error);
@@ -1880,39 +2114,6 @@ const trackReferralCount = useCallback(async () => {
     return response.data;
   } catch (error) {
     console.error("Error tracking referral count:", error);
-    return null;
-  }
-}, [apiClient]);
-
-// Track multi-pool staking and lending for "Super Staker" badge
-const trackMultiPoolActivity = useCallback(async () => {
-  try {
-    const response = await apiClient().get("/quests/track/multi-pool");
-    return response.data;
-  } catch (error) {
-    console.error("Error tracking multi-pool activity:", error);
-    return null;
-  }
-}, [apiClient]);
-
-// Track completed quests for "Completionist" badge
-const trackCompletedQuests = useCallback(async () => {
-  try {
-    const response = await apiClient().get("/quests/track/quest-completion");
-    return response.data;
-  } catch (error) {
-    console.error("Error tracking completed quests:", error);
-    return null;
-  }
-}, [apiClient]);
-
-// Track earned badges for "ZyOG" badge
-const trackEarnedBadges = useCallback(async () => {
-  try {
-    const response = await apiClient().get("/quests/track/earned-badges");
-    return response.data;
-  } catch (error) {
-    console.error("Error tracking earned badges:", error);
     return null;
   }
 }, [apiClient]);
@@ -2661,6 +2862,8 @@ const getBadges = useCallback(async () => {
         getUserPointsProfile,
         getUserPointsHistory,
         getPointsLeaderboard,
+        checkUserEndorsement,
+        endorseUser,
         claimDailyLoginPoints,
         getRedemptionOptions,
         redeemPointsForReward,
@@ -2674,6 +2877,7 @@ const getBadges = useCallback(async () => {
         getQuestLeaderboard,
         trackProfileCompletion,
         trackWalletConnection,
+        storeEmailOptin,
         verifySocialShare,
         trackReferral,
         trackFeatureUsage,

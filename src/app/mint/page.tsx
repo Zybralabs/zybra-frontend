@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import FaucetButtons from "@/components/FaucetButtons";
 import { useMintTransactions, type MintableToken } from "@/hooks/useMintTransactions";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { ClientDebugInfo } from "@/components/Debug/ClientDebugInfo";
+import { handleTransactionError } from "@/utils/gaslessErrorHandler";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
+import { WalletType } from "@/constant/account/enum";
 
 // Define TypeScript interfaces
 interface TokenInfo {
@@ -43,18 +47,6 @@ const tokens: TokenInfo[] = [
     decimals: 18,
   },
 
-
-  {
-    id: "zrusd",
-    name: "ZrUSD",
-    description: "ZrUSD for yield generation and liquidity provision",
-    icon: "ZR",
-    iconBg: "bg-purple-600",
-    amount: 100,
-    cooldown: 24,
-    symbol: "ZrUSD",
-    decimals: 18,
-  },
   {
     id: "zfi",
     name: "ZFI",
@@ -66,6 +58,18 @@ const tokens: TokenInfo[] = [
     symbol: "ZFI",
     decimals: 18,
   },
+  {
+    id: "zrusd",
+    name: "ZrUSD",
+    description: "ZrUSD for yield generation and liquidity provision",
+    icon: "ZR",
+    iconBg: "bg-purple-600",
+    amount: 100,
+    cooldown: 24,
+    symbol: "ZrUSD",
+    decimals: 18,
+  },
+
 ];
 
 // Component for individual token card
@@ -172,9 +176,10 @@ const TokenFaucet: FC = () => {
   const [claimingToken, setClaimingToken] = useState<string | null>(null);
   const [claimHistory, setClaimHistory] = useState<ClaimHistory>({});
   const [loadingTokens, setLoadingTokens] = useState<Record<string, boolean>>({});
-  const { address: userAddress } = useUserAccount();
+  const { walletType, address: userAddress } = useUserAccount();
   const chainId = useChainId();
   const router = useRouter();
+  const { isGasSponsored, client } = useSmartAccountClientSafe();
 
   // Use the new mint transactions hook
   const {
@@ -342,18 +347,31 @@ const TokenFaucet: FC = () => {
             errorTitle = "Transaction Rejected";
             errorMessage = "Transaction was rejected by the smart contract. Please try again.";
           }
-        } else if (err.message.includes("insufficient") ||
-                   err.message.includes("needs ETH for gas fees") ||
-                   err.message.includes("Send Base Sepolia ETH to:")) {
-          // Show funding helper for Account Kit gas issues
-          showFunding = true;
-          errorMessage = err.message;
-        } else if (err.message.includes("user rejected")) {
-          errorTitle = "Transaction Cancelled";
-          errorMessage = "Transaction was cancelled by user.";
         } else {
-          // Use the original error message for unknown errors
-          errorMessage = err.message;
+          // Check for special gasless retry errors first
+          if (err.message.includes("gas_sponsored_retry") || err.message.includes("network_retry")) {
+            // For gasless users with active sponsorship, don't show error - just retry
+            console.log("Gas sponsorship retry detected, attempting transaction again...");
+            // Don't show any error modal for gasless retry
+            return;
+          } else if (err.message.includes("funding_helper")) {
+            // Show funding helper for users who actually need ETH
+            showFunding = true;
+            errorTitle = "Funding Required";
+            errorMessage = "Your Account Kit wallet needs ETH for gas fees. Please add funds to continue.";
+          } else {
+            // Use enhanced error handling for other gasless transactions
+            const errorHandlerResult = handleTransactionError({
+              walletType: walletType || WalletType.WEB3, // Default to WEB3 if null
+              isGasSponsored,
+              smartAccountAddress: client?.account?.address,
+              originalError: err
+            });
+
+            showFunding = errorHandlerResult.shouldShowFundingHelper;
+            errorTitle = errorHandlerResult.errorTitle;
+            errorMessage = errorHandlerResult.errorMessage;
+          }
         }
       }
 
@@ -400,6 +418,8 @@ const TokenFaucet: FC = () => {
 
   return (
     <div className="flex-1 text-white flex flex-col items-center justify-center py-12 min-h-screen bg-gradient-to-b from-[#001525] to-[#001A20]">
+      {/* Debug component for development */}
+      {/* <ClientDebugInfo /> */}
       {/* Hidden element for cooldown refresh trigger */}
       <div id="cooldown-refresh-trigger" className="hidden" data-timestamp={Date.now()}></div>
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -585,7 +605,7 @@ const TokenFaucet: FC = () => {
                     <li>You only need a small amount of Sepolia ETH to get started (0.001 ETH is enough)</li>
                     <li>All faucets above require NO existing ETH balance - perfect for new wallets</li>
                     <li>If one faucet doesn&apos;t work, try another one from the list</li>
-                    <li>Having trouble? Join our <a href="https://discord.gg/zybra" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Discord</a> for help</li>
+                    <li>Having trouble? Join our <a href="https://discord.com/invite/frh8MaEnTM" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Discord</a> for help</li>
                   </ul>
 
                   {/* Bridge Information Box */}

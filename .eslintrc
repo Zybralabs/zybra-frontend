@@ -18,7 +18,7 @@
      "@typescript-eslint/ban-ts-comment":0,
      "eslint-plugin-import/order":0,
      
-  // "tailwindCSS.experimental.configFile": "./tailwind.config.js",
+     "tailwindCSS.experimental.configFile": "./tailwind.config.js",
     "import/order": [
       0,
       {

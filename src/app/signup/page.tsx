@@ -24,7 +24,7 @@ import { ZybraLogo } from "@/components/Icons";
 
 const SignupPage = () => {
   const router = useRouter();
-  const { address, user, loading, signIn } = useUserAccount();
+  const { address, user, loading, signIn, alertModalOpenHandler } = useUserAccount();
   const { referralCode, referrerName, isApplied } = useReferralCode();
   const [activeTab, setActiveTab] = useState("sign-in");
 
@@ -50,8 +50,35 @@ const SignupPage = () => {
       // The success message is now handled in the UserAccountContext
       await signIn("oauth", { authProviderId: "google" });
     } catch (err) {
-      // Error handling is now done in the UserAccountContext
       console.error("Error during Google sign-in:", err);
+
+      // Enhanced error handling for OAuth failures
+      let errorTitle = "Google Sign-In Failed";
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+
+      if (err instanceof Error) {
+        if (err.message.includes("popup") || err.message.includes("blocked")) {
+          errorTitle = "Popup Blocked";
+          errorMessage = "Please allow popups for this site and try again.";
+        } else if (err.message.includes("network") || err.message.includes("fetch")) {
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again.";
+        } else if (err.message.includes("cancelled") || err.message.includes("closed")) {
+          errorTitle = "Sign-In Cancelled";
+          errorMessage = "Google sign-in was cancelled. Please try again.";
+        } else if (err.message.includes("unauthorized") || err.message.includes("access_denied")) {
+          errorTitle = "Access Denied";
+          errorMessage = "Google sign-in was denied. Please check your Google account permissions.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      alertModalOpenHandler({
+        isError: true,
+        title: errorTitle,
+        message: errorMessage,
+      });
     }
   };
 
@@ -60,8 +87,35 @@ const SignupPage = () => {
       // The success message is now handled in the UserAccountContext
       await signIn("oauth", { authProviderId: "apple" });
     } catch (err) {
-      // Error handling is now done in the UserAccountContext
       console.error("Error during Apple sign-in:", err);
+
+      // Enhanced error handling for OAuth failures
+      let errorTitle = "Apple Sign-In Failed";
+      let errorMessage = "Failed to sign in with Apple. Please try again.";
+
+      if (err instanceof Error) {
+        if (err.message.includes("popup") || err.message.includes("blocked")) {
+          errorTitle = "Popup Blocked";
+          errorMessage = "Please allow popups for this site and try again.";
+        } else if (err.message.includes("network") || err.message.includes("fetch")) {
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again.";
+        } else if (err.message.includes("cancelled") || err.message.includes("closed")) {
+          errorTitle = "Sign-In Cancelled";
+          errorMessage = "Apple sign-in was cancelled. Please try again.";
+        } else if (err.message.includes("unauthorized") || err.message.includes("access_denied")) {
+          errorTitle = "Access Denied";
+          errorMessage = "Apple sign-in was denied. Please check your Apple ID permissions.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      alertModalOpenHandler({
+        isError: true,
+        title: errorTitle,
+        message: errorMessage,
+      });
     }
   };
 

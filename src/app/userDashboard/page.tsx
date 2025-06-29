@@ -43,6 +43,7 @@ import { useBalance, useChainId } from "wagmi";
 import { useTokenBalances, useTokenBalancess } from "@/lib/hooks/useCurrencyBalance";
 import { useAppSelector } from "@/state/hooks";
 import { useUserAccount } from "@/context/UserAccountContext";
+import { useTransactionContext } from "@/context/TransactionContext";
 import { Token } from "@uniswap/sdk-core";
 import { useStockIcon } from "@/hooks/useStockIcon";
 import { useAllTransactions } from "@/state/transactions/hooks";
@@ -142,15 +143,16 @@ export default function Chart() {
     totalInvested,
     getTotalInvestment,
     zrusdBorrowed,
-    getTransactions,
     zfi_balance,
     balanceLoading,
     getTotalAssetInvestment,
   } = useUserAccount();
+
+  // Use shared transaction context
+  const { transactions: transactionsFromDb, isLoading: isTransactionLoading } = useTransactionContext();
+
   const [poolsModal, setPoolsModal] = useState(false);
   const [stocksModal, setStocksModal] = useState(false);
-  const [transactionsFromDb, setTransactionFromDb] = useState<Transaction[] | null>(null);
-  const [isTransactionLoading, setIsTransactionLoading] = useState(false);
   const [investmentData, setInvestmentData] = useState<InvestmentData | null>(null);
   const transactions = useAppSelector((state) => state.transactions);
   const { assets, loading } = useAppSelector((state) => state.application);
@@ -197,19 +199,7 @@ export default function Chart() {
     }
   }, [address]);
 
-  const fetchTransactions = async () => {
-    setIsTransactionLoading(true);
-    try {
-      const data = await getTransactions();
-      if (data?.payload?.transactions) {
-        setTransactionFromDb(data.payload.transactions);
-      }
-    } catch (err) {
-      console.error("Error fetching transactions:", err);
-    } finally {
-      setIsTransactionLoading(false);
-    }
-  };
+
 
   const fetchTotalInvestment = async () => {
     try {
@@ -230,11 +220,8 @@ export default function Chart() {
   useEffect(() => {
     const fetchData = async () => {
       if (token) {
-        await fetchTransactions();
         await fetchTotalInvestment();
-
-      } else if (transactionsFromDb) {
-        setTransactionFromDb(null);
+        // Transaction data is now handled by TransactionContext
       }
     };
 
@@ -535,7 +522,7 @@ export default function Chart() {
     // Only render when visible
     if (!isVisible) return null;
 
-    // Use absolute positioning relative to the parent container - this keeps it "sticky" to the card
+    // Simple positioning - always show below the icon, within the card
     return (
       <AnimatePresence>
         <motion.div
@@ -543,11 +530,11 @@ export default function Chart() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -5 }}
           transition={{ duration: 0.2 }}
-          className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 max-w-[90vw] p-3 text-sm text-white bg-[#001E33] border border-[#034a70] shadow-2xl rounded-md pointer-events-none"
+          className="absolute top-full right-0 mt-2 w-64 max-w-[280px] p-3 text-sm text-white bg-[#001E33] border border-[#034a70] shadow-2xl rounded-md pointer-events-none"
           style={{ zIndex: 9999 }}
         >
           {/* Arrow pointer */}
-          <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-[#001E33] border-t border-l border-[#034a70] rotate-45" />
+          <div className="absolute -top-1.5 right-4 w-3 h-3 bg-[#001E33] border-t border-l border-[#034a70] rotate-45" />
 
           {/* Title */}
           <div className="font-medium mb-1 text-[#4BB6EE]">{name}</div>
@@ -618,6 +605,7 @@ export default function Chart() {
               {icon}
             </div>
 
+            {/* Tooltip positioned relative to this icon container */}
             <Tooltip
               isVisible={showTooltip}
               reference={iconRef}
@@ -754,13 +742,13 @@ export default function Chart() {
   return (
     // <SidebarProvider open={sidebarVisible} onOpenChange={(e) => setSidebarVisible(e)}>
     <>
-      <div className="flex container justify-center overflow-x-hidden mt-6">
+      <div className="flex container justify-center overflow-x-hidden mt-6 px-2 sm:px-4">
         {/* <Sidebar /> */}
-        <div className={`flex flex-col flex-1 w-full duration-300`}>
+        <div className={`flex flex-col flex-1 w-full max-w-full duration-300`}>
           {/* <LayoutHeader /> */}
           {/* <Header /> */}
           <DashboardUserHeader />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-5 2xl:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3 sm:gap-5 2xl:gap-8 overflow-visible">
             <StatCard
               name="My Wallet"
               icon={<WalletIcon />}
@@ -862,9 +850,9 @@ export default function Chart() {
             />
           </div>
           {/* Main Dashboard Content */}
-          <div className="w-full mt-5 grid grid-cols-1 xl:grid-cols-9 2xl:grid-cols-4 gap-6">
+          <div className="w-full mt-5 grid grid-cols-1 xl:grid-cols-9 2xl:grid-cols-4 gap-3 sm:gap-6 overflow-x-hidden">
             {/* Left Column - Portfolio Chart and Transactions */}
-            <div className="w-full flex flex-col xl:col-span-6 2xl:col-span-3 order-2 xl:order-1">
+            <div className="w-full flex flex-col xl:col-span-6 2xl:col-span-3 order-2 xl:order-1 min-w-0">
               <PortfolioChart />
               <div className="mt-5 flex-1">
                 {isTransactionLoading ? (
@@ -886,7 +874,7 @@ export default function Chart() {
             </div>
 
             {/* Right Column - Charts, Investments, and Quests */}
-            <div className="xl:col-span-3 2xl:col-span-1 flex flex-col gap-4 order-1 xl:order-2">
+            <div className="xl:col-span-3 2xl:col-span-1 flex flex-col gap-4 order-1 xl:order-2 min-w-0">
               <div className="max-h-[215px] flex-1">
                 <CardWithChart
                   head={
@@ -918,11 +906,11 @@ export default function Chart() {
           </div>
 
           {/* Quests and Rewards Section */}
-          <div className="w-full mt-12">
+          <div className="w-full mt-12 overflow-x-hidden">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Quests & Rewards</h2>
+              <h2 className="text-lg sm:text-xl font-semibold">Quests & Rewards</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
               {/* Active Quests Widget */}
               <div className="md:col-span-1">
                 <ActiveQuestsWidget />

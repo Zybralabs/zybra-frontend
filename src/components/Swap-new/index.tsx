@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "./components/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLoadAssets } from "@/state/application/hooks";
@@ -8,6 +8,7 @@ import Swap from "./Swap";
 import BuyCrypto from "./BuyCrypto";
 import { useSearchParams, useRouter } from "next/navigation";
 import PoolInvestPage from "./Swap-Pool";
+import { ChevronDown } from "lucide-react";
 
 type TabContent = {
   [key: string]: JSX.Element | null;
@@ -22,10 +23,14 @@ export default function SwapBuyPage() {
   const [poolSubTab, setPoolSubTab] = useState<SubTab>("deposit");
   const [isAnimating, setIsAnimating] = useState(false);
   const [navType, setNavType] = useState<"main" | "sub">("main");
-  
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const loadAssets = useLoadAssets();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Reference for dropdown positioning
+  const dropdownButtonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     loadAssets({
@@ -34,7 +39,7 @@ export default function SwapBuyPage() {
       orderBy: "name",
       orderDirection: "asc"
     });
-  }, []);
+  }, [loadAssets]);
 
   // Handle URL params for navigation
   useEffect(() => {
@@ -54,6 +59,39 @@ export default function SwapBuyPage() {
       }
     }
   }, [searchParams]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen && dropdownButtonRef.current && !dropdownButtonRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // Toggle dropdown
+  const toggleDropdown = useCallback(() => {
+    setIsDropdownOpen(prev => !prev);
+  }, []);
+
+  // Handle dropdown item selection
+  const handleDropdownSelect = useCallback((main: MainTab, sub?: SubTab) => {
+    setMainTab(main);
+    if (sub) {
+      if (main === "stock") {
+        setStockSubTab(sub);
+      } else if (main === "pool") {
+        setPoolSubTab(sub);
+      }
+    }
+    updateUrl(main, sub);
+    setIsDropdownOpen(false);
+  }, []);
 
   // Update URL when tabs change
   const updateUrl = (main: MainTab, sub?: SubTab) => {

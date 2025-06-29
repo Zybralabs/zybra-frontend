@@ -7,7 +7,7 @@ export const SOCIAL_LINKS = {
   TWITTER: "https://x.com/zybraFi",
   TELEGRAM_CHANNEL: "https://t.me/ZybraFi",
   TELEGRAM_GROUP: "https://t.me/+EyltbQLhkJhjZjM8",
-  DISCORD: "http://discord.gg/frh8MaEnTM",
+  DISCORD: "https://discord.com/invite/frh8MaEnTM",
   
   // Documentation
   DOCUMENTATION: "https://zybra-finance.gitbook.io/zybra-general-documentation",

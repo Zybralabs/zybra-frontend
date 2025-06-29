@@ -26,6 +26,7 @@ import { HealthFactorDisplay, HealthFactorBar, HealthFactorPreview } from "@/com
 import { useLendingTransactions, type LendingAsset } from "@/hooks/useLendingTransactions";
 import { TrendingUp, TrendingDown, DollarSign, Shield, AlertTriangle, CheckCircle, Clock, Zap } from "lucide-react";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { LendingMetricsCard } from "@/components/LendingMetrics/LendingMetricsCards";
 
 // Sample assets data with tokenAddresses added
 const initialAssets: AssetInfo[] = [
@@ -934,115 +935,18 @@ const LendingAndBorrowing: FC = () => {
           </div>
         )}
 
-        {/* Analytics Cards - User Metrics */}
-        {userAddress && !isLoadingPoolData && !isLoadingTokenBalances && userAccountData && (
-          <motion.div
-            className="space-y-6"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {/* Top Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <AnalyticsCard
-                title="Total Supplied"
-                value={`$${userAccountData.totalLiquidityBalanceUSD.toLocaleString(undefined, {maximumFractionDigits: 2})}`}
-                subtitle="Across all assets"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-                bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
-              />
-              <AnalyticsCard
-                title="Total Borrowed"
-                value={`$${userAccountData.totalBorrowBalanceUSD.toLocaleString(undefined, {maximumFractionDigits: 2})}`}
-                subtitle="Outstanding debt"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                }
-                bgColor="bg-gradient-to-br from-purple-500 to-purple-600"
-              />
-              <AnalyticsCard
-                title="Borrow Utilization"
-                value={`${(borrowUtilization * 100).toFixed(2)}%`}
-                subtitle={`of $${borrowLimit.toLocaleString(undefined, {maximumFractionDigits: 2})} limit`}
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                }
-                bgColor="bg-gradient-to-br from-yellow-500 to-amber-600"
-              />
-            </div>
-
-            {/* Bottom Detailed Metrics with Health Factor */}
-            <div className="bg-gradient-to-r from-[#0A1721] to-[#142936] rounded-xl p-6 border border-white/10 shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Total Supplied */}
-                <div className="text-center">
-                  <p className="text-sm text-white/60 mb-1">Total Supplied</p>
-                  <p className="text-2xl font-bold text-white">
-                    ${userAccountData.totalLiquidityBalanceUSD.toFixed(2)}
-                  </p>
-                </div>
-
-                {/* Total Borrowed */}
-                <div className="text-center">
-                  <p className="text-sm text-white/60 mb-1">Total Borrowed</p>
-                  <p className="text-2xl font-bold text-white">
-                    ${userAccountData.totalBorrowBalanceUSD.toFixed(2)}
-                  </p>
-                </div>
-
-                {/* Borrow Utilization */}
-                <div className="text-center">
-                  <p className="text-sm text-white/60 mb-1">Borrow Utilization</p>
-                  <p className="text-2xl font-bold text-white">
-                    {(userAccountData.borrowUtilization * 100).toFixed(1)}%
-                  </p>
-                </div>
-
-                {/* Health Factor */}
-                <div className="text-center">
-                  <p className="text-sm text-white/60 mb-2">Health Factor</p>
-                  <HealthFactorDisplay
-                    healthFactor={healthFactor}
-                    size="md"
-                    showIcon={true}
-                    showDescription={false}
-                  />
-                </div>
-              </div>
-
-              {/* Health Factor Bar */}
-              <div className="mt-6">
-                <HealthFactorBar
-                  healthFactor={userAccountData.healthFactor}
-                  showLabels={true}
-                  height="md"
-                />
-              </div>
-
-              {/* Risk Warning */}
-              {userAccountData.healthFactor < 1.5 && userAccountData.totalBorrowBalanceUSD > 0 && (
-                <motion.div
-                  className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <p className="text-sm text-yellow-400">
-                    <strong>⚠️ Risk Notice:</strong> Consider supplying more collateral or reducing your borrows to improve your Health Factor.
-                  </p>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
+        {/* Comprehensive Lending Metrics with Health Factor */}
+        <LendingMetricsCard
+          totalSupplied={userAccountData?.totalLiquidityBalanceUSD || 0}
+          totalBorrowed={userAccountData?.totalBorrowBalanceUSD || 0}
+          borrowUtilization={borrowUtilization}
+          borrowLimit={borrowLimit}
+          healthFactor={userAccountData?.healthFactor || Infinity}
+          // @ts-ignore
+          isLoading={isLoadingPoolData || isLoadingTokenBalances}
+          hasUserAddress={!!userAddress}
+          hasUserData={!!userAccountData}
+        />
 
         {/* Tabs */}
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">

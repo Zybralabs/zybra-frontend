@@ -23,6 +23,11 @@ export interface FormData {
   documentCountry?: string;
   documentPicture?: string;
   address?: string;
+  city?: string;
+  postalCode?: string;
+  frontImage?: File;
+  backImage?: File;
+  [key: string]: string | File | undefined; // For dynamic file upload fields
 }
 
 interface OnboardingContextType {

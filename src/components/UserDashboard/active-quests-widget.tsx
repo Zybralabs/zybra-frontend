@@ -99,12 +99,15 @@ export default function ActiveQuestsWidget() {
     if (!quest.user_progress?.steps_progress?.length) return 0;
 
     const totalSteps = quest.steps.length;
+    if (totalSteps === 0) return 0;
+
     const completedSteps = quest.user_progress.steps_progress.filter(step => step.status === 'completed').length;
     const inProgressSteps = quest.user_progress.steps_progress.filter(step => step.status === 'in_progress');
 
     let progressSum = completedSteps * 100;
     inProgressSteps.forEach(step => {
-      progressSum += step.progress_percent;
+      const stepProgress = step.progress_percent || 0;
+      progressSum += stepProgress;
     });
 
     return Math.round(progressSum / totalSteps);

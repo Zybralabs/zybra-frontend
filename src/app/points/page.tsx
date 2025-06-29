@@ -7,6 +7,8 @@ import { ErrorModal, SuccessModal } from "@/components/Modal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow, format } from "date-fns";
+import { useAccount, useChainId } from "wagmi";
+import { ZFI, SupportedChainId } from "@/constant/addresses";
 import {
   Trophy,
   CloudLightning,
@@ -36,12 +38,18 @@ import {
   MapIcon,
   BarChart,
   User,
-  History
+  History,
+  Play,
+  Pause,
+  CheckCircle,
+  Coins
 } from "lucide-react";
 import LoadingContent from "@/components/LoadingContent";
 import { useUserAccount, type Badges } from "@/context/UserAccountContext";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import UserRankDisplay from "@/components/Points/UserRankDisplay";
+import Pagination from "@/components/ui/Pagination";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@radix-ui/react-tooltip";
 
@@ -74,7 +82,7 @@ interface UserPointsProfile {
 
 interface QuestStep {
   step_id: string;
-  type: 'deposit' | 'mint_zrusd' | 'lend_zrusd' | 'borrow_zrusd' | 'trade_zrusd' | 'hold_zrusd' | 'other';
+  type: 'deposit' | 'mint_zrusd' | 'lend_zrusd' | 'borrow_zrusd' | 'trade_zrusd' | 'hold_zrusd' | 'email_optin' | 'social_share' | 'social_thread' | 'other';
   description: string;
   required_amount: number;
   required_duration: number;
@@ -227,7 +235,47 @@ interface Badge {
 }
 
 const BadgeCard: FC<{ badge: Badge; index: number }> = ({ badge, index }) => {
-  // Map category to icon
+  // Map badge ID to SVG image - EXACT MATCH with API badge IDs
+  const getBadgeImage = (badgeId: string) => {
+    const badgeImageMap: Record<string, string> = {
+      // Login and streak badges (exact API names from console)
+      'first_login': '/icons/testnetconnected.svg',
+      'daily_login': '/icons/testnetconnected.svg',
+      'streak_3_day': '/icons/3daystreaker.svg',
+      'streak_5_day': '/icons/5daysachiever.svg',
+      'streak_7_day': '/icons/7daysmaster.svg',
+      'testnet_connected': '/icons/testnetconnected.svg',
+
+      // Product usage badges (exact API names from console)
+      'testnet_staker': '/icons/testnetstaker.svg',
+      'testnet_lender': '/icons/testnetlender.svg',
+      'zrusd_minter': '/icons/ZrUSDMinter.svg',
+      'asset_swapper': '/icons/assetswapper.svg',
+      'power_user': '/icons/poweruser.svg',
+      'super_staker': '/icons/testnetstaker.svg',
+
+      // Achievement badges (exact API names from console)
+      'profile_complete': '/icons/profilecomplete.svg',
+      'completionist': '/icons/completionist.svg',
+      'test_pilot': '/icons/testpilot.svg',
+      'zy_og': '/icons/ZyOG.svg',
+
+      // Social engagement badges (exact API names from console)
+      'dazzle_up': '/icons/dazzleup.svg',
+      'zybra_promoter': '/icons/shareyouryield.svg',
+      'zybra_evangelist': '/icons/thread.svg',
+      'zybra_referrer': '/icons/referafriend.svg',
+      'community_participant': '/icons/AMA participation.svg',
+
+      // Special badges (exact API names from console)
+      'feature_explorer': '/icons/completemodules.svg',
+      'zybra_master': '/icons/ZyOG.svg',
+      'prize_entrant': '/icons/drawentry.svg'
+    };
+    return badgeImageMap[badgeId] || null;
+  };
+
+  // Map category to icon (fallback)
   const getCategoryIcon = (category: string) => {
     const icons: Record<string, React.ReactNode> = {
       'exploration': <CloudLightning className="w-6 h-6 text-white" />,
@@ -252,9 +300,17 @@ const BadgeCard: FC<{ badge: Badge; index: number }> = ({ badge, index }) => {
       <div className="flex flex-col h-full">
         <div className="flex items-start gap-4 mb-3">
           <div className={`w-12 h-12 rounded-lg flex items-center justify-center
-            ${badge.earned ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-md' : 'bg-[#002132] opacity-60'}
+            ${badge.earned ? 'bg-transparent shadow-md' : 'bg-[#002132] opacity-60'}
           `}>
-            {getCategoryIcon(badge.category)}
+            {getBadgeImage(badge.id) ? (
+              <img
+                src={getBadgeImage(badge.id)!}
+                alt={badge.title}
+                className="w-12 h-12"
+              />
+            ) : (
+              getCategoryIcon(badge.category)
+            )}
           </div>
 
           <div className="flex-grow">
@@ -538,9 +594,9 @@ const LeaderboardRow: FC<{
   tier: string;
   isCurrentUser?: boolean;
 }> = ({ position, username, points, tier, isCurrentUser = false }) => {
-  // Truncate long wallet addresses
+  // Truncate long wallet addresses for mobile
   const displayUsername = username?.startsWith('0x') ?
-    `${username.substring(0, 6)}...${username.substring(username.length - 4)}` :
+    `${username.substring(0, 4)}...${username.substring(username.length - 3)}` :
     username || 'Anonymous';
 
   // Determine if this is a top 3 position
@@ -555,8 +611,8 @@ const LeaderboardRow: FC<{
   return (
     <motion.div
       className={`
-        flex items-center gap-3 p-3 sm:p-4 rounded-xl transition-all duration-300
-        w-full max-w-full backdrop-blur-sm
+        flex items-center gap-2 sm:gap-3 p-2.5 sm:p-4 rounded-xl transition-all duration-300
+        w-full max-w-full backdrop-blur-sm leaderboard-mobile-optimized
         ${isCurrentUser
           ? 'bg-gradient-to-r from-[#002C54] to-[#00233A] border border-[#0071D4]/40 shadow-[0_0_15px_rgba(0,113,212,0.15)]'
           : 'bg-gradient-to-r from-[#001525] to-[#00233A] border border-[#003354]/30'
@@ -579,8 +635,8 @@ const LeaderboardRow: FC<{
       {/* Position Badge */}
       <div
         className={`
-          w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center
-          rounded-lg font-bold text-base sm:text-lg
+          w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center
+          rounded-lg font-bold text-sm sm:text-lg
           ${positionStyle.bg}
           ${positionStyle.text}
           border ${positionStyle.border}
@@ -591,16 +647,16 @@ const LeaderboardRow: FC<{
 
       {/* User Info */}
       <div className="flex-grow min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
           {/* Username with optional avatar for visual interest */}
-          <div className="flex items-center gap-2 truncate">
+          <div className="flex items-center gap-1 sm:gap-2 truncate flex-1 min-w-0">
             {isTopThree && position === 1 && (
-              <span className="text-lg mr-1">👑</span>
+              <span className="text-base sm:text-lg flex-shrink-0">👑</span>
             )}
 
             <span
               className={`
-                truncate max-w-[150px] sm:max-w-full font-medium
+                truncate font-medium text-sm sm:text-base
                 ${isCurrentUser
                   ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#4FACFF] to-[#6CBBFF]'
                   : isTopThree ? 'text-white' : 'text-gray-200'
@@ -610,10 +666,10 @@ const LeaderboardRow: FC<{
               {displayUsername}
             </span>
 
-            {/* Tier Badge */}
+            {/* Tier Badge - Hidden on very small screens */}
             <div
               className={`
-                px-2 py-0.5 text-xs rounded-full backdrop-blur-sm border
+                hidden xs:block px-1.5 sm:px-2 py-0.5 text-xs rounded-full backdrop-blur-sm border flex-shrink-0
                 ${tierColors[tier.toLowerCase()] || tierColors.bronze}
                 ${isCurrentUser ? 'border-blue-500/30' : 'border-slate-700/50'}
               `}
@@ -621,9 +677,9 @@ const LeaderboardRow: FC<{
               {tier.charAt(0).toUpperCase() + tier.slice(1)}
             </div>
 
-            {/* You Badge */}
+            {/* You Badge - Smaller on mobile */}
             {isCurrentUser && (
-              <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-md font-medium border border-blue-500/30">
+              <span className="text-xs px-1.5 sm:px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-md font-medium border border-blue-500/30 flex-shrink-0">
                 You
               </span>
             )}
@@ -634,19 +690,28 @@ const LeaderboardRow: FC<{
       {/* Points */}
       <div
         className={`
-          text-right font-bold
+          text-right font-bold flex-shrink-0
           ${isCurrentUser
-            ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#4FACFF] to-[#6CBBFF]'
+            ? 'text-blue-400'
             : isTopThree && position === 1
-              ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-300'
+              ? 'text-yellow-400'
               : 'text-white'
           }
         `}
       >
-        <span className="text-sm sm:text-base">
-          {points?.toLocaleString()}
-          <span className="ml-1 text-xs sm:text-sm opacity-80">pts</span>
-        </span>
+        <div className="flex flex-col items-end">
+          <span className="text-sm sm:text-base leading-tight">
+            {points != null && points !== undefined
+              ? points >= 1000000
+                ? `${(points / 1000000).toFixed(1)}M`
+                : points >= 1000
+                  ? `${(points / 1000).toFixed(1)}K`
+                  : points.toLocaleString()
+              : '0'
+            }
+          </span>
+          <span className="text-xs opacity-80 leading-tight">pts</span>
+        </div>
       </div>
     </motion.div>
   );
@@ -665,6 +730,177 @@ const getCategoryStyle = (category: string) => {
     'Streak': "bg-pink-500/20 text-pink-400 border-pink-500/30"
   };
   return styles[category] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
+};
+
+// Email Opt-in Form Component
+const EmailOptinForm: FC<{
+  questId: string;
+  onComplete: () => void;
+}> = ({ questId, onComplete }) => {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const { storeEmailOptin } = useUserAccount();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      // Store the email opt-in and update quest progress
+      await storeEmailOptin(email, questId);
+
+      // Show success and refresh
+      setTimeout(() => {
+        onComplete();
+      }, 1000);
+    } catch (err) {
+      setError('Failed to complete email opt-in. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email address"
+          className="w-full px-3 py-2 bg-[#001A26] border border-[#003354]/60 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-colors"
+          disabled={isSubmitting}
+        />
+        {error && (
+          <p className="text-red-400 text-xs mt-1">{error}</p>
+        )}
+      </div>
+      <Button
+        type="submit"
+        disabled={isSubmitting || !email}
+        className="w-full py-2 px-4 bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white rounded-lg font-medium transition-all duration-300 disabled:opacity-50"
+      >
+        {isSubmitting ? (
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Submitting...</span>
+          </div>
+        ) : (
+          'Complete Email Opt-in'
+        )}
+      </Button>
+    </form>
+  );
+};
+
+// Social Share Form Component
+const SocialShareForm: FC<{
+  questId: string;
+  quest: Quest;
+  onComplete: () => void;
+}> = ({ questId, quest, onComplete }) => {
+  const [isSharing, setIsSharing] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const { verifySocialShare } = useUserAccount();
+
+  const handleShare = async () => {
+    setIsSharing(true);
+
+    // Determine platform and message
+    let platform = 'twitter';
+    let shareUrl = '';
+    let message = '';
+
+    if (quest.title.toLowerCase().includes('twitter') || quest.title.toLowerCase().includes('thread')) {
+      platform = 'twitter';
+      message = "Just discovered @zybraFi - an amazing DeFi platform with innovative yield strategies! 🚀 The future of decentralized finance is here. #ZybraFinance #DeFi #Yield";
+      shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent('https://app.zybra.finance')}`;
+    } else if (quest.title.toLowerCase().includes('discord')) {
+      platform = 'discord';
+      shareUrl = 'https://discord.com/invite/frh8MaEnTM';
+    } else if (quest.title.toLowerCase().includes('telegram')) {
+      platform = 'telegram';
+      shareUrl = 'https://t.me/ZybraFi';
+    } else {
+      // Default to Twitter
+      platform = 'twitter';
+      message = "Check out @zybraFi - revolutionizing DeFi with smart yield strategies! 🌟 #ZybraFinance #DeFi";
+      shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent('https://app.zybra.finance')}`;
+    }
+
+    // Open social media platform
+    window.open(shareUrl, '_blank');
+
+    // Auto-complete the quest after 9 seconds
+    setTimeout(async () => {
+      try {
+        // Determine the correct action type based on quest
+        let actionType = 'create_thread';
+        if (quest.title.toLowerCase().includes('share') || quest.title.toLowerCase().includes('yield')) {
+          actionType = 'share_yield';
+        }
+
+        // Track the social share with the correct action type
+        console.log('Calling verifySocialShare with:', { platform, shareUrl, actionType, questId: quest.quest_id });
+        const result = await verifySocialShare(platform, shareUrl, actionType, quest.quest_id);
+        console.log('verifySocialShare result:', result);
+
+        if (result && result.success) {
+          setIsCompleted(true);
+          console.log('Social quest completed successfully');
+        } else {
+          console.error('Social quest completion failed:', result);
+        }
+
+        // Refresh the page after a short delay to show updated quest status
+        setTimeout(() => {
+          onComplete();
+        }, 1500);
+      } catch (error) {
+        console.error('Error completing social quest:', error);
+        // Still refresh to show updated state
+        setTimeout(() => {
+          onComplete();
+        }, 1500);
+      }
+    }, 9000);
+  };
+
+  return (
+    <div className="space-y-3">
+      {!isSharing ? (
+        <Button
+          onClick={handleShare}
+          className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-400 hover:to-purple-300 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          Share on Social Media
+        </Button>
+      ) : (
+        <div className="text-center space-y-2">
+          {!isCompleted ? (
+            <div className="flex items-center justify-center gap-2 text-purple-400">
+              <Share2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Redirected to social media</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-green-400">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Quest completed!</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 // Quest Card Component
 const QuestCard: FC<{
@@ -687,11 +923,24 @@ const QuestCard: FC<{
     quest.steps.reduce((sum, step) => sum + step.reward.points, 0);
 
   // Calculate quest completion percentage
-  const questCompletionPercent = isInProgress ?
-    userProgress ?
-      userProgress.steps_progress.reduce((sum, step) => sum + step.progress_percent, 0) /
-      userProgress.steps_progress.length : 0
-    : isCompleted || isClaimed ? 100 : 0;
+  const questCompletionPercent = (() => {
+    if (isCompleted || isClaimed) return 100;
+    if (!isInProgress || !userProgress?.steps_progress?.length) return 0;
+
+    const totalSteps = quest.steps.length;
+    if (totalSteps === 0) return 0;
+
+    const completedSteps = userProgress.steps_progress.filter(step => step.status === 'completed').length;
+    const inProgressSteps = userProgress.steps_progress.filter(step => step.status === 'in_progress');
+
+    let progressSum = completedSteps * 100;
+    inProgressSteps.forEach(step => {
+      const stepProgress = step.progress_percent || 0;
+      progressSum += stepProgress;
+    });
+
+    return Math.round(progressSum / totalSteps);
+  })();
 
   // Get category style
 
@@ -855,6 +1104,75 @@ const QuestCard: FC<{
                   </>
                 )}
               </Button>
+            </motion.div>
+          )}
+
+          {/* Email Opt-in Quest UI */}
+          {isInProgress && (quest.title.toLowerCase().includes('email') || quest.description.toLowerCase().includes('email')) && (
+            <motion.div
+              key="email-optin"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              <div className="bg-[#00233A] rounded-lg p-4 border border-[#003354]/60">
+                <div className="flex items-center gap-2 mb-3">
+                  <Mail className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-medium text-white">Enter your email to opt-in for updates:</span>
+                </div>
+                <EmailOptinForm questId={quest.quest_id} onComplete={() => window.location.reload()} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Social Quest UI */}
+          {isInProgress && (
+            quest.title.toLowerCase().includes('share') ||
+            quest.title.toLowerCase().includes('thread') ||
+            quest.title.toLowerCase().includes('twitter') ||
+            quest.title.toLowerCase().includes('discord') ||
+            quest.title.toLowerCase().includes('telegram')
+          ) && (
+            <motion.div
+              key="social-quest"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              <div className="bg-[#00233A] rounded-lg p-4 border border-[#003354]/60">
+                <div className="flex items-center gap-2 mb-3">
+                  <Share2 className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm font-medium text-white">Share about Zybra Finance:</span>
+                </div>
+                <SocialShareForm questId={quest.quest_id} quest={quest} onComplete={() => window.location.reload()} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Testnet Assets Quest UI - Add ZFI Token Button */}
+          {isInProgress && (
+            quest.title.toLowerCase().includes('testnet') &&
+            quest.title.toLowerCase().includes('assets')
+          ) && (
+            <motion.div
+              key="testnet-assets-quest"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              <div className="bg-[#00233A] rounded-lg p-4 border border-[#003354]/60">
+                <div className="flex items-center gap-2 mb-3">
+                  <Coins className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm font-medium text-white">Add ZFI Token to your wallet:</span>
+                </div>
+                <AddZFITokenButton onSuccess={() => window.location.reload()} />
+              </div>
             </motion.div>
           )}
 
@@ -1115,37 +1433,40 @@ const ReferralCard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="bg-gradient-to-r from-[#00233A] to-[#001220] py-4 px-5 border-b border-[#002A43] flex justify-between items-center">
+        <div className="bg-gradient-to-r from-[#00233A] to-[#001220] py-3 sm:py-4 px-4 sm:px-5 border-b border-[#002A43] flex flex-col sm:flex-row gap-2 sm:gap-0 sm:justify-between sm:items-center">
           <div className="flex items-center">
-            <Award className="h-5 w-5 text-blue-400 mr-2" />
-            <span className="font-semibold text-base text-white">Referral Program</span>
+            <Award className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mr-2" />
+            <span className="font-semibold text-sm sm:text-base text-white">Referral Program</span>
           </div>
-          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-2.5 py-1 text-xs">
-            <Users className="mr-1.5 h-3 w-3" /> 1000 pts per referral
+          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-2 sm:px-2.5 py-1 text-xs self-start sm:self-auto">
+            <Users className="mr-1 sm:mr-1.5 h-3 w-3" />
+            <span className="hidden xs:inline">1000 pts per referral</span>
+            <span className="xs:hidden">1000 pts</span>
           </Badge>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
             </div>
           ) : (
             <>
-              <div className="mb-6">
-                <h3 className="text-xl font-medium text-white mb-2">Invite friends & earn rewards</h3>
-                <p className="text-gray-400 text-sm">Share your referral code with friends. When they join and complete their first activity, you&apos;ll both earn bonus points!</p>
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-medium text-white mb-2">Invite friends & earn rewards</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">Share your referral code with friends. When they join and complete their first activity, you&apos;ll both earn bonus points!</p>
               </div>
 
               {referralData.hasGeneratedCode ? (
-                <div className="bg-[#00233A] rounded-lg p-5 border border-[#002A43] mb-6">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="bg-[#00233A] rounded-lg p-4 sm:p-5 border border-[#002A43] mb-4 sm:mb-6">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2 sm:gap-0">
                     <div className="text-sm font-medium text-white">Your Referral Code</div>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="text-xs text-blue-400 flex items-center cursor-help">
+                        <div className="text-xs text-blue-400 flex items-center cursor-help self-start sm:self-auto">
                           <InfoIcon className="w-3.5 h-3.5 mr-1.5" />
-                          1000 points per referral
+                          <span className="hidden xs:inline">1000 points per referral</span>
+                          <span className="xs:hidden">1000 pts</span>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -1153,32 +1474,32 @@ const ReferralCard = () => {
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-[#001525] flex-grow px-4 py-3 rounded-lg border border-[#002A43] font-mono text-blue-300 select-all">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="bg-[#001525] flex-grow px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-[#002A43] font-mono text-blue-300 select-all text-sm sm:text-base min-w-0 overflow-hidden">
                       {referralData.referralCode}
                     </div>
                     <Button
                       onClick={handleCopyCode}
-                      className={`p-3 rounded-lg h-12 w-12 flex items-center justify-center transition-colors duration-200 ${
+                      className={`p-2.5 sm:p-3 rounded-lg h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center transition-colors duration-200 flex-shrink-0 ${
                         copyState.code
                           ? "bg-green-500/20 text-green-300 hover:bg-green-500/30"
                           : "bg-[#00314F] hover:bg-[#003b5e] text-blue-300"
                       }`}
                     >
-                      {copyState.code ? <Check size={18} /> : <Copy size={18} />}
+                      {copyState.code ? <Check size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Copy size={16} className="sm:w-[18px] sm:h-[18px]" />}
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-[#00233A] rounded-lg p-8 border border-[#002A43] mb-6 flex flex-col items-center justify-center text-center">
-                  <div className="bg-blue-500/10 p-3 rounded-full mb-4">
-                    <Trophy className="h-10 w-10 text-blue-400" />
+                <div className="bg-[#00233A] rounded-lg p-6 sm:p-8 border border-[#002A43] mb-4 sm:mb-6 flex flex-col items-center justify-center text-center">
+                  <div className="bg-blue-500/10 p-2.5 sm:p-3 rounded-full mb-3 sm:mb-4">
+                    <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400" />
                   </div>
-                  <h4 className="text-lg text-white font-medium mb-2">Generate Your Referral Code</h4>
-                  <p className="text-gray-400 text-sm mb-5 max-w-md">Create your unique referral code to start inviting friends and earning rewards!</p>
+                  <h4 className="text-base sm:text-lg text-white font-medium mb-2">Generate Your Referral Code</h4>
+                  <p className="text-gray-400 text-sm mb-4 sm:mb-5 max-w-md leading-relaxed">Create your unique referral code to start inviting friends and earning rewards!</p>
                   <Button
                     onClick={handleGenerateCode}
-                    className="py-3 px-6 font-medium bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg"
+                    className="py-2.5 sm:py-3 px-5 sm:px-6 font-medium bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg text-sm sm:text-base"
                   >
                     <Zap className="mr-2 h-4 w-4" />
                     Generate Code
@@ -1188,38 +1509,38 @@ const ReferralCard = () => {
 
               {referralData.hasGeneratedCode && (
                 <>
-                  <div className="flex flex-col md:flex-row gap-3 mb-6">
+                  <div className="flex flex-col gap-2.5 sm:gap-3 mb-4 sm:mb-6">
                     <Button
                       onClick={handleCopyLink}
-                      className={`flex-1 py-3 font-medium rounded-lg transition-colors duration-200 ${
+                      className={`w-full py-2.5 sm:py-3 font-medium rounded-lg transition-colors duration-200 text-sm sm:text-base ${
                         copyState.link
                           ? "bg-green-500/20 text-green-300 hover:bg-green-500/30"
                           : "bg-[#00314F] hover:bg-[#003b5e] text-blue-300"
                       }`}
                     >
-                      {copyState.link ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                      {copyState.link ? <Check className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Copy className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                       {copyState.link ? "Link Copied!" : "Copy Referral Link"}
                     </Button>
                     <Button
                       onClick={handleSendEmail}
-                      className="flex-1 py-3 font-medium bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg"
+                      className="w-full py-2.5 sm:py-3 font-medium bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg text-sm sm:text-base"
                     >
-                      <Mail className="mr-2 h-4 w-4" />
+                      <Mail className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Send Email Invite
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-[#00233A] rounded-lg p-4 border border-[#002A43] text-center">
-                      <div className="text-2xl font-bold text-white mb-1">{referralData.successCount}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                    <div className="bg-[#00233A] rounded-lg p-3 sm:p-4 border border-[#002A43] text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-white mb-1">{referralData.successCount}</div>
                       <div className="text-xs text-gray-400">Successful Referrals</div>
                     </div>
-                    <div className="bg-[#00233A] rounded-lg p-4 border border-[#002A43] text-center">
-                      <div className="text-2xl font-bold text-white mb-1">{referralData.pendingCount}</div>
+                    <div className="bg-[#00233A] rounded-lg p-3 sm:p-4 border border-[#002A43] text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-white mb-1">{referralData.pendingCount}</div>
                       <div className="text-xs text-gray-400">Pending Referrals</div>
                     </div>
-                    <div className="bg-[#00233A] rounded-lg p-4 border border-[#002A43] text-center">
-                      <div className="text-2xl font-bold text-blue-400 mb-1">{referralData.pointsEarned}</div>
+                    <div className="bg-[#00233A] rounded-lg p-3 sm:p-4 border border-[#002A43] text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-blue-400 mb-1">{referralData.pointsEarned}</div>
                       <div className="text-xs text-gray-400">Points Earned</div>
                     </div>
                   </div>
@@ -1227,47 +1548,49 @@ const ReferralCard = () => {
               )}
 
               {/* Rewards multiplier card */}
-              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 flex items-start mb-6">
-                <div className="bg-blue-500/20 p-1.5 rounded-full mr-3 flex-shrink-0">
-                  <Zap className="w-5 h-5 text-blue-400" />
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 sm:p-4 flex items-start mb-4 sm:mb-6">
+                <div className="bg-blue-500/20 p-1.5 rounded-full mr-2.5 sm:mr-3 flex-shrink-0">
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-medium text-white mb-1">Boost your rewards!</h4>
-                  <p className="text-xs text-gray-300">Complete social engagement quests to earn a 1.5x multiplier on all referral rewards.</p>
+                  <p className="text-xs text-gray-300 leading-relaxed">Complete social engagement quests to earn a 1.5x multiplier on all referral rewards.</p>
                   {referralData.successCount >= 3 && (
                     <div className="mt-2 text-xs text-green-400 flex items-center">
-                      <CheckCircle2 className="h-3 w-3 mr-1.5" />
-                      You&apos;re on your way to the &quot;Dazzle Up&quot; badge! {referralData.successCount}/5 referrals
+                      <CheckCircle2 className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                      <span className="break-words">You&apos;re on your way to the &quot;Dazzle Up&quot; badge! {referralData.successCount}/5 referrals</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {referralData.hasGeneratedCode && referralData.successCount + referralData.pendingCount === 0 && (
-                <div className="mt-6 bg-[#00233A] rounded-lg p-5 border border-dashed border-[#002A43] text-center">
-                  <div className="bg-blue-500/10 p-2 rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-3">
-                    <Share2 className="w-5 h-5 text-blue-400" />
+                <div className="mt-4 sm:mt-6 bg-[#00233A] rounded-lg p-4 sm:p-5 border border-dashed border-[#002A43] text-center">
+                  <div className="bg-blue-500/10 p-2 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mx-auto mb-3">
+                    <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
                   <h4 className="text-sm font-medium text-white mb-2">No Referrals Yet</h4>
-                  <p className="text-xs text-gray-400 mb-4">Share your code with friends to start earning rewards!</p>
-                  <div className="flex justify-center space-x-3">
+                  <p className="text-xs text-gray-400 mb-4 leading-relaxed">Share your code with friends to start earning rewards!</p>
+                  <div className="flex flex-col xs:flex-row justify-center gap-2 xs:gap-3">
                     <Button
                       onClick={() => window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(`Join me on Zybra Finance! Sign up using my referral code: ${referralData.referralCode} ${referralData.referralLink}`), '_blank')}
-                      className="bg-[#1DA1F2]/20 hover:bg-[#1DA1F2]/30 text-[#1DA1F2] text-xs px-3 py-2 rounded-lg"
+                      className="bg-[#1DA1F2]/20 hover:bg-[#1DA1F2]/30 text-[#1DA1F2] text-xs px-3 py-2 rounded-lg flex-1 xs:flex-none"
                       size="sm"
                     >
-                      <FaTwitter className="h-3.5 w-3.5 mr-1.5" /> Twitter
+                      <FaTwitter className="h-3.5 w-3.5 mr-1.5" />
+                      <span className="hidden xs:inline">Twitter</span>
+                      <span className="xs:hidden">X</span>
                     </Button>
                     <Button
                       onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(referralData.referralLink)}&text=${encodeURIComponent(`Join me on Zybra Finance! Use my referral code: ${referralData.referralCode}`)}`, '_blank')}
-                      className="bg-[#0088cc]/20 hover:bg-[#0088cc]/30 text-[#0088cc] text-xs px-3 py-2 rounded-lg"
+                      className="bg-[#0088cc]/20 hover:bg-[#0088cc]/30 text-[#0088cc] text-xs px-3 py-2 rounded-lg flex-1 xs:flex-none"
                       size="sm"
                     >
                       <Send className="h-3.5 w-3.5 mr-1.5" /> Telegram
                     </Button>
                     <Button
                       onClick={() => window.open(`https://discord.com/channels/@me`, '_blank')}
-                      className="bg-[#5865F2]/20 hover:bg-[#5865F2]/30 text-[#5865F2] text-xs px-3 py-2 rounded-lg"
+                      className="bg-[#5865F2]/20 hover:bg-[#5865F2]/30 text-[#5865F2] text-xs px-3 py-2 rounded-lg flex-1 xs:flex-none"
                       size="sm"
                     >
                       <FaDiscord className="h-3.5 w-3.5 mr-1.5" /> Discord
@@ -1334,13 +1657,204 @@ interface QuestResponse {
   } | Quest[];
 }
 
+// Function to add ZFI token to wallet
+const addZFITokenToWallet = async (chainId: number) => {
+  try {
+    if (!window.ethereum) {
+      throw new Error("No wallet detected. Please install MetaMask or another Web3 wallet.");
+    }
+
+    const tokenAddress = ZFI[chainId as keyof typeof ZFI];
+    if (!tokenAddress) {
+      throw new Error("ZFI token not available on this network");
+    }
+
+    const wasAdded = await window.ethereum.request({
+      method: 'wallet_watchAsset',
+      params: {
+        type: 'ERC20',
+        options: {
+          address: tokenAddress,
+          symbol: 'ZFI',
+          decimals: 18,
+          image: 'https://zybra.finance/icons/zfi-logo.png', // You can add a ZFI logo URL here
+        },
+      },
+    });
+
+    return { success: true, wasAdded };
+  } catch (error: any) {
+    console.error('Error adding ZFI token to wallet:', error);
+
+    // Check if the error is due to wallet_watchAsset not being supported
+    if (error.message && error.message.includes("wallet_watchAsset isn't implemented")) {
+      return {
+        success: false,
+        error: "Your wallet doesn't support automatic token addition. Please add the token manually.",
+        fallback: true
+      };
+    }
+
+    return {
+      success: false,
+      error: error.message || "Failed to add token to wallet",
+      fallback: false
+    };
+  }
+};
+
+// Add ZFI Token Button Component
+const AddZFITokenButton: FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const chainId = useChainId();
+  const { address } = useAccount();
+  const { trackWalletConnection } = useUserAccount();
+
+  const handleAddToken = async () => {
+    try {
+      setIsAdding(true);
+      setErrorMessage("");
+      setShowFallback(false);
+
+      const result = await addZFITokenToWallet(chainId);
+
+      if (result.success && result.wasAdded) {
+        setIsAdded(true);
+
+        // Track quest completion - mark as having testnet assets
+        if (address) {
+          try {
+            await trackWalletConnection(address, true); // true indicates has_testnet_assets
+            console.log("Quest completion tracked for adding ZFI token");
+
+            // Call onSuccess callback to refresh quest data
+            if (onSuccess) {
+              setTimeout(() => {
+                onSuccess();
+              }, 1000); // Small delay to ensure backend processing
+            }
+          } catch (questError) {
+            console.error("Failed to track quest completion:", questError);
+            // Don't show error to user, quest tracking is non-critical
+          }
+        }
+
+        setTimeout(() => setIsAdded(false), 5000); // Reset after 5 seconds
+      } else if (result.fallback) {
+        setShowFallback(true);
+        setErrorMessage(result.error || "");
+
+        // Even for fallback (manual addition), we can mark the quest as completed
+        // since the user has taken the action to add the token
+        if (address) {
+          try {
+            await trackWalletConnection(address, true);
+            console.log("Quest completion tracked for manual ZFI token addition");
+
+            // Call onSuccess callback to refresh quest data
+            if (onSuccess) {
+              setTimeout(() => {
+                onSuccess();
+              }, 1000); // Small delay to ensure backend processing
+            }
+          } catch (questError) {
+            console.error("Failed to track quest completion:", questError);
+          }
+        }
+      } else {
+        setErrorMessage(result.error || "Failed to add token");
+      }
+    } catch (error) {
+      console.error('Failed to add ZFI token:', error);
+      setErrorMessage("An unexpected error occurred");
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const tokenAddress = ZFI[chainId as keyof typeof ZFI];
+
+  if (showFallback) {
+    return (
+      <div className="space-y-3">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-amber-300">
+              {errorMessage}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#00233A] rounded-lg p-4 border border-[#003354]/60">
+          <div className="text-sm font-medium text-white mb-2">Manual Token Addition:</div>
+          <div className="space-y-2 text-xs text-gray-300">
+            <div><span className="text-gray-400">Token Address:</span> <span className="font-mono text-blue-300 break-all">{tokenAddress}</span></div>
+            <div><span className="text-gray-400">Symbol:</span> ZFI</div>
+            <div><span className="text-gray-400">Decimals:</span> 18</div>
+          </div>
+          <Button
+            onClick={() => navigator.clipboard.writeText(tokenAddress || "")}
+            className="w-full mt-3 py-2 text-xs bg-[#001A26] hover:bg-[#002132] text-blue-300 border border-[#003354]/60"
+          >
+            <Copy className="w-3 h-3 mr-1" />
+            Copy Token Address
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={handleAddToken}
+        disabled={isAdding}
+        className={`w-full py-3 px-4 font-medium rounded-lg transition-all duration-300 ${
+          isAdded
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            : 'bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-400 hover:to-blue-300 text-white shadow-lg shadow-blue-500/30'
+        }`}
+      >
+        {isAdding ? (
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Adding Token...</span>
+          </div>
+        ) : isAdded ? (
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Token Added!</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center space-x-2">
+            <Coins className="w-4 h-4" />
+            <span>Add ZFI Token to Wallet</span>
+          </div>
+        )}
+      </Button>
+
+      {errorMessage && !showFallback && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2">
+          <div className="flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <div className="text-xs text-red-300">{errorMessage}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main Component
 const PointsAndQuests: FC = () => {
   const [activeTab, setActiveTab] = useState<string>("points");
   const [pointsSubTab, setPointsSubTab] = useState<string>("profile");
   const [questsSubTab, setQuestsSubTab] = useState<string>("available");
   const [loading, setLoading] = useState(true);
-  const [redeemSubTab, setRedeemSubTab] = useState<string>("redeem");
   const [badges, setBadges] = useState<Badges | null>(null);
   const [userBadges, setUserBadges] = useState<string[]>([]);
   const [badgeProgress, setBadgeProgress] = useState<Record<string, { progress: number, required: number }>>({});
@@ -1351,6 +1865,18 @@ const PointsAndQuests: FC = () => {
   const [pointsHistory, setPointsHistory] = useState<PointsActivity[]>([]);
   const [claimingDaily, setClaimingDaily] = useState(false);
   const [pointsByCategory, setPointsByCategory] = useState<Record<string, { points: number, percentage: number }>>({});
+
+  // Leaderboard pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [userRank, setUserRank] = useState<{
+    rank: number;
+    points: number;
+    tier: string;
+  } | null>(null);
+  const itemsPerPage = 10;
 
   // Quests state
   const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
@@ -1379,6 +1905,7 @@ const PointsAndQuests: FC = () => {
 
   const {
     address,
+    user,
     getUserPointsProfile,
     getUserPointsHistory,
     getPointsLeaderboard,
@@ -1397,7 +1924,10 @@ const PointsAndQuests: FC = () => {
     trackMultiPoolActivity,
     trackCompletedQuests,
     trackEarnedBadges,
-    getBadges
+    getBadges,
+    trackProfileCompletion,
+    verifySocialShare,
+    storeEmailOptin
   } = useUserAccount();
   const router = useRouter();
 
@@ -1520,26 +2050,83 @@ const PointsAndQuests: FC = () => {
   // Create a persistent ref to track if leaderboard fetch is in progress
   const isLeaderboardFetchingRef = useRef(false);
 
-  const fetchPointsLeaderboard = useCallback(async () => {
-    // If we already have leaderboard data, don't fetch again
-    if (pointsLeaderboard.length > 0) {
-      console.log("Already have points leaderboard data, skipping fetch");
-      return true;
-    }
-
+  const fetchPointsLeaderboard = useCallback(async (page: number = 1, forceRefresh: boolean = false) => {
     // If already fetching, don't make another request
     if (isLeaderboardFetchingRef.current) {
       console.log("Points leaderboard fetch already in progress, skipping");
       return false;
     }
 
+    // If we already have data for this page and not forcing refresh, skip
+    if (!forceRefresh && pointsLeaderboard.length > 0 && page === currentPage) {
+      console.log("Already have points leaderboard data for this page, skipping fetch");
+      return true;
+    }
+
     isLeaderboardFetchingRef.current = true;
+    setLeaderboardLoading(true);
 
     try {
-      console.log("Fetching points leaderboard");
-      const pointsLeaderboardRes = await getPointsLeaderboard();
-      if (pointsLeaderboardRes?.payload?.leaderboard) {
-        setPointsLeaderboard(pointsLeaderboardRes.payload.leaderboard);
+      const pointsLeaderboardRes = await getPointsLeaderboard(page, itemsPerPage);
+
+      if (pointsLeaderboardRes?.payload) {
+        const { leaderboard, pagination, user_stats } = pointsLeaderboardRes.payload;
+
+        setPointsLeaderboard(leaderboard || []);
+        setTotalPages(pagination?.total_pages || 1);
+        setTotalItems(pagination?.total || 0);
+        setCurrentPage(page);
+
+        // Calculate user rank - prioritize API user_stats, then calculate from leaderboard
+        let calculatedUserRank = null;
+
+        // Method 1: Use API provided user_stats (most reliable)
+        if (user_stats && user_stats.rank) {
+          calculatedUserRank = {
+            rank: user_stats.rank,
+            points: user_stats.points || 0,
+            tier: user_stats.tier || 'bronze'
+          };
+        }
+        // Method 2: Calculate from current leaderboard page if user is visible
+        else if (leaderboard && address) {
+          console.log("Calculating user rank from leaderboard...");
+          const userEntry = leaderboard.find(entry =>
+            entry.wallet_address === address ||
+                                  entry.user_id === userPoints?.user ||
+                                  entry.username === user.username
+          );
+          console.log("Calculating user rank from leaderboard...",userEntry,user,leaderboard);
+
+          if (userEntry) {
+            const userIndexInPage = leaderboard.findIndex(entry =>
+                                  entry.wallet_address === address ||
+                                  entry.user_id === userPoints?.user ||
+                                  entry.username === user.username
+            );
+            // Calculate global rank: (page-1) * itemsPerPage + position in page + 1
+            const globalRank = (page - 1) * itemsPerPage + userIndexInPage + 1;
+            calculatedUserRank = {
+              rank: globalRank,
+              points: userEntry.total_points,
+              tier: userEntry.tier
+            };
+            console.log("Calculated user rank from leaderboard:", calculatedUserRank);
+
+          }
+        }
+
+        // Method 3: Fallback to user points data without rank
+        if (!calculatedUserRank && userPoints) {
+          calculatedUserRank = {
+            rank: null, // Unknown rank
+            points: userPoints.total_points || 0,
+            tier: userPoints.tier || 'bronze'
+          };
+        }
+        console.log("User stats from API:", user_stats);
+
+        setUserRank(calculatedUserRank);
         return true;
       }
       return false;
@@ -1549,8 +2136,16 @@ const PointsAndQuests: FC = () => {
       return false;
     } finally {
       isLeaderboardFetchingRef.current = false;
+      setLeaderboardLoading(false);
     }
-  }, [getPointsLeaderboard, pointsLeaderboard]);
+  }, [getPointsLeaderboard, pointsLeaderboard, currentPage, itemsPerPage, address, userPoints]);
+
+  // Handle page change for leaderboard
+  const handlePageChange = useCallback((page: number) => {
+    if (page !== currentPage && page >= 1 && page <= totalPages) {
+      fetchPointsLeaderboard(page, true);
+    }
+  }, [currentPage, totalPages, fetchPointsLeaderboard]);
 
   // Use refs to track API call states for quests data
   const isQuestsFetchingRef = useRef(false);
@@ -1732,7 +2327,7 @@ const PointsAndQuests: FC = () => {
 
       // These operations use our improved caching mechanism
       // and will skip if already in progress
-      await fetchPointsLeaderboard();
+      await fetchPointsLeaderboard(1, false);
       await fetchQuestsData();
       await fetchRedemptionOptions();
       await fetchBadgesData();
@@ -1858,7 +2453,7 @@ const PointsAndQuests: FC = () => {
     }
   };
 
-  // Handle starting a quest
+  // Handle starting a quest - now just starts the quest and shows inline UI
   const handleStartQuest = async (questId: string) => {
     if (!address) {
       router.push("/signup");
@@ -1872,34 +2467,11 @@ const PointsAndQuests: FC = () => {
 
       if (response?.payload) {
         // Refresh quests data
-        const availableQuestsRes = await getAvailableQuests();
-        if (availableQuestsRes?.payload) {
-          if (Array.isArray(availableQuestsRes.payload)) {
-            setAvailableQuests(availableQuestsRes.payload);
-
-            // Re-categorize quests
-            const categorized: Record<string, Quest[]> = {};
-            availableQuestsRes.payload.forEach((quest: Quest) => {
-              const category = quest.steps[0]?.type || 'other';
-              if (!categorized[category]) {
-                categorized[category] = [];
-              }
-              categorized[category].push(quest);
-            });
-            setCategorizedQuests(categorized);
-          }
-        }
-
-        const userQuestsRes = await getUserQuests();
-        if (userQuestsRes?.payload) {
-          if (Array.isArray(userQuestsRes.payload)) {
-            setUserQuests(userQuestsRes.payload);
-          }
-        }
+        await refreshQuestData();
 
         setSuccess({
           title: "Quest Started",
-          message: "You've successfully started the quest. Complete all steps to earn rewards!"
+          message: "Quest started successfully! Complete the steps below to earn rewards."
         });
       }
     } catch (err: unknown) {
@@ -1912,6 +2484,35 @@ const PointsAndQuests: FC = () => {
       setStartingQuest(null);
     }
   };
+
+  // Helper function to refresh quest data
+  const refreshQuestData = async () => {
+    const availableQuestsRes = await getAvailableQuests();
+    if (availableQuestsRes?.payload) {
+      if (Array.isArray(availableQuestsRes.payload)) {
+        setAvailableQuests(availableQuestsRes.payload);
+
+        // Re-categorize quests
+        const categorized: Record<string, Quest[]> = {};
+        availableQuestsRes.payload.forEach((quest: Quest) => {
+          const category = quest.steps[0]?.type || 'other';
+          if (!categorized[category]) {
+            categorized[category] = [];
+          }
+          categorized[category].push(quest);
+        });
+        setCategorizedQuests(categorized);
+      }
+    }
+
+    const userQuestsRes = await getUserQuests();
+    if (userQuestsRes?.payload) {
+      if (Array.isArray(userQuestsRes.payload)) {
+        setUserQuests(userQuestsRes.payload);
+      }
+    }
+  };
+
   const fetchUserBadges = async () => {
     if (!address) return;
 
@@ -2143,7 +2744,7 @@ const PointsAndQuests: FC = () => {
     ];
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {categories.map(category => {
           const stats = pointsByCategory[category.id] || { points: 0, percentage: 0 };
 
@@ -2235,13 +2836,13 @@ const PointsAndQuests: FC = () => {
             defaultValue="points"
             value={activeTab}
             onValueChange={setActiveTab}
-            className="w-full"
+            className="w-full mobile-tabs-container tab-container"
           >
-        <div className="relative mb-10">
+        <div className="relative mb-10 mt-6">
   {/* Subtle background line */}
   <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-px bg-[#002040]/30"></div>
 
-  <TabsList className="relative z-10 grid grid-cols-4 max-w-3xl mx-auto rounded-full overflow-hidden bg-[#001525]/80 border border-[#003354]/40">
+  <TabsList className="relative z-0 grid grid-cols-4 max-w-xs sm:max-w-3xl mx-auto rounded-full overflow-hidden bg-[#001525]/80 border border-[#003354]/40 gap-1 sm:gap-0 p-1">
     {[
       { value: "points", icon: Trophy, label: "Points" },
       { value: "quests", icon: MapIcon, label: "Quests" },
@@ -2251,11 +2852,11 @@ const PointsAndQuests: FC = () => {
       <TabsTrigger
         key={value}
         value={value}
-        className="group relative px-3 py-2.5 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-sm font-medium"
+        className="group relative px-1 sm:px-3 py-2 sm:py-2.5 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-xs sm:text-sm font-medium min-w-0"
       >
-        <div className="flex items-center justify-center space-x-2">
-          <Icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110" />
-          <span className="transition-all duration-300">{label}</span>
+        <div className="flex items-center justify-center space-x-0 sm:space-x-2">
+          <Icon className="h-4 w-4 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110 flex-shrink-0" />
+          <span className="transition-all duration-300 hidden sm:inline">{label}</span>
         </div>
 
         {/* Subtle hover effect for inactive tabs */}
@@ -2280,7 +2881,7 @@ const PointsAndQuests: FC = () => {
               className="w-full"
             >
               {/* Sub-tabs Navigation */}
-              <div className="relative mb-8">
+              <div className="relative mb-8 mt-4">
                 {/* Subtle background line */}
                 <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2 h-px bg-[#002040]/30"></div>
 
@@ -2294,10 +2895,10 @@ const PointsAndQuests: FC = () => {
                     <TabsTrigger
                       key={value}
                       value={value}
-                      className="group relative px-2 py-2 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-sm font-medium"
+                      className="group relative px-1.5 sm:px-2 py-2 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-xs sm:text-sm font-medium"
                     >
-                      <div className="flex items-center justify-center space-x-1.5">
-                        <Icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110" />
+                      <div className="flex items-center justify-center space-x-1 sm:space-x-1.5">
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110" />
                         <span className="hidden sm:inline transition-all duration-300">{label}</span>
                         <span className="sm:hidden text-xs transition-all duration-300">{shortLabel}</span>
                       </div>
@@ -2323,7 +2924,7 @@ const PointsAndQuests: FC = () => {
                 ) : (
                   <>
                     {/* User Points Profile */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                       {/* Points Overview Card */}
                       <div className="lg:col-span-2">
                         <motion.div
@@ -2471,7 +3072,7 @@ const PointsAndQuests: FC = () => {
                     {/* Redemption Options */}
                     <div className="space-y-5">
                       <h3 className="text-lg font-medium">Available Rewards</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {redemptionOptions.length > 0 ? (
                           redemptionOptions.map(option => (
                             <RedemptionCard
@@ -2525,31 +3126,67 @@ const PointsAndQuests: FC = () => {
                     <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
                   </div>
                 ) : (
-                  <div className="space-y-5">
-                    <h3 className="text-lg font-medium">Global Leaderboard</h3>
-                    <div className="space-y-3">
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* User Rank Display - Always show when user is connected */}
+                    {address ? (
+                      <UserRankDisplay
+                        rank={userRank?.rank || null}
+                        points={userRank?.points || userPoints?.total_points || 0}
+                        tier={userRank?.tier || userPoints?.tier || 'bronze'}
+                        username={address || undefined}
+                        loading={leaderboardLoading}
+                        totalUsers={totalItems}
+                      />
+                    ) : (
+                      <div className="bg-gradient-to-r from-[#012b3f] to-[#01223a] rounded-2xl border border-[#0a3b54]/40 p-4 sm:p-6">
+                        <div className="text-center text-gray-400">
+                          <p className="text-sm sm:text-base">Connect your wallet to see your rank</p>
+                          <p className="text-xs mt-1">Total Users: {totalItems.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <h3 className="text-base sm:text-lg font-medium">Global Leaderboard</h3>
+                    <div className="space-y-2 sm:space-y-3">
                       {pointsLeaderboard.length > 0 ? (
-                        pointsLeaderboard.map((entry, index) => (
-                          <LeaderboardRow
-                            key={entry.user_id}
-                            position={index + 1}
-                            username={entry.username}
-                            points={entry.total_points}
-                            tier={entry.tier}
-                            isCurrentUser={entry.user_id === userPoints?.user}
+                        <>
+                          {pointsLeaderboard.map((entry, index) => {
+                            // Calculate actual position based on current page
+                            const actualPosition = (currentPage - 1) * itemsPerPage + index + 1;
+                            const safePoints = entry.total_points ?? 0;
+                            return (
+                              <LeaderboardRow
+                                key={entry.user_id}
+                                position={actualPosition}
+                                username={entry.username}
+                                points={safePoints}
+                                tier={entry.tier}
+                                isCurrentUser={
+                                  entry.user_id === address ||
+                                  entry.user_id === userPoints?.user ||
+                                  entry.username === address
+                                }
+                              />
+                            );
+                          })}
+
+                          {/* Pagination */}
+                          <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                            loading={leaderboardLoading}
                           />
-                        ))
+                        </>
                       ) : (
                         <div className="bg-[#001C29] rounded-lg p-6 text-center text-gray-400">
                           <div className="mb-2 flex justify-center">
                             <Trophy className="w-8 h-8 text-blue-400 opacity-60" />
                           </div>
                           <p>Leaderboard data is being updated. Check back soon!</p>
-                          {/* Add a retry button that doesn't show errors */}
                           <button
                             onClick={() => {
-                              setLoading(true);
-                              fetchPointsLeaderboard().finally(() => setLoading(false));
+                              fetchPointsLeaderboard(1, true);
                             }}
                             className="mt-4 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-md text-sm transition-colors"
                           >
@@ -2565,23 +3202,41 @@ const PointsAndQuests: FC = () => {
           </TabsContent>
 
           {/* Quests Tab Content */}
-          <TabsContent value="quests" className="space-y-8">
+          <TabsContent value="quests" className="space-y-8 mobile-tabs-container">
             {/* Quests Sub-tabs */}
             <Tabs
               defaultValue="available"
               value={questsSubTab}
               onValueChange={setQuestsSubTab}
-              className="w-full"
+              className="w-full mt-4"
             >
-              <TabsList className="grid grid-cols-3 max-w-sm mx-auto mb-6">
-                <TabsTrigger value="available" className="text-xs">
-                  Available
+              <TabsList className="relative z-0 grid grid-cols-3 max-w-xs sm:max-w-md mx-auto mb-8 gap-2 bg-[#001525]/80 border border-[#003354]/40 rounded-full p-1">
+                <TabsTrigger
+                  value="available"
+                  className="group relative px-2 sm:px-3 py-2 sm:py-2.5 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-xs sm:text-sm font-medium min-w-0"
+                >
+                  <div className="flex items-center justify-center space-x-0 sm:space-x-2">
+                    <Play className="h-4 w-4 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110 flex-shrink-0" />
+                    <span className="hidden sm:inline transition-all duration-300">Available</span>
+                  </div>
                 </TabsTrigger>
-                <TabsTrigger value="in-progress" className="text-xs">
-                  In Progress
+                <TabsTrigger
+                  value="in-progress"
+                  className="group relative px-2 sm:px-3 py-2 sm:py-2.5 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-xs sm:text-sm font-medium min-w-0"
+                >
+                  <div className="flex items-center justify-center space-x-0 sm:space-x-2">
+                    <Pause className="h-4 w-4 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110 flex-shrink-0" />
+                    <span className="hidden sm:inline transition-all duration-300">In Progress</span>
+                  </div>
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="text-xs">
-                  Completed
+                <TabsTrigger
+                  value="completed"
+                  className="group relative px-2 sm:px-3 py-2 sm:py-2.5 rounded-full data-[state=active]:bg-[#0060df] data-[state=active]:text-white transition-all duration-300 text-xs sm:text-sm font-medium min-w-0"
+                >
+                  <div className="flex items-center justify-center space-x-0 sm:space-x-2">
+                    <CheckCircle className="h-4 w-4 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:scale-110 flex-shrink-0" />
+                    <span className="hidden sm:inline transition-all duration-300">Completed</span>
+                  </div>
                 </TabsTrigger>
               </TabsList>
 
@@ -2600,7 +3255,7 @@ const PointsAndQuests: FC = () => {
                           <CloudLightning className="text-blue-400 mr-2 h-5 w-5" />
                           Exploration Quests
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                           {categorizedQuests.exploration
                             .filter(quest => quest.user_progress?.status !== 'claimed')
                             .map((quest, index) => (
@@ -2626,7 +3281,7 @@ const PointsAndQuests: FC = () => {
                           <TrendingUp className="text-green-400 mr-2 h-5 w-5" />
                           Product Use Quests
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                           {categorizedQuests.product_use
                             .filter(quest => quest.user_progress?.status !== 'claimed')
                             .map((quest, index) => (
@@ -2652,7 +3307,7 @@ const PointsAndQuests: FC = () => {
                           <Share2 className="text-purple-400 mr-2 h-5 w-5" />
                           Social Engagement Quests
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                           {categorizedQuests.social_engagement
                             .filter(quest => quest.user_progress?.status !== 'claimed')
                             .map((quest, index) => (
@@ -2678,7 +3333,7 @@ const PointsAndQuests: FC = () => {
                           <Award className="text-amber-400 mr-2 h-5 w-5" />
                           Advanced Quests
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                           {categorizedQuests.advanced_quests
                             .filter(quest => quest.user_progress?.status !== 'claimed')
                             .map((quest, index) => (
@@ -2718,7 +3373,7 @@ const PointsAndQuests: FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                       {userQuests
                         .filter(quest => quest.user_progress?.status === 'in_progress')
                         .map((quest, index) => (
@@ -2756,7 +3411,7 @@ const PointsAndQuests: FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                       {userQuests
                         .filter(quest => quest.user_progress?.status === 'completed' || quest.user_progress?.status === 'claimed')
                         .map((quest, index) => (
@@ -2788,30 +3443,15 @@ const PointsAndQuests: FC = () => {
             </Tabs>
           </TabsContent>
 
-          {/* Rewards Tab Content */}
+          {/* Referrals Tab Content */}
           <TabsContent value="rewards" className="space-y-8">
-            {/* Rewards Sub-tabs */}
-            <Tabs
-              defaultValue="referral"
-              value={redeemSubTab}
-              onValueChange={setRedeemSubTab}
-              className="w-full"
-            >
-             
-
-            
-
-              {/* Referral Program Tab */}
-              <TabsContent value="referral" className="space-y-6">
-                {loading ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                  </div>
-                ) : (
-                  <ReferralCard />
-                )}
-              </TabsContent>
-            </Tabs>
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+              </div>
+            ) : (
+              <ReferralCard />
+            )}
           </TabsContent>
           <TabsContent value="badges" className="space-y-8">
             {badgeLoading ? (
@@ -2840,7 +3480,7 @@ const PointsAndQuests: FC = () => {
 
                 <div className="space-y-6">
                   <h3 className="text-lg font-medium">Earned Badges</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {combinedBadgesData.filter(badge => badge.earned).length > 0 ? (
                       combinedBadgesData
                         .filter(badge => badge.earned)
@@ -2863,7 +3503,7 @@ const PointsAndQuests: FC = () => {
                 </div>
                 <div className="space-y-6">
                   <h3 className="text-lg font-medium">Available Badges</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {combinedBadgesData.filter(badge => !badge.earned).length > 0 ? (
                       combinedBadgesData
                         .filter(badge => !badge.earned)

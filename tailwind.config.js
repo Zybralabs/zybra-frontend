@@ -18,6 +18,9 @@ const config = {
 	],
 	theme: {
 		extend: {
+			screens: {
+				'xs': '400px', // Extra small screens
+			},
 			container: {
 				center: true, // Centers the container horizontally
 				padding: '1rem', // Adds horizontal padding

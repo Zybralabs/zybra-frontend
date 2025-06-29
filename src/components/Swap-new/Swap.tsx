@@ -16,6 +16,7 @@ import { LoadingSpinner } from "../Modal/loading-spinner";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { useSwarmVault } from "@/hooks/useSwarmVault";
 import { ErrorModal, SuccessModal } from "../Modal";
+import { useReferralCompletion } from "@/hooks/useReferralCompletion";
 import { AssetType, TakingOfferType } from "@/types";
 import TradingCard from "./components/trading-card";
 import { useChainId } from "wagmi";
@@ -30,10 +31,10 @@ import { useTokenFromActiveNetwork } from "@/lib/hooks/useCurrency";
 import { ZFI_TOKEN_TESTNET, ZRUSD_TOKEN_TESTNET } from "@/state/stake/hooks";
 import { SWARM_VAULT_ADDRESS, USDC_ADDRESS, ZrUSD } from "@/constant/addresses";
 import { ZRUSDIcon } from "../Icons";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { accountType } from "@/config";
 import { ethers } from "ethers";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
+import { handleTransactionError } from "@/utils/gaslessErrorHandler";
 
 type Token = {
   id: string;
@@ -52,6 +53,7 @@ type Offer = {
   total: number;
   offerId: number;
   selected: boolean;
+  availableAmount?: number;
 };
 
 
@@ -77,7 +79,7 @@ export const TokenList: any = [
     decimals: 18,
     id: ZRUSD_TOKEN_TESTNET.address,
     name: "Zybra USD.",
-    symbol: "ZRUSD",
+    symbol: "ZrUSD",
     tokenId: null,
     tradedVolume: "1.134778601287855285"
 
@@ -297,6 +299,7 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
   ];
 
   const { address: userAddress, walletType, zfi_balance } = useUserAccount();
+  const { attemptReferralCompletion } = useReferralCompletion();
   const preSelectedToken: Token | undefined = useMemo(() =>
     tokens?.find((token: Token) => token?.address === address)
   , [tokens, address]);
@@ -319,23 +322,53 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
   // UI state
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [activeSide, setActiveSide] = useState<"sell" | "buy">("sell");
-  const [isPriceLoading, setIsPriceLoading] = useState(true);
+  // Price loading removed - price is calculated from user input ratio
   const [isAmountTooLarge, setIsAmountTooLarge] = useState(false);
   const [priceImpact, setPriceImpact] = useState("Market");
   const [expiry, setExpiry] = useState("1 week");
 
   // Offers and pricing state
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
+  const [selectedOffers, setSelectedOffers] = useState<number[]>([]);
   const [isDynamicPricing, setIsDynamicPricing] = useState(false);
   const [maxRate, setMaxRate] = useState<string>("");
   const [currentOfferId, setCurrentOfferId] = useState<number | null>(null);
-  const [currentPrice, setCurrentPrice] = useState<number>(0);
+  const [bestPrice, setBestPrice] = useState<number>(0);
+  const [priceImpactPercentage, setPriceImpactPercentage] = useState<number>(0);
+
+  // Enhanced price calculation based on offers and user input
+  const currentPrice = useMemo(() => {
+    if (filteredOffers.length > 0 && sellAmount > 0) {
+      // Calculate weighted average price from selected offers
+      const selectedOffersList = filteredOffers.filter(offer =>
+        selectedOffers.includes(offer.offerId)
+      );
+
+      if (selectedOffersList.length > 0) {
+        const totalValue = selectedOffersList.reduce((sum, offer) => sum + offer.total, 0);
+        const totalAmount = selectedOffersList.reduce((sum, offer) => sum + offer.amount, 0);
+        return totalAmount > 0 ? totalValue / totalAmount : 0;
+      }
+    }
+
+    // Fallback to manual price calculation
+    if (sellAmount > 0 && buyAmount > 0) {
+      return sellAmount / buyAmount;
+    }
+    return 0;
+  }, [filteredOffers, selectedOffers, sellAmount, buyAmount]);
 
   // Transaction feedback state
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState<any | null>(null);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
-  const [success, setSuccess] = useState<{
+  const [approvalSuccess, setApprovalSuccess] = useState<{
+    title: string;
+    message: string;
+    txHash?: string;
+  } | null>(null);
+  const [transactionSuccess, setTransactionSuccess] = useState<{
     title: string;
     message: string;
     txHash?: string;
@@ -388,12 +421,14 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
   const BuySymbol = useStockIcon(buyToken?.symbol);
   const SellSymbol = useStockIcon(sellToken?.symbol);
 
-  // Account Kit integration
-  const { client } = useSmartAccountClient({ type: accountType });
-  const { sendUserOperationAsync, sendUserOperationResult } = useSendUserOperation({
+  // Use centralized smart account client with gas sponsorship
+  const {
     client,
-    waitForTxn: true,
-  });
+    isGasSponsored,
+    isClientReady,
+    sendUserOperationAsync,
+    sendUserOperationResult,
+  } = useSmartAccountClientSafe();
 
   // =============== DERIVED STATE ===============
 
@@ -458,12 +493,14 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     setIsTokenSelectorOpen(false);
   }, [isWithdraw, activeSide]);
 
-  // Calculate swap amounts based on price and impact
+  // Calculate swap amounts based on price and impact (for legacy compatibility)
   const calculateSwapAmounts = useCallback((
     amount: number,
     isWithdrawCalc: boolean,
     priceImpactValue: string = "Market",
   ): number => {
+    // This function is kept for compatibility but won't be used for auto-calculation
+    // Users will manually set both sell and buy amounts
     if (!amount || !currentPrice) return 0;
 
     const impactMultiplier =
@@ -482,22 +519,126 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     }
   }, [currentPrice]);
 
-  // Handle amount changes
+  // Filter offers based on user input and automatically select best offers
+  const filterAndSelectOffers = useCallback((
+    availableOffers: Offer[],
+    targetSellAmount: number,
+    targetBuyAmount: number
+  ) => {
+    if (!availableOffers.length || (!targetSellAmount && !targetBuyAmount)) {
+      return {
+        filtered: availableOffers,
+        selected: [],
+        calculatedBuyAmount: 0,
+        calculatedSellAmount: 0,
+        bestPrice: 0,
+        priceImpact: 0
+      };
+    }
+
+    // Sort offers by best price (lowest price = best for buyer)
+    const sortedOffers = [...availableOffers].sort((a, b) => a.price - b.price);
+
+    let remainingAmount = targetSellAmount || 0;
+    let totalBuyAmount = 0;
+    let totalSellAmount = 0;
+    const selectedOfferIds: number[] = [];
+
+    // If user specified sell amount, calculate buy amount from offers
+    if (targetSellAmount > 0) {
+      for (const offer of sortedOffers) {
+        if (remainingAmount <= 0) break;
+
+        const canTakeAmount = Math.min(remainingAmount, offer.availableAmount || offer.amount);
+        const buyAmountFromOffer = canTakeAmount / offer.price;
+
+        totalSellAmount += canTakeAmount;
+        totalBuyAmount += buyAmountFromOffer;
+        selectedOfferIds.push(offer.offerId);
+        remainingAmount -= canTakeAmount;
+      }
+    }
+    // If user specified buy amount, calculate sell amount from offers
+    else if (targetBuyAmount > 0) {
+      let remainingBuyAmount = targetBuyAmount;
+
+      for (const offer of sortedOffers) {
+        if (remainingBuyAmount <= 0) break;
+
+        const canTakeAmount = Math.min(remainingBuyAmount, offer.availableAmount || offer.amount);
+        const sellAmountForOffer = canTakeAmount * offer.price;
+
+        totalBuyAmount += canTakeAmount;
+        totalSellAmount += sellAmountForOffer;
+        selectedOfferIds.push(offer.offerId);
+        remainingBuyAmount -= canTakeAmount;
+      }
+    }
+
+    // Calculate best price and price impact
+    const bestPrice = sortedOffers.length > 0 ? sortedOffers[0].price : 0;
+    const averagePrice = totalBuyAmount > 0 ? totalSellAmount / totalBuyAmount : 0;
+    const priceImpact = bestPrice > 0 ? ((averagePrice - bestPrice) / bestPrice) * 100 : 0;
+
+    return {
+      filtered: sortedOffers,
+      selected: selectedOfferIds,
+      calculatedBuyAmount: totalBuyAmount,
+      calculatedSellAmount: totalSellAmount,
+      bestPrice,
+      priceImpact: Math.max(0, priceImpact)
+    };
+  }, []);
+
+  // Handle sell amount change with offer-based calculation
   const handleSellAmountChange = useCallback((value: number) => {
     setSellAmount(value);
-    if (currentPrice > 0) {
-      const newBuyAmount = calculateSwapAmounts(value, isWithdraw, priceImpact);
-      setBuyAmount(newBuyAmount);
-    }
-  }, [currentPrice, isWithdraw, priceImpact, calculateSwapAmounts]);
+    setActiveSide("sell");
 
+    // Auto-calculate buy amount based on available offers
+    if (value > 0 && offers.length > 0) {
+      const result = filterAndSelectOffers(offers, value, 0);
+      setBuyAmount(result.calculatedBuyAmount);
+      setFilteredOffers(result.filtered);
+      setSelectedOffers(result.selected);
+      setBestPrice(result.bestPrice);
+      setPriceImpactPercentage(result.priceImpact);
+
+      // Set current offer ID to the best offer
+      if (result.selected.length > 0) {
+        setCurrentOfferId(result.selected[0]);
+      }
+    } else if (value === 0) {
+      setBuyAmount(0);
+      setSelectedOffers([]);
+      setCurrentOfferId(null);
+    }
+  }, [offers, filterAndSelectOffers]);
+
+  // Handle buy amount change with offer-based calculation
   const handleBuyAmountChange = useCallback((value: number) => {
     setBuyAmount(value);
-    if (currentPrice > 0) {
-      const newSellAmount = calculateSwapAmounts(value, !isWithdraw, priceImpact);
-      setSellAmount(newSellAmount);
+    setActiveSide("buy");
+
+    // Auto-calculate sell amount based on available offers
+    if (value > 0 && offers.length > 0) {
+      const result = filterAndSelectOffers(offers, 0, value);
+      setSellAmount(result.calculatedSellAmount);
+      setFilteredOffers(result.filtered);
+      setSelectedOffers(result.selected);
+      setBestPrice(result.bestPrice);
+      setPriceImpactPercentage(result.priceImpact);
+
+      // Set current offer ID to the best offer
+      if (result.selected.length > 0) {
+        setCurrentOfferId(result.selected[0]);
+      }
+    } else if (value === 0) {
+      setSellAmount(0);
+      setSelectedOffers([]);
+      setCurrentOfferId(null);
     }
-  }, [currentPrice, isWithdraw, priceImpact, calculateSwapAmounts]);
+  }, [offers, filterAndSelectOffers]);
 
   // Handle max amount click
   const handleMaxClick = useCallback(() => {
@@ -538,18 +679,35 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     setError(null);
   }, []);
 
-  const handleSuccessClose = useCallback(() => {
-    setSuccess(null);
+  const handleApprovalSuccessClose = useCallback(() => {
+    setApprovalSuccess(null);
+  }, []);
+
+  const handleTransactionSuccessClose = useCallback(() => {
+    setTransactionSuccess(null);
   }, []);
 
   // =============== TRANSACTION HANDLERS ===============
 
-  // Get matching offers
+  // Enhanced offer matching with better typing and filtering
   const getMatchingOffers = useCallback(() => {
     if (!swarmOffers || !sellToken || !buyToken) return [];
 
     return swarmOffers
-      .filter((offer: any) => {
+      .filter((offer: {
+        depositAsset: { symbol: string };
+        withdrawalAsset: { symbol: string };
+        sellAmount?: number;
+        buyAmount?: number;
+        amountIn?: string;
+        amountOut?: string;
+        availableAmount?: number;
+        cancelled?: boolean;
+        status?: string;
+      }) => {
+        // Check if offer is still valid
+        if (offer.cancelled) return false;
+
         const isDepositMatch =
           offer.depositAsset.symbol.toUpperCase() === sellToken.symbol.toUpperCase();
         const isWithdrawalMatch =
@@ -557,10 +715,22 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
 
         return isDepositMatch && isWithdrawalMatch;
       })
-      .map((offer: any) => {
-        const amountIn = parseFloat(offer.amountIn);
-        const amountOut = parseFloat(offer.amountOut);
-        const price = amountOut / amountIn;
+      .map((offer: {
+        id: string;
+        sellAmount?: number;
+        buyAmount?: number;
+        amountIn?: string;
+        amountOut?: string;
+        availableAmount?: number;
+        rate?: number;
+      }) => {
+        // Handle different offer data formats
+        const amountIn = offer.sellAmount || parseFloat(offer.amountIn || "0");
+        const amountOut = offer.buyAmount || parseFloat(offer.amountOut || "0");
+        const availableAmount = offer.availableAmount || amountOut;
+
+        // Calculate price (how much sellToken per buyToken)
+        const price = amountIn > 0 ? amountIn / amountOut : (offer.rate || 0);
         const total = amountOut * price;
 
         return {
@@ -568,9 +738,11 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
           price,
           total,
           offerId: parseInt(offer.id),
-          selected: true,
+          availableAmount,
+          selected: false, // Start with unselected
         };
-      });
+      })
+      .sort((a, b) => a.price - b.price); // Sort by best price first
   }, [swarmOffers, sellToken, buyToken]);
 
   // Create offer parameters
@@ -612,6 +784,9 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
       return;
     }
 
+    setGlobalLoading(true);
+    setGlobalError(null);
+
     try {
       if (currentOfferId) {
         // Handle deposit with offerId
@@ -637,6 +812,7 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
           zRUSDAmount,
           buyAmount,
           isWithdraw ? sellToken.symbol : buyToken.symbol,
+          isWithdraw ? buyToken.symbol : sellToken.symbol,
           0,
           0,
           offerParams,
@@ -649,6 +825,8 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     } catch (err) {
       console.error("Deposit failed:", err);
       setGlobalError(err instanceof Error ? err : new Error("Deposit failed"));
+    } finally {
+      setGlobalLoading(false);
     }
   }, [
     userAddress, isAmountTooLarge, sellAmount, zRUSDAmount,
@@ -663,6 +841,9 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
       setGlobalError(new Error("Invalid input parameters"));
       return;
     }
+
+    setGlobalLoading(true);
+    setGlobalError(null);
 
     try {
       if (currentOfferId) {
@@ -700,6 +881,8 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     } catch (err) {
       console.error("Withdrawal failed:", err);
       setGlobalError(err instanceof Error ? err : new Error("Withdrawal failed"));
+    } finally {
+      setGlobalLoading(false);
     }
   }, [
     userAddress, isAmountTooLarge, sellAmount, zRUSDAmount,
@@ -719,33 +902,41 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
 
   // =============== EFFECTS ===============
 
-  // Set initial price
-  useEffect(() => {
-    if (buyToken) {
-      setIsPriceLoading(false);
-      setCurrentPrice(101);
-    }
-  }, [buyToken]);
+  // Price is now calculated dynamically from sell/buy amounts ratio
 
-  // Update success state from receipts
+  // Update success state from receipts - separate approval and transaction success
   useEffect(() => {
     if (approvalReceipt) {
-      setSuccess({
-        title: "Approval Successful",
-        message: "Token approval successful",
-        txHash: approvalReceipt.hash,
+      const txHash = typeof approvalReceipt === 'string'
+        ? approvalReceipt
+        : approvalReceipt.hash || approvalReceipt.message || approvalReceipt;
+
+      console.log("Approval success with hash:", txHash);
+      setApprovalSuccess({
+        title: "Approval Confirmed",
+        message: "Token approval has been confirmed on the blockchain",
+        txHash: typeof txHash === 'string' ? txHash : (txHash?.hash || txHash?.message || String(txHash)),
       });
     }
+  }, [approvalReceipt]);
+
+  useEffect(() => {
     if (receipt) {
-      setSuccess({
-        title: isWithdraw ? "Withdrawal Offer Successful" : "Offer Made Successful",
+      const txHash = typeof receipt === 'string' ? receipt : receipt.hash || receipt;
+
+      console.log("Transaction success with hash:", txHash);
+      setTransactionSuccess({
+        title: isWithdraw ? "Withdrawal Confirmed" : "Deposit Confirmed",
         message: isWithdraw
-          ? "Your tokens have been successfully withdrawn"
-          : "Your tokens have been successfully deposited",
-        txHash: receipt,
+          ? "Your withdrawal transaction has been confirmed on the blockchain"
+          : "Your deposit transaction has been confirmed on the blockchain",
+        txHash: typeof txHash === 'string' ? txHash : (txHash?.hash || txHash?.message || String(txHash)),
       });
+
+      // Complete referral if this is the user's first qualifying action
+      attemptReferralCompletion(isWithdraw ? 'swap-withdraw' : 'swap-deposit');
     }
-  }, [approvalReceipt, receipt, isWithdraw]);
+  }, [receipt, isWithdraw, attemptReferralCompletion]);
 
   // Update amount validation
   useEffect(() => {
@@ -759,70 +950,111 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     }
   }, [address, preSelectedToken]);
 
-  // Find matching offers
+  // Find matching offers and update when tokens change
   useEffect(() => {
     const matchedOffers = getMatchingOffers();
     setOffers(matchedOffers);
+    setFilteredOffers(matchedOffers);
 
-    // If there are matching offers, set the current offer ID
-    if (matchedOffers.length > 0) {
-      setCurrentOfferId(matchedOffers[0].offerId);
-    } else {
-      setCurrentOfferId(null);
-    }
+    // Reset selections when offers change
+    setSelectedOffers([]);
+    setCurrentOfferId(null);
+    setBestPrice(0);
+    setPriceImpactPercentage(0);
   }, [getMatchingOffers]);
 
-  // Enhanced error handling with Account Kit support
+  // Update offer filtering when amounts change
+  useEffect(() => {
+    if (offers.length > 0 && (sellAmount > 0 || buyAmount > 0)) {
+      const result = filterAndSelectOffers(
+        offers,
+        activeSide === "sell" ? sellAmount : 0,
+        activeSide === "buy" ? buyAmount : 0
+      );
+
+      setFilteredOffers(result.filtered);
+      setSelectedOffers(result.selected);
+      setBestPrice(result.bestPrice);
+      setPriceImpactPercentage(result.priceImpact);
+
+      // Auto-update the opposite amount if offers are available
+      if (activeSide === "sell" && result.calculatedBuyAmount > 0) {
+        setBuyAmount(result.calculatedBuyAmount);
+      } else if (activeSide === "buy" && result.calculatedSellAmount > 0) {
+        setSellAmount(result.calculatedSellAmount);
+      }
+
+      // Set current offer ID to the best offer
+      if (result.selected.length > 0) {
+        setCurrentOfferId(result.selected[0]);
+      }
+    }
+  }, [offers, sellAmount, buyAmount, activeSide, filterAndSelectOffers]);
+
+  // Enhanced error handling with gasless transaction support
   useEffect(() => {
     if (approvalError) {
-      const errorMessage = approvalError.message || "Failed to approve token";
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: approvalError
+      });
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Approval Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     }
 
     if (vaultError) {
-      const errorMessage = typeof vaultError === 'string'
-        ? vaultError
-        : (vaultError as any)?.message || "Failed to execute transaction";
+      const vaultErrorObj = typeof vaultError === 'string'
+        ? new Error(vaultError)
+        : (vaultError as Error);
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: vaultErrorObj
+      });
+
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Transaction Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     }
 
     if (globalError) {
-      const errorMessage = typeof globalError === 'string'
-        ? globalError
-        : (globalError as any)?.message || "An error occurred";
+      const globalErrorObj = typeof globalError === 'string'
+        ? new Error(globalError)
+        : (globalError as Error);
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: globalErrorObj
+      });
+
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     }
-  }, [approvalError, vaultError, globalError]);
+  }, [approvalError, vaultError, globalError, walletType, isGasSponsored, client]);
 
   return (
     <div className="flex-1 w-full text-white flex justify-center items-start py-4">
@@ -882,32 +1114,21 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
     </div>
   </div>
 
-  {/* Price input field */}
+  {/* Price display - calculated from sell/buy ratio */}
   <div className="relative">
-    <input
-      type="number"
-      disabled={isPriceLoading}
-      value={currentPrice || ""}
-      placeholder="0"
-      className="w-full text-2xl sm:text-3xl px-0 font-semibold bg-transparent border-none outline-none appearance-none pr-16 focus:ring-0 h-9"
-      style={{
-        MozAppearance: "textfield",
-        WebkitAppearance: "none",
-      }}
-    />
+    <div className="w-full text-2xl sm:text-3xl px-0 font-semibold bg-transparent border-none outline-none appearance-none pr-16 h-9 flex items-center">
+      <span className="text-white/90">
+        {currentPrice > 0 ? currentPrice.toFixed(6) : "0.000000"}
+      </span>
+    </div>
     <div className="absolute inset-y-0 right-0 flex items-center px-2 sm:px-2.5 py-1 bg-[#013853]/40 rounded-md text-[#4BB6EE]">
       <span className="text-xs sm:text-sm font-medium">{sellToken?.symbol}</span>
     </div>
 
-    {/* Loading state overlay */}
-    {isPriceLoading && (
-      <div className="absolute inset-0 flex justify-center items-center bg-[#001C29]/80 rounded-md">
-        <div className="flex items-center gap-2">
-          <LoadingSpinner size="xs" color="blue" />
-          <span className="text-sm text-white/80">Loading price...</span>
-        </div>
-      </div>
-    )}
+    {/* Helper text */}
+    <div className="text-xs text-white/50 mt-1">
+      Price calculated from sell/buy ratio
+    </div>
   </div>
 </div>
 
@@ -1352,27 +1573,36 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
           </CardContent>
         </Card>
 
-        {/* Offers Section - Now on the right side with better sizing */}
-        {offers && (
-          <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full md:w-2/5 h-fit sticky top-4"
-          >
-            <TradingCard
-              fromSymbol={sellToken?.symbol}
-              fromAmount={sellAmount}
-              toSymbol={buyToken?.symbol}
-              toAmount={buyAmount}
-              FromLogo={SellSymbol}
-              ToLogo={BuySymbol}
-              avgPrice={currentPrice}
-              offers={offers}
-              setCurrentOfferId={setCurrentOfferId}
-            />
-          </motion.div>
-        )}
+        {/* Offers Section - Always show on the right side */}
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full md:w-2/5 h-fit sticky top-4"
+        >
+          <TradingCard
+            fromSymbol={sellToken?.symbol || ""}
+            fromAmount={sellAmount}
+            toSymbol={buyToken?.symbol || ""}
+            toAmount={buyAmount}
+            FromLogo={SellSymbol}
+            ToLogo={BuySymbol}
+            avgPrice={currentPrice}
+            offers={filteredOffers.length > 0 ? filteredOffers : offers}
+            selectedOffers={selectedOffers}
+            bestPrice={bestPrice}
+            priceImpact={priceImpactPercentage}
+            setCurrentOfferId={setCurrentOfferId}
+            onOfferSelectionChange={(selectedIds: number[]) => {
+              setSelectedOffers(selectedIds);
+              if (selectedIds.length > 0) {
+                setCurrentOfferId(selectedIds[0]);
+              } else {
+                setCurrentOfferId(null);
+              }
+            }}
+          />
+        </motion.div>
       </div>
 
       {/* Error Modal */}
@@ -1383,17 +1613,23 @@ export default function SwapPage({ setActiveTab, isWithdraw }: SwapProps) {
         message={globalError?.message ?? globalError}
       />
 
-      {/* Success Modal */}
+      {/* Approval Success Modal */}
       <SuccessModal
-        isOpen={success != null && success.txHash != null}
-        onClose={handleSuccessClose}
-        title="Success"
-        message={
-          approvalReceipt
-            ? "Token approval successful"
-            : `${isWithdraw ? "Withdrawal" : "Deposit"} successful`
-        }
-        txHash={approvalReceipt || receipt}
+        isOpen={approvalSuccess != null && approvalSuccess.txHash != null}
+        onClose={handleApprovalSuccessClose}
+        title={approvalSuccess?.title || "Approval Successful"}
+        message={approvalSuccess?.message || "Token approval successful"}
+        txHash={approvalSuccess?.txHash}
+        chainId={chainId}
+      />
+
+      {/* Transaction Success Modal */}
+      <SuccessModal
+        isOpen={transactionSuccess != null && transactionSuccess.txHash != null}
+        onClose={handleTransactionSuccessClose}
+        title={transactionSuccess?.title || "Transaction Successful"}
+        message={transactionSuccess?.message || "Transaction completed successfully"}
+        txHash={transactionSuccess?.txHash}
         chainId={chainId}
       />
 

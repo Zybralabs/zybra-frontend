@@ -16,10 +16,9 @@ import { LoadingSpinner } from "../Modal/loading-spinner";
 import { useSwarmVault } from "@/hooks/useSwarmVault";
 import { SupportedChainId } from "@/constant/addresses";
 import { Button } from "../ui/button";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { accountType } from "@/config";
 import { WalletType } from "@/constant/account/enum";
 import { useUserAccount } from "@/context/UserAccountContext";
+
 import FundingHelper from "@/components/AccountKit/FundingHelper";
 
 interface AccordionItemProps {
@@ -98,12 +97,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   // Get wallet type for Account Kit integration
   const { walletType } = useUserAccount();
 
-  // Account Kit integration
-  const { client } = useSmartAccountClient({ type: accountType });
-  const { sendUserOperationAsync, sendUserOperationResult } = useSendUserOperation({
-    client,
-    waitForTxn: true,
-  });
+
 
   const handleCopy = (val: string) => {
     if (!val) return;

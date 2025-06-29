@@ -2,15 +2,15 @@ import { useCallback, useState } from "react";
 import { useChainId, useWriteContract } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { wagmiConfig } from "@/wagmi";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
 import { ethers } from "ethers";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { WalletType } from "@/constant/account/enum";
 import { SupportedChainId, TOKEN_FAUCET_ADDRESS } from "@/constant/addresses";
-import { accountType, accountClientOptions as opts } from "@/config";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 import TokenFaucetABI from "@/abis/TokenFaucetABI.json";
 import type { TransactionData } from "@/types";
 import { toWei } from "./formatting";
+import { handleTransactionError } from "@/utils/gaslessErrorHandler";
 
 export interface MintableToken {
   id: string;
@@ -42,26 +42,19 @@ export function useMintTransactions() {
   // Web3 wallet hooks
   const { writeContractAsync } = useWriteContract();
 
-  // Account Kit hooks with enhanced configuration
-  const { client } = useSmartAccountClient({
-    type: accountType,
-    opts: {
-      ...opts,
-      // Ensure proper configuration for MultiTokenFaucet
-      txMaxRetries: 20,
-      txRetryIntervalMs: 2000,
-    },
-  });
-
+  // Use centralized smart account client with real gas sponsorship
   const {
+    client,
+    isGasSponsored,
+    isClientReady,
     sendUserOperationAsync,
     sendUserOperationResult,
     isSendingUserOperation,
-    error: sendUserOperationError,
-  } = useSendUserOperation({
-    client: client,
-    waitForTxn: true,
-  });
+    sendUserOperationError,
+    executeTransaction,
+    executeSponsoredTransaction,
+    canSponsorTransaction,
+  } = useSmartAccountClientSafe();
 
   // Get the single token faucet contract address
   const getContractAddress = useCallback((): string => {
@@ -72,6 +65,10 @@ export function useMintTransactions() {
   const validateAccountKitSetup = useCallback(() => {
     if (walletType === WalletType.MINIMAL) {
       const issues: string[] = [];
+
+      if (!isClientReady) {
+        issues.push("Smart account client is not ready - wallet may not be connected");
+      }
 
       if (!client) {
         issues.push("Smart account client is not available");
@@ -84,6 +81,7 @@ export function useMintTransactions() {
             accountAddress: client.account.address,
             chainId: client.chain?.id,
             chainName: client.chain?.name,
+            isClientReady,
           });
         }
       }
@@ -99,7 +97,7 @@ export function useMintTransactions() {
     }
 
     return { valid: true, issues: [] };
-  }, [walletType, client, sendUserOperationAsync]);
+  }, [walletType, client, sendUserOperationAsync, isClientReady]);
 
   // Core transaction handler following SwarmVault pattern
   const handleMintTransaction = useCallback(
@@ -114,9 +112,9 @@ export function useMintTransactions() {
 
       // Prepare transaction data for backend
       const transactionData: TransactionData = {
-        type: "stock", // Backend expects 'stock' for token minting
+        type: "zybra", // Backend expects 'stock' for token minting
         amount: Number(toWei(100)),
-        status: "mint-zrusd", // TransactionStatus.MINT_ZRUSD
+        status: `mint-${token.symbol.toLowerCase()}`, // TransactionStatus.MINT_ZRUSD
         metadata: {
           assetType: "Asset",
           assetSymbol: token.symbol,
@@ -156,6 +154,11 @@ export function useMintTransactions() {
         }
         // MINIMAL WALLET (ACCOUNT ABSTRACTION) TRANSACTION FLOW
         else if (walletType === WalletType.MINIMAL) {
+          // Check if client is ready first
+          if (!isClientReady) {
+            throw new Error("Smart account client is not ready. Please ensure your wallet is connected and try again.");
+          }
+
           // Validate Account Kit setup first
           const setupValidation = validateAccountKitSetup();
           if (!setupValidation.valid) {
@@ -181,6 +184,8 @@ export function useMintTransactions() {
             contractAddress,
             tokenIndex: token.tokenIndex,
             functionName: "claimTokens",
+            isGasSponsored,
+            gasSponsorshipInfo: isGasSponsored ? "✅ Gas fees sponsored by Alchemy Gas Manager" : "❌ User pays gas fees",
           });
 
           try {
@@ -190,21 +195,42 @@ export function useMintTransactions() {
               token.tokenIndex,
             ]) as `0x${string}`;
 
-            console.log("Sending user operation with encoded data:", {
+            console.log("Sending user operation with enhanced gas sponsorship:", {
               target: contractAddress,
               data,
               value: "0",
               tokenIndex: token.tokenIndex,
+              smartAccountAddress: client.account.address,
+              isGasSponsored,
             });
 
-            // Send user operation with proper error handling
-            const userOpResult = await sendUserOperationAsync({
-              uo: {
-                target: contractAddress as `0x${string}`,
-                data,
-                value: 0n,
-              },
-            });
+            // Create real transaction data for gas sponsorship
+            const realTransactionData = {
+              target: contractAddress as `0x${string}`,
+              data,
+              value: 0n,
+              abi: TokenFaucetABI,
+              functionName: "claimTokens",
+              args: [token.tokenIndex],
+            };
+
+            // Execute with real gas sponsorship
+            let userOpResult;
+            if (isGasSponsored && walletType === WalletType.MINIMAL) {
+              try {
+                console.log("Attempting real gas sponsorship for mint...");
+                userOpResult = await executeSponsoredTransaction(realTransactionData, {
+                  waitForTxn: true,
+                });
+              } catch (sponsorError) {
+                console.warn("Real gas sponsorship failed, falling back to regular transaction:", sponsorError);
+                // Fallback to regular transaction
+                userOpResult = await executeTransaction(realTransactionData);
+              }
+            } else {
+              // Use regular transaction for non-gasless users
+              userOpResult = await executeTransaction(realTransactionData);
+            }
 
             console.log("User operation sent successfully:", userOpResult);
 
@@ -237,6 +263,7 @@ export function useMintTransactions() {
               console.log("Final Account Kit transaction hash:", txHash);
             } else {
               console.warn("No transaction hash found in user operation result:", userOpResult);
+              // This is a legitimate case where we need to inform the user about the missing hash
               throw new Error("Transaction was sent but no transaction hash was returned. The transaction may still be processing.");
             }
           } catch (accountKitError) {
@@ -246,56 +273,76 @@ export function useMintTransactions() {
             if (accountKitError instanceof Error) {
               const errorMessage = accountKitError.message.toLowerCase();
 
-              // Contract-specific errors (from MultiTokenFaucet)
+              // Contract-specific errors (from MultiTokenFaucet) - preserve original error
               if (errorMessage.includes("cooldownnotelapsed") || errorMessage.includes("cooldown")) {
-                throw new Error("CooldownNotElapsed: You are still in the 24-hour cooldown period.");
+                throw accountKitError; // Preserve original error message
               } else if (errorMessage.includes("insufficientfaucetbalance")) {
-                throw new Error("InsufficientFaucetBalance: The faucet doesn't have enough tokens.");
+                throw accountKitError; // Preserve original error message
               } else if (errorMessage.includes("invalidtokenindex")) {
-                throw new Error("InvalidTokenIndex: Invalid token selected.");
+                throw accountKitError; // Preserve original error message
               } else if (errorMessage.includes("transferfailed")) {
-                throw new Error("TransferFailed: Token transfer failed.");
+                throw accountKitError; // Preserve original error message
               }
 
-              // Account Kit specific errors
+              // Check for gas-related errors first
               else if (errorMessage.includes("insufficient funds") ||
                        errorMessage.includes("sender balance and deposit together is 0") ||
                        errorMessage.includes("insufficient balance") ||
                        errorMessage.includes("not enough funds")) {
-                const smartAccountAddress = client?.account?.address || address;
-                throw new Error(`Your Account Kit smart wallet needs ETH for gas fees. Send Base Sepolia ETH to: ${smartAccountAddress || 'your smart wallet address'} or switch to a Web3 wallet.`);
+                // Use enhanced error handling for gasless transactions
+                const errorHandlerResult = handleTransactionError({
+                  walletType,
+                  isGasSponsored,
+                  smartAccountAddress: client?.account?.address || address,
+                  originalError: accountKitError
+                });
+
+                // For gasless users with sponsorship, handle appropriately
+                if (errorHandlerResult.shouldShowFundingHelper) {
+                  throw new Error("funding_helper: Your Account Kit wallet needs ETH for gas fees. Please add funds to continue.");
+                } else if (errorHandlerResult.shouldShowErrorModal) {
+                  throw new Error(errorHandlerResult.errorMessage);
+                } else {
+                  // For gasless users with active sponsorship, this is likely a temporary gas sponsorship issue
+                  // Don't throw an error that would show a modal - just log and continue
+                  console.log("Gas sponsorship detected for gasless user, transaction may have failed due to temporary sponsorship issues");
+
+                  // Check if user actually has gas sponsorship active
+                  const isAbstractWalletUser = walletType === WalletType.MINIMAL;
+                  if (isAbstractWalletUser && isGasSponsored) {
+                    // For gasless users with active sponsorship, this shouldn't be a blocking error
+                    console.log("User has active gas sponsorship, this may be a temporary network issue");
+                    throw new Error("network_retry: Transaction failed due to network issues. Gas sponsorship is active. Please try again.");
+                  } else {
+                    // Fallback for other cases
+                    throw new Error("gas_sponsored_retry: Transaction temporarily failed due to gas sponsorship issues. Please try again.");
+                  }
+                }
               } else if (errorMessage.includes("user rejected") ||
                          errorMessage.includes("user denied") ||
                          errorMessage.includes("user cancelled")) {
-                throw new Error("user rejected: Transaction was rejected by user.");
+                throw accountKitError; // Preserve original user rejection message
               } else if (errorMessage.includes("missing or invalid parameters") ||
                          errorMessage.includes("invalid parameters")) {
-                throw new Error("Account Kit transaction failed due to invalid parameters. Please try again or switch to a Web3 wallet.");
+                throw accountKitError; // Preserve original parameter error
               } else if (errorMessage.includes("execution reverted")) {
-                // Check if it's a contract revert with specific reason
-                if (errorMessage.includes("cooldown")) {
-                  throw new Error("execution reverted: You are still in the 24-hour cooldown period.");
-                } else {
-                  throw new Error("execution reverted: Transaction was rejected by the smart contract.");
-                }
+                // For execution reverted errors, preserve the original message which contains the revert reason
+                throw accountKitError; // Preserve original revert message with reason
               } else if (errorMessage.includes("network error") ||
                          errorMessage.includes("connection failed")) {
-                throw new Error("Network error occurred. Please check your connection and try again.");
+                throw accountKitError; // Preserve original network error
               } else if (errorMessage.includes("gas estimation failed")) {
-                throw new Error("Gas estimation failed. Your Account Kit wallet may need more ETH for gas fees.");
+                throw accountKitError; // Preserve original gas estimation error
               } else if (errorMessage.includes("nonce too low") ||
                          errorMessage.includes("nonce too high")) {
-                throw new Error("Transaction nonce error. Please try again in a moment.");
+                throw accountKitError; // Preserve original nonce error
               } else if (errorMessage.includes("replacement transaction underpriced")) {
-                throw new Error("Transaction replacement failed. Please wait and try again.");
+                throw accountKitError; // Preserve original replacement error
               }
             }
 
-            // Fallback error message
-            const fallbackMessage = accountKitError instanceof Error
-              ? accountKitError.message
-              : 'Unknown Account Kit error occurred';
-            throw new Error(`Account Kit transaction failed: ${fallbackMessage}`);
+            // Fallback - preserve the original error
+            throw accountKitError;
           }
         }
 
@@ -324,21 +371,10 @@ export function useMintTransactions() {
         console.error("Error in mint transaction:", err);
 
         // Enhanced error handling for Web3 wallet errors
+        // Don't modify error messages - preserve original blockchain/contract errors
         if (err instanceof Error) {
-          // Check for specific contract errors
-          if (err.message.includes("CooldownNotElapsed")) {
-            err.message = "CooldownNotElapsed: You are still in the 24-hour cooldown period.";
-          } else if (err.message.includes("InsufficientFaucetBalance")) {
-            err.message = "InsufficientFaucetBalance: The faucet doesn't have enough tokens.";
-          } else if (err.message.includes("InvalidTokenIndex")) {
-            err.message = "InvalidTokenIndex: Invalid token selected.";
-          } else if (err.message.includes("TransferFailed")) {
-            err.message = "TransferFailed: Token transfer failed.";
-          } else if (err.message.includes("execution reverted")) {
-            err.message = "execution reverted: Transaction was rejected by the smart contract.";
-          } else if (err.message.includes("user rejected")) {
-            err.message = "user rejected: Transaction was rejected by user.";
-          }
+          console.log("Preserving original error message:", err.message);
+          // Keep the original error message intact - it contains valuable information from the blockchain
         }
 
         setTransactionState({
@@ -353,12 +389,15 @@ export function useMintTransactions() {
       walletType,
       address,
       writeContractAsync,
-      sendUserOperationAsync,
+      executeTransaction,
+      executeSponsoredTransaction,
       sendUserOperationResult,
       addTransaction,
       client,
       getContractAddress,
       validateAccountKitSetup,
+      isGasSponsored,
+      isClientReady,
     ]
   );
 
@@ -465,6 +504,42 @@ export function useMintTransactions() {
   // Claim tokens with strict contract-based cooldown enforcement
   const claimTokens = useCallback(
     async (token: MintableToken) => {
+      // Early validation for Account Kit wallets with retry mechanism
+      if (walletType === WalletType.MINIMAL) {
+        // Wait for client to be ready with timeout
+        let retryCount = 0;
+        const maxRetries = 10; // 2 seconds total wait time
+        const retryDelay = 200; // 200ms between retries
+
+        while (!isClientReady && retryCount < maxRetries) {
+          console.log(`Waiting for smart account client to be ready... (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          retryCount++;
+        }
+
+        // Final check if client is ready
+        if (!isClientReady) {
+          throw new Error("Smart account client is not ready after waiting. Please ensure your wallet is connected and try again.");
+        }
+
+        // Validate Account Kit setup
+        const setupValidation = validateAccountKitSetup();
+        if (!setupValidation.valid) {
+          throw new Error(`Account Kit setup issues: ${setupValidation.issues.join(', ')}`);
+        }
+
+        // Additional client validation
+        if (!client) {
+          throw new Error("Smart account client not available. Please ensure Account Kit is properly initialized.");
+        }
+
+        if (!sendUserOperationAsync) {
+          throw new Error("Send user operation function not available. Please try again.");
+        }
+
+        console.log("Smart account client validation passed, proceeding with transaction");
+      }
+
       // First check with contract (authoritative)
       const canClaim = await canClaimToken(token);
       if (!canClaim) {
@@ -490,7 +565,7 @@ export function useMintTransactions() {
 
       return result;
     },
-    [handleMintTransaction, canClaimToken, getRemainingCooldown, address]
+    [handleMintTransaction, canClaimToken, getRemainingCooldown, address, walletType, isClientReady, validateAccountKitSetup, client, sendUserOperationAsync]
   );
 
   // Get available tokens for minting

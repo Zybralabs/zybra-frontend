@@ -44,7 +44,7 @@ const Header = () => {
     },
   ];
   return (
-    <header className="sticky top-0 z-10 flex flex-col items-center border-b border-white/10 bg-darkGrassGreen w-full overflow-hidden">
+    <header className="sticky top-0 z-50 flex flex-col items-center border-b border-white/10 bg-darkGrassGreen w-full overflow-hidden">
       {!!stocks?.length && (
         <div className="w-full bg-darkBlue flex items-center py-3 overflow-hidden">
           <div className="flex items-center px-2.5">

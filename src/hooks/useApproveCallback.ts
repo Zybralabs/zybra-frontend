@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect } from "react";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Contract } from "@ethersproject/contracts";
 import { useERC20TokenContract } from "./useContract";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
 import { WalletType } from "@/constant/account/enum";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { useChainId, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
@@ -60,17 +60,17 @@ export function useApproveCallback(
     hash: hash as `0x${string}` | undefined,
     confirmations: 2,
   });
-  const { client } = useSmartAccountClient({
-    type: accountType,
-    opts,
-  });
-  // Account Kit hooks for minimal wallet
+  // Use centralized smart account client with gas sponsorship (safe version)
   const {
-    sendUserOperationAsync,
+    client,
+    isGasSponsored,
+    isClientReady,
+    executeTransaction,
+    executeSponsoredTransaction,
     sendUserOperationResult,
     isSendingUserOperation,
-    error: isSendUserOperationError,
-  } = useSendUserOperation({ client: client, waitForTxn: true });
+    sendUserOperationError: isSendUserOperationError,
+  } = useSmartAccountClientSafe();
 
   // Check current allowance
   //@ts-ignore
@@ -138,6 +138,15 @@ export function useApproveCallback(
         }
 
       } else if (walletType === WalletType.MINIMAL) {
+        // Check if client is ready first
+        if (!isClientReady) {
+          throw new Error("Smart account client is not ready. Please ensure your wallet is connected and try again.");
+        }
+
+        if (!executeTransaction) {
+          throw new Error("Transaction execution function is not available. Please try again.");
+        }
+
         // Minimal wallet approval using Account Kit
         if (!erc20Contract) {
           throw new Error("ERC20 contract not initialized");
@@ -154,9 +163,11 @@ export function useApproveCallback(
         // Set state to pending while processing
         setApprovalState(ApprovalState.PENDING);
 
-        // Send user operation and wait for result
-        const userOpResult = await sendUserOperationAsync({
-          uo: { target, data, value },
+        // Use the new executeTransaction method with proper gas estimation
+        const userOpResult = await executeTransaction({
+          target,
+          data,
+          value,
         });
 
         console.log("Approval user operation result:", userOpResult);
@@ -199,7 +210,7 @@ export function useApproveCallback(
     } finally {
       setLoading(false);
     }
-  }, [spender, tokenAddress, amountToApprove, tokenSymbol, owner, address, walletType, writeContractAsync, addTransaction, erc20Contract, sendUserOperationAsync]);
+  }, [spender, tokenAddress, amountToApprove, tokenSymbol, owner, address, walletType, writeContractAsync, addTransaction, erc20Contract, executeTransaction, isClientReady]);
 
   // Effect to handle Account Kit transaction results (backup)
   useEffect(() => {

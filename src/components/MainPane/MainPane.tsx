@@ -288,9 +288,9 @@ const Dashboard = () => {
     const explorationSteps = useMemo<ExplorationStep[]>(() => [
       {
         id: 'wallet',
-        title: "Connect your wallet to start trading",
+        title: isWalletConnected ? "Wallet Connected" : "Connect your wallet to start trading",
         icon: <Wallet className="w-5 h-5" />,
-        action: "Connect Wallet",
+        action: isWalletConnected ? "Wallet Connected" : "Connect Wallet",
         completed: isStepCompleted('wallet'),
         requiredSteps: [],
       },
@@ -429,8 +429,8 @@ const Dashboard = () => {
         </div>
 
         {isExpanded && (
-          <div className="p-4 space-y-3 bg-gradient-to-b from-[#001525] to-[#001A20]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="p-3 sm:p-4 space-y-3 bg-gradient-to-b from-[#001525] to-[#001A20] overflow-x-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
               {explorationSteps.map((step: ExplorationStep) => {
                 const isAvailable = isStepAvailable(step);
                 // Only show completed steps if wallet is connected
@@ -479,6 +479,16 @@ const Dashboard = () => {
                         onClick={() => router.push("/signup")}
                       >
                         Connect Wallet
+                      </Button>
+                    ) : isWalletStep && isWalletConnected ? (
+                      // Show connected state for wallet step
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="bg-gradient-to-r from-[#10B981] to-[#34D399] text-white transition-all duration-300 text-sm h-9 px-4 shadow-md shadow-green-500/20 cursor-default"
+                        disabled
+                      >
+                        ✓ Wallet Connected
                       </Button>
                     ) : step.action ? (
                       <Button
@@ -538,9 +548,9 @@ const Dashboard = () => {
         <div className="mb-4 sm:mb-6 md:mb-8">
           <h1 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 md:mb-6">Markets</h1>
           <p className="text-white/80 text-xs sm:text-sm">
-            Explore & Invest in your favourite Stocks & Crypto pools.
+            Discover and invest in your favorite assets from Centrifuge and Swarm
           </p>
-          <p className="text-white/95 text-xs sm:text-sm">All from one place!</p>
+          <p className="text-white/95 text-xs sm:text-sm">..All from one place</p>
         </div>
 
         {/* Exploration Guide - Only show when user is logged in */}

@@ -9,17 +9,19 @@ import { Button } from "./Button";
 import { useZRUSDStaking } from "../../hooks/useStaking";
 import { ErrorModal, SuccessModal } from "../Modal";
 import { SupportedChainId, ZFI, ZFI_STAKING_ADDRESS } from "@/constant/addresses";
-import { useChainId } from "wagmi";
+import { useChainId, useWaitForTransactionReceipt } from "wagmi";
 import { fromWei, toWei } from "@/hooks/formatting";
 import { useUserAccount } from "@/context/UserAccountContext";
 import { useRouter } from "next/navigation";
 import { useStockIcon } from "@/hooks/useStockIcon";
 import { ApprovalState, useApproveCallback } from "@/hooks/useApproveCallback";
-import { useSendUserOperation, useSmartAccountClient } from "@account-kit/react";
-import { accountType } from "@/config";
 import { ethers } from "ethers";
 import { WalletType } from "@/constant/account/enum";
 import FundingHelper from "@/components/AccountKit/FundingHelper";
+import { useSmartAccountClientSafe } from "@/context/SmartAccountClientContext";
+import { useReferralCompletion } from "@/hooks/useReferralCompletion";
+import { handleTransactionError } from "@/utils/gaslessErrorHandler";
+
 
 interface ErrorState {
   title: string;
@@ -33,12 +35,23 @@ export default function Staking() {
   const [sliderValue, setSliderValue] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
-  const [success, setSuccess] = useState<{
+  const [approvalSuccess, setApprovalSuccess] = useState<{
+    title: string;
+    message: string;
+    txHash?: string;
+  } | null>(null);
+  const [transactionSuccess, setTransactionSuccess] = useState<{
     title: string;
     message: string;
     txHash?: string;
   } | null>(null);
   const [showFundingHelper, setShowFundingHelper] = useState(false);
+
+  // State to track transaction hashes for confirmation
+  const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
+  const [stakingTxHash, setStakingTxHash] = useState<string | null>(null);
+
+
 
   // Refs to track processed transactions
   const processedApprovalRef = useRef<string | null>(null);
@@ -46,13 +59,16 @@ export default function Staking() {
 
   const { address: userAddress, walletType, zfi_balance } = useUserAccount();
   const chainId = useChainId();
+  const { attemptReferralCompletion } = useReferralCompletion();
 
-  // Account Kit integration
-  const { client } = useSmartAccountClient({ type: accountType });
-  const { sendUserOperationAsync, sendUserOperationResult } = useSendUserOperation({
+  // Use centralized smart account client with gas sponsorship (safe version)
+  const {
     client,
-    waitForTxn: true,
-  });
+    isGasSponsored,
+    isClientReady,
+    sendUserOperationAsync,
+    sendUserOperationResult,
+  } = useSmartAccountClientSafe();
 
   const {
     totalStaked,
@@ -88,80 +104,224 @@ export default function Staking() {
     "ZFI",
   );
 
-  // Enhanced error handling with Account Kit support
+  // Wait for approval transaction confirmation
+  const {
+    data: approvalTxReceipt,
+    isLoading: isApprovalConfirming,
+    isSuccess: isApprovalConfirmed,
+    isError: isApprovalError,
+  } = useWaitForTransactionReceipt({
+    hash: approvalTxHash as `0x${string}` | undefined,
+    confirmations: 2,
+  });
+
+  // Wait for staking transaction confirmation
+  const {
+    data: stakingTxReceipt,
+    isLoading: isStakingConfirming,
+    isSuccess: isStakingConfirmed,
+    isError: isStakingError,
+  } = useWaitForTransactionReceipt({
+    hash: stakingTxHash as `0x${string}` | undefined,
+    confirmations: 2,
+  });
+
+  // For Account Kit transactions, we'll use the sendUserOperationResult from the context
+  // which provides transaction status and hash information
+
+  // Enhanced error handling with gasless transaction support
   useEffect(() => {
     if (approvalError) {
-      const errorMessage = approvalError.message || "Failed to approve token";
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: approvalError
+      });
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Approval Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     }
 
     if (stakingError) {
-      const errorMessage = stakingError.message || "Failed to Stake token";
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: stakingError
+      });
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Staking Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     }
-  }, [approvalError, stakingError]);
+  }, [approvalError, stakingError, walletType, isGasSponsored, client]);
 
-  // Success handling
+  // Handle approval transaction hash and set it for confirmation tracking
   useEffect(() => {
-    // Handle approval receipt - check both message and hash
     if (approvalReceipt && (approvalReceipt.message || approvalReceipt.hash)) {
       const txHash = approvalReceipt.message || approvalReceipt.hash || "";
-      // Check if we've already processed this approval receipt
-      if (processedApprovalRef.current !== txHash && txHash) {
-        console.log("Approval receipt received:", txHash);
-        setSuccess({
-          title: "Approval Successful",
-          message: "ZFI token approval successful",
+      if (txHash && !approvalTxHash) {
+        console.log("Approval transaction submitted:", txHash);
+        setApprovalTxHash(txHash);
+      }
+    }
+  }, [approvalReceipt, approvalTxHash]);
+
+  // Handle staking transaction hash and set it for confirmation tracking
+  useEffect(() => {
+    if (receipt && typeof receipt === 'string' && !stakingTxHash) {
+      console.log("Staking transaction submitted:", receipt);
+      setStakingTxHash(receipt);
+    }
+  }, [receipt, stakingTxHash]);
+
+  // Handle Account Kit transaction results for immediate success feedback
+  useEffect(() => {
+    const handleAccountKitTransaction = async () => {
+      if (sendUserOperationResult && walletType === WalletType.MINIMAL) {
+        const txHash = typeof sendUserOperationResult === 'string'
+          ? sendUserOperationResult
+          : sendUserOperationResult.hash;
+
+        if (txHash && !processedReceiptRef.current) {
+          console.log("Account Kit transaction completed:", {
+            txHash,
+            sendUserOperationResult,
+            type: typeof sendUserOperationResult
+          });
+
+          // Clear approval success modal when main transaction succeeds
+          setApprovalSuccess(null);
+
+          // For Account Kit transactions, show success immediately since they're already confirmed
+          setTransactionSuccess({
+            title: isStaking ? "Staking Confirmed" : "Unstaking Confirmed",
+            message: isStaking
+              ? "Your tokens have been successfully staked and confirmed on the blockchain."
+              : "Your tokens have been successfully unstaked and confirmed on the blockchain.",
+            txHash: txHash,
+          });
+
+          // Complete referral if this is the user's first qualifying action
+          await attemptReferralCompletion('staking');
+
+          // Mark this transaction as processed
+          processedReceiptRef.current = txHash;
+          setIsLoading(false);
+          setStakingTxHash(null);
+        }
+      }
+    };
+
+    handleAccountKitTransaction();
+  }, [sendUserOperationResult, walletType, isStaking, attemptReferralCompletion]);
+
+  // Success handling - only show success when transactions are CONFIRMED
+  useEffect(() => {
+    // Handle approval confirmation for regular wallets
+    if (isApprovalConfirmed && approvalTxReceipt && walletType !== WalletType.MINIMAL) {
+      const txHash = approvalTxReceipt.transactionHash;
+      // Check if we've already processed this approval confirmation
+      if (processedApprovalRef.current !== txHash) {
+        console.log("Approval transaction confirmed:", txHash);
+        setApprovalSuccess({
+          title: "Approval Confirmed",
+          message: "ZFI token approval has been confirmed on the blockchain",
           txHash: txHash,
         });
         // Mark this approval as processed
         processedApprovalRef.current = txHash;
-
         // Clear approval loading state
         setIsLoading(false);
+        // Reset approval tx hash
+        setApprovalTxHash(null);
       }
     }
 
-    // Handle transaction receipt
-    if (receipt) {
-      // Check if we've already processed this transaction receipt
-      if (processedReceiptRef.current !== receipt) {
-        console.log("Transaction receipt received:", receipt);
-        setSuccess({
-          title: isStaking ? "Staking Successful" : "Unstaking Successful",
-          message: isStaking
-            ? "Your tokens have been successfully staked."
-            : "Your tokens have been successfully unstaked.",
-          txHash: receipt,
+    // Handle approval confirmation for Account Kit (immediate success)
+    if (approvalReceipt && walletType === WalletType.MINIMAL) {
+      const txHash = approvalReceipt.hash || approvalReceipt.message;
+      if (txHash && processedApprovalRef.current !== txHash) {
+        console.log("Account Kit approval transaction completed:", txHash);
+        setApprovalSuccess({
+          title: "Approval Confirmed",
+          message: "ZFI token approval has been confirmed on the blockchain",
+          txHash: txHash,
         });
-        // Mark this transaction as processed
-        processedReceiptRef.current = receipt;
+        // Mark this approval as processed
+        processedApprovalRef.current = txHash;
+        // Clear approval loading state
+        setIsLoading(false);
+        // Reset approval tx hash
+        setApprovalTxHash(null);
+      }
+    }
 
+    // Handle staking confirmation
+    if (isStakingConfirmed && stakingTxReceipt) {
+      const txHash = stakingTxReceipt.transactionHash;
+      // Check if we've already processed this staking confirmation
+      if (processedReceiptRef.current !== txHash) {
+        console.log("Staking transaction confirmed:", txHash);
+
+        // Clear approval success modal when main transaction succeeds
+        setApprovalSuccess(null);
+
+        setTransactionSuccess({
+          title: isStaking ? "Staking Confirmed" : "Unstaking Confirmed",
+          message: isStaking
+            ? "Your tokens have been successfully staked and confirmed on the blockchain."
+            : "Your tokens have been successfully unstaked and confirmed on the blockchain.",
+          txHash: txHash,
+        });
+
+        // Complete referral if this is the user's first qualifying action
+        attemptReferralCompletion('staking');
+
+        // Mark this transaction as processed
+        processedReceiptRef.current = txHash;
         // Clear loading state
         setIsLoading(false);
+        // Reset staking tx hash
+        setStakingTxHash(null);
       }
     }
-  }, [approvalReceipt, receipt, isStaking]);
+  }, [isApprovalConfirmed, approvalTxReceipt, isStakingConfirmed, stakingTxReceipt, isStaking, walletType, approvalReceipt]);
+
+  // Handle transaction confirmation errors
+  useEffect(() => {
+    if (isApprovalError && approvalTxHash) {
+      console.error("Approval transaction failed confirmation");
+      setError({
+        title: "Approval Failed",
+        message: "The approval transaction failed to confirm. Please try again.",
+      });
+      setApprovalTxHash(null);
+      setIsLoading(false);
+    }
+
+    if (isStakingError && stakingTxHash) {
+      console.error("Staking transaction failed confirmation");
+      setError({
+        title: isStaking ? "Staking Failed" : "Unstaking Failed",
+        message: `The ${isStaking ? 'staking' : 'unstaking'} transaction failed to confirm. Please try again.`,
+      });
+      setStakingTxHash(null);
+      setIsLoading(false);
+    }
+  }, [isApprovalError, approvalTxHash, isStakingError, stakingTxHash, isStaking]);
 
   // Amount animation
   useEffect(() => {
@@ -204,7 +364,8 @@ export default function Staking() {
     try {
       setIsLoading(true);
       setError(null);
-      setSuccess(null);
+      setApprovalSuccess(null);
+      setTransactionSuccess(null);
 
       // Reset the processed approval ref when initiating a new approval
       processedApprovalRef.current = null;
@@ -214,23 +375,26 @@ export default function Staking() {
     } catch (err) {
       console.error("Error during approval:", err);
 
-      const errorMessage = (err as Error).message || "Approval failed";
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: err as Error
+      });
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Approval Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     } finally {
       // Don't set loading to false here, let the success handler do it
       // setIsLoading(false);
     }
-  }, [userAddress, setError, setIsLoading, setSuccess, approveCallback, setShowFundingHelper]);
+  }, [userAddress, setError, setIsLoading, approveCallback, setShowFundingHelper, walletType, isGasSponsored, client]);
 
   // Handle stake/unstake process
   const handleStakeUnstake = useCallback(async () => {
@@ -245,7 +409,8 @@ export default function Staking() {
     }
 
     setIsLoading(true);
-    setSuccess(null);
+    setApprovalSuccess(null);
+    setTransactionSuccess(null);
     setError(null);
 
     // Reset the processed receipt ref when initiating a new transaction
@@ -262,32 +427,35 @@ export default function Staking() {
     } catch (err) {
       console.error("Error during staking/unstaking:", err);
 
-      const errorMessage = (err as Error).message || "Transaction failed";
+      const errorHandlerResult = handleTransactionError({
+        walletType: walletType || WalletType.WEB3,
+        isGasSponsored,
+        smartAccountAddress: client?.account?.address,
+        originalError: err as Error
+      });
 
-      // Check if it's an Account Kit gas fee issue
-      if (errorMessage.includes("needs ETH for gas fees") ||
-          errorMessage.includes("Send Base Sepolia ETH to:")) {
+      if (errorHandlerResult.shouldShowFundingHelper) {
         setShowFundingHelper(true);
-      } else if (stakingError) {
+      } else if (errorHandlerResult.shouldShowErrorModal) {
         setError({
-          title: "Staking Error",
-          message: stakingError.message || "Failed to Stake token",
-        });
-      } else {
-        setError({
-          title: isStaking ? "Staking Error" : "Unstaking Error",
-          message: errorMessage,
+          title: errorHandlerResult.errorTitle,
+          message: errorHandlerResult.errorMessage,
         });
       }
     } finally {
       // Don't set loading to false here, let the success handler do it
       // setIsLoading(false);
     }
-  }, [userAddress, amount, isStaking, setError, setIsLoading, setSuccess, stake, unstake, stakingError, setShowFundingHelper]);
+  }, [userAddress, amount, isStaking, setError, setIsLoading, stake, unstake, setShowFundingHelper, walletType, isGasSponsored, client]);
 
-  const handleSuccessClose = useCallback(() => {
-    setSuccess(null);
+  const handleApprovalSuccessClose = useCallback(() => {
+    setApprovalSuccess(null);
+  }, []);
 
+  const handleTransactionSuccessClose = useCallback(() => {
+    setTransactionSuccess(null);
+    // Also clear approval success when closing transaction success
+    setApprovalSuccess(null);
     // Don't reset the processed transaction refs here
     // This would cause the success modal to show again if the receipt is still in state
     // We only want to reset these when a new transaction is initiated
@@ -318,14 +486,46 @@ export default function Staking() {
     }
 
     if (isStaking) {
-      if (approvalState === ApprovalState.NOT_APPROVED) {
+      // Check if approval is pending confirmation (for regular wallets)
+      if (approvalTxHash && isApprovalConfirming && walletType !== WalletType.MINIMAL) {
         return {
-          text: "Approve ZFI",
-          onClick: handleApproval,
-          loading: approvalLoading,
-          disabled: amount <= 0,
+          text: "Confirming Approval...",
+          onClick: () => {},
+          loading: true,
+          disabled: true,
         };
       }
+
+      // Check if approval is needed (real-time state update)
+      if (approvalState === ApprovalState.NOT_APPROVED || approvalState === ApprovalState.PENDING) {
+        return {
+          text: approvalState === ApprovalState.PENDING ? "Approving..." : "Approve ZFI",
+          onClick: handleApproval,
+          loading: approvalLoading || approvalState === ApprovalState.PENDING,
+          disabled: amount <= 0 || approvalState === ApprovalState.PENDING,
+        };
+      }
+
+      // Check if staking transaction is pending confirmation
+      if (stakingTxHash && isStakingConfirming && walletType !== WalletType.MINIMAL) {
+        return {
+          text: "Confirming Transaction...",
+          onClick: () => {},
+          loading: true,
+          disabled: true,
+        };
+      }
+
+      // Check if Account Kit transaction is in progress
+      if (walletType === WalletType.MINIMAL && (stakingLoading || isLoading)) {
+        return {
+          text: "Processing Transaction...",
+          onClick: () => {},
+          loading: true,
+          disabled: true,
+        };
+      }
+
       return {
         text: "Stake ZFI",
         onClick: handleStakeUnstake,
@@ -333,6 +533,17 @@ export default function Staking() {
         disabled: amount <= 0 || approvalState !== ApprovalState.APPROVED,
       };
     }
+
+    // Unstaking mode
+    if (stakingTxHash && isStakingConfirming) {
+      return {
+        text: "Confirming Transaction...",
+        onClick: () => {},
+        loading: true,
+        disabled: true,
+      };
+    }
+
     return {
       text: "Unstake sZFI",
       onClick: handleStakeUnstake,
@@ -347,6 +558,11 @@ export default function Staking() {
     approvalLoading,
     stakingLoading,
     isLoading,
+    approvalTxHash,
+    isApprovalConfirming,
+    stakingTxHash,
+    isStakingConfirming,
+    walletType,
     route,
     handleApproval,
     handleStakeUnstake
@@ -393,8 +609,12 @@ export default function Staking() {
                   }`}
                 onClick={() => {
                   setIsStaking(true);
-                  // Clear success state when switching tabs
-                  setSuccess(null);
+                  // Clear all success states and reset processed refs when switching tabs
+                  setApprovalSuccess(null);
+                  setTransactionSuccess(null);
+                  setError(null);
+                  processedApprovalRef.current = null;
+                  processedReceiptRef.current = null;
                 }}
                 disabled={isLoading || approvalLoading || stakingLoading}
               >
@@ -405,8 +625,12 @@ export default function Staking() {
                   }`}
                 onClick={() => {
                   setIsStaking(false);
-                  // Clear success state when switching tabs
-                  setSuccess(null);
+                  // Clear all success states and reset processed refs when switching tabs
+                  setApprovalSuccess(null);
+                  setTransactionSuccess(null);
+                  setError(null);
+                  processedApprovalRef.current = null;
+                  processedReceiptRef.current = null;
                 }}
                 disabled={isLoading || approvalLoading || stakingLoading}
               >
@@ -621,8 +845,8 @@ export default function Staking() {
               </Button>
             </motion.div>
 
-            {/* Approval Status Indicator - Only show in staking mode when approved */}
-            {isStaking && approvalState === ApprovalState.APPROVED && (
+            {/* Approval Status Indicator - Only show in staking mode when approved and not pending */}
+            {isStaking && approvalState === ApprovalState.APPROVED && !approvalTxHash && (
               <motion.div
                 className="flex items-center justify-center gap-2 mt-3 text-xs text-green-400"
                 initial={{ opacity: 0 }}
@@ -633,6 +857,116 @@ export default function Staking() {
                 ZFI token approved for staking
               </motion.div>
             )}
+
+            {/* Approval Pending Indicator */}
+            {isStaking && (approvalState === ApprovalState.PENDING || (approvalTxHash && isApprovalConfirming)) && (
+              <motion.div
+                className="flex items-center justify-center gap-2 mt-3 text-xs text-yellow-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="h-2 w-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                {approvalTxHash ? "Confirming approval..." : "Approval pending..."}
+              </motion.div>
+            )}
+
+            {/* Transaction Confirming Indicator */}
+            {stakingTxHash && isStakingConfirming && (
+              <motion.div
+                className="flex items-center justify-center gap-2 mt-3 text-xs text-blue-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse"></div>
+                Transaction confirming...
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Entity Staking Section - Coming Soon */}
+        <motion.div
+          className="bg-[#001C29] rounded-xl overflow-hidden border border-[#003354]/40 shadow-[0_0_30px_rgba(0,70,120,0.15)] mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <div className="p-6 relative">
+            {/* Coming Soon Badge */}
+            <div className="absolute top-4 right-4">
+              <span className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                COMING SOON
+              </span>
+            </div>
+
+            {/* Header */}
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-white mb-2">Entity Staking</h3>
+              <p className="text-gray-400 text-sm">
+                Advanced staking features designed for institutional and corporate entities with enhanced compliance and reporting capabilities.
+              </p>
+            </div>
+
+            {/* Features Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-[#00233A] p-4 rounded-lg border border-[#003354]/60 opacity-60">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-600/50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-white">Compliance Reporting</span>
+                </div>
+                <p className="text-gray-400 text-sm">Automated compliance reports and audit trails for regulatory requirements.</p>
+              </div>
+
+              <div className="bg-[#00233A] p-4 rounded-lg border border-[#003354]/60 opacity-60">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-600/50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-white">Multi-Signature Support</span>
+                </div>
+                <p className="text-gray-400 text-sm">Enterprise-grade multi-signature wallet integration for secure transactions.</p>
+              </div>
+
+              <div className="bg-[#00233A] p-4 rounded-lg border border-[#003354]/60 opacity-60">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-600/50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-white">Advanced Analytics</span>
+                </div>
+                <p className="text-gray-400 text-sm">Detailed performance metrics and portfolio analytics for institutional needs.</p>
+              </div>
+
+              <div className="bg-[#00233A] p-4 rounded-lg border border-[#003354]/60 opacity-60">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-600/50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-white">Enhanced Security</span>
+                </div>
+                <p className="text-gray-400 text-sm">Additional security layers and risk management tools for large-scale operations.</p>
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <div className="text-center">
+              <p className="text-gray-400 text-sm mb-4">
+                Interested in entity staking features? Get notified when they become available.
+              </p>
+          
+            </div>
           </div>
         </motion.div>
       </div>
@@ -645,13 +979,23 @@ export default function Staking() {
         message={error?.message || "Something went wrong"}
       />
 
-      {/* Success Modal */}
+      {/* Approval Success Modal - Only show if no transaction success */}
       <SuccessModal
-        isOpen={success != null && success.txHash != null}
-        onClose={handleSuccessClose}
-        title={success?.title || "Success"}
-        message={success?.message || "Operation completed successfully"}
-        txHash={success?.txHash}
+        isOpen={approvalSuccess != null && approvalSuccess.txHash != null && transactionSuccess == null}
+        onClose={handleApprovalSuccessClose}
+        title={approvalSuccess?.title || "Approval Successful"}
+        message={approvalSuccess?.message || "Token approval successful"}
+        txHash={approvalSuccess?.txHash}
+        chainId={chainId}
+      />
+
+      {/* Transaction Success Modal - Takes priority over approval success */}
+      <SuccessModal
+        isOpen={transactionSuccess != null && transactionSuccess.txHash != null}
+        onClose={handleTransactionSuccessClose}
+        title={transactionSuccess?.title || "Transaction Successful"}
+        message={transactionSuccess?.message || "Transaction completed successfully"}
+        txHash={transactionSuccess?.txHash}
         chainId={chainId}
       />
 

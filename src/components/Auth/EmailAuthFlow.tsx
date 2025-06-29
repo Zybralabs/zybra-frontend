@@ -126,7 +126,25 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
 
     // Basic email validation
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address");
+      const errorMessage = "Please enter a valid email address";
+      setError(errorMessage);
+      alertModalOpenHandler({
+        isError: true,
+        title: "Invalid Email",
+        message: errorMessage,
+      });
+      return;
+    }
+
+    // Check for common email issues
+    if (email.length > 254) {
+      const errorMessage = "Email address is too long";
+      setError(errorMessage);
+      alertModalOpenHandler({
+        isError: true,
+        title: "Invalid Email",
+        message: errorMessage,
+      });
       return;
     }
 
@@ -198,6 +216,7 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
         );
       } catch (error) {
         console.error("Error initiating email authentication:", error);
+
         // If direct authenticate fails, fall back to authenticateAsync
         authenticateAsync(
           {
@@ -211,13 +230,29 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
               // The OTP verification will handle the backend authentication
             },
             onError: (err) => {
-              const errorMessage = err instanceof Error ? err.message : "Failed to send verification code";
-              setError(errorMessage);
+              let fallbackErrorTitle = "Authentication Failed";
+              let fallbackErrorMessage = "Failed to send verification code";
 
+              if (err instanceof Error) {
+                if (err.message.includes("network") || err.message.includes("fetch")) {
+                  fallbackErrorTitle = "Network Error";
+                  fallbackErrorMessage = "Please check your internet connection and try again";
+                } else if (err.message.includes("rate limit") || err.message.includes("too many")) {
+                  fallbackErrorTitle = "Rate Limit Exceeded";
+                  fallbackErrorMessage = "Too many attempts. Please wait a few minutes before trying again";
+                } else if (err.message.includes("blocked") || err.message.includes("forbidden")) {
+                  fallbackErrorTitle = "Email Blocked";
+                  fallbackErrorMessage = "This email address cannot be used for authentication";
+                } else {
+                  fallbackErrorMessage = err.message;
+                }
+              }
+
+              setError(fallbackErrorMessage);
               alertModalOpenHandler({
                 isError: true,
-                title: "Error",
-                message: errorMessage,
+                title: fallbackErrorTitle,
+                message: fallbackErrorMessage,
               });
             },
           }
@@ -227,12 +262,28 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
       // Start resend timer
       setResendTimer(60);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to send verification code";
-      setError(errorMessage);
+      let errorTitle = "Authentication Error";
+      let errorMessage = "Failed to send verification code";
 
+      if (err instanceof Error) {
+        if (err.message.includes("network") || err.message.includes("fetch")) {
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again";
+        } else if (err.message.includes("rate limit") || err.message.includes("too many")) {
+          errorTitle = "Rate Limit Exceeded";
+          errorMessage = "Too many attempts. Please wait a few minutes before trying again";
+        } else if (err.message.includes("service unavailable") || err.message.includes("503")) {
+          errorTitle = "Service Unavailable";
+          errorMessage = "Authentication service is temporarily unavailable. Please try again later";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       alertModalOpenHandler({
         isError: true,
-        title: "Error",
+        title: errorTitle,
         message: errorMessage,
       });
     } finally {
@@ -246,7 +297,25 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
 
     // Check if OTP is complete
     if (!otpCode || otpCode.length < 6) {
-      setError("Please enter the complete verification code");
+      const errorMessage = "Please enter the complete 6-digit verification code";
+      setError(errorMessage);
+      alertModalOpenHandler({
+        isError: true,
+        title: "Incomplete Code",
+        message: errorMessage,
+      });
+      return;
+    }
+
+    // Validate OTP format (should be numeric)
+    if (!/^\d{6}$/.test(otpCode)) {
+      const errorMessage = "Verification code must be 6 digits";
+      setError(errorMessage);
+      alertModalOpenHandler({
+        isError: true,
+        title: "Invalid Code Format",
+        message: errorMessage,
+      });
       return;
     }
 
@@ -315,24 +384,65 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
             }
           },
           onError: (err) => {
-            const errorMessage = err instanceof Error ? err.message : "Failed to verify code";
-            setError(errorMessage);
+            let errorTitle = "Verification Failed";
+            let errorMessage = "Failed to verify code";
 
+            if (err instanceof Error) {
+              if (err.message.includes("invalid") || err.message.includes("incorrect")) {
+                errorTitle = "Invalid Code";
+                errorMessage = "The verification code you entered is incorrect. Please try again";
+              } else if (err.message.includes("expired")) {
+                errorTitle = "Code Expired";
+                errorMessage = "The verification code has expired. Please request a new one";
+              } else if (err.message.includes("rate limit") || err.message.includes("too many")) {
+                errorTitle = "Too Many Attempts";
+                errorMessage = "Too many failed attempts. Please wait before trying again";
+              } else if (err.message.includes("network") || err.message.includes("fetch")) {
+                errorTitle = "Network Error";
+                errorMessage = "Please check your internet connection and try again";
+              } else {
+                errorMessage = err.message;
+              }
+            }
+
+            setError(errorMessage);
             alertModalOpenHandler({
               isError: true,
-              title: "Verification Failed",
+              title: errorTitle,
               message: errorMessage,
             });
           },
         }
       );
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to verify code";
-      setError(errorMessage);
+      let errorTitle = "Verification Error";
+      let errorMessage = "Failed to verify code";
 
+      if (err instanceof Error) {
+        if (err.message.includes("invalid") || err.message.includes("incorrect")) {
+          errorTitle = "Invalid Code";
+          errorMessage = "The verification code you entered is incorrect. Please try again";
+        } else if (err.message.includes("expired")) {
+          errorTitle = "Code Expired";
+          errorMessage = "The verification code has expired. Please request a new one";
+        } else if (err.message.includes("network") || err.message.includes("fetch")) {
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again";
+        } else if (err.message.includes("rate limit") || err.message.includes("too many")) {
+          errorTitle = "Too Many Attempts";
+          errorMessage = "Too many failed attempts. Please wait before trying again";
+        } else if (err.message.includes("service unavailable") || err.message.includes("503")) {
+          errorTitle = "Service Unavailable";
+          errorMessage = "Verification service is temporarily unavailable. Please try again later";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       alertModalOpenHandler({
         isError: true,
-        title: "Verification Failed",
+        title: errorTitle,
         message: errorMessage,
       });
     } finally {
@@ -390,12 +500,28 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
             }
           },
           onError: (err) => {
-            const errorMessage = err instanceof Error ? err.message : "Failed to resend code";
-            setError(errorMessage);
+            let errorTitle = "Resend Failed";
+            let errorMessage = "Failed to resend verification code";
 
+            if (err instanceof Error) {
+              if (err.message.includes("rate limit") || err.message.includes("too many")) {
+                errorTitle = "Rate Limit Exceeded";
+                errorMessage = "Too many requests. Please wait a few minutes before requesting another code";
+              } else if (err.message.includes("network") || err.message.includes("fetch")) {
+                errorTitle = "Network Error";
+                errorMessage = "Please check your internet connection and try again";
+              } else if (err.message.includes("service unavailable") || err.message.includes("503")) {
+                errorTitle = "Service Unavailable";
+                errorMessage = "Email service is temporarily unavailable. Please try again later";
+              } else {
+                errorMessage = err.message;
+              }
+            }
+
+            setError(errorMessage);
             alertModalOpenHandler({
               isError: true,
-              title: "Error",
+              title: errorTitle,
               message: errorMessage,
             });
           },
@@ -411,12 +537,28 @@ const EmailAuthFlow: React.FC<EmailAuthFlowProps> = ({ onSuccess, onCancel }) =>
         message: "A new verification code has been sent to your email",
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to resend code";
-      setError(errorMessage);
+      let errorTitle = "Resend Error";
+      let errorMessage = "Failed to resend verification code";
 
+      if (err instanceof Error) {
+        if (err.message.includes("rate limit") || err.message.includes("too many")) {
+          errorTitle = "Rate Limit Exceeded";
+          errorMessage = "Too many requests. Please wait a few minutes before requesting another code";
+        } else if (err.message.includes("network") || err.message.includes("fetch")) {
+          errorTitle = "Network Error";
+          errorMessage = "Please check your internet connection and try again";
+        } else if (err.message.includes("service unavailable") || err.message.includes("503")) {
+          errorTitle = "Service Unavailable";
+          errorMessage = "Email service is temporarily unavailable. Please try again later";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       alertModalOpenHandler({
         isError: true,
-        title: "Error",
+        title: errorTitle,
         message: errorMessage,
       });
     }

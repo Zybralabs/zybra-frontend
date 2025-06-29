@@ -159,7 +159,6 @@ export function useDotVc2(withSignerIfPossible = true, chainId: number) {
     withSignerIfPossible,
   );
 }
-useDotVc2
 // Tranche Asset Contract Hook
 export function useTrancheAssetContract(address: string, withSignerIfPossible = true) {
   return useContract(address, TrancheAssetABI, withSignerIfPossible);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, ExternalLink, AlertCircle } from 'lucide-react';
-import { useSmartAccountClient } from '@account-kit/react';
-import { accountType } from '@/config';
+import { Copy, ExternalLink, AlertCircle, Shield } from 'lucide-react';
+import { useSmartAccountClientSafe } from '@/context/SmartAccountClientContext';
 
 interface FundingHelperProps {
   isOpen: boolean;
@@ -15,8 +14,8 @@ export const FundingHelper: React.FC<FundingHelperProps> = ({
   smartAccountAddress
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
-  const { client } = useSmartAccountClient({ type: accountType });
-  
+  const { client, isGasSponsored, policyId } = useSmartAccountClientSafe();
+
   const address = smartAccountAddress || client?.account?.address;
 
   const handleCopyAddress = async () => {
@@ -47,18 +46,37 @@ export const FundingHelper: React.FC<FundingHelperProps> = ({
           </button>
         </div>
 
-        {/* Alert */}
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-medium text-yellow-300 mb-1">ETH Required for Gas</h4>
-              <p className="text-sm text-yellow-200/80">
-                Your Account Kit smart wallet needs Base Sepolia ETH to pay for transaction gas fees.
-              </p>
+        {/* Gas Sponsorship Status */}
+        {isGasSponsored ? (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-green-300 mb-1">Gas Fees Sponsored</h4>
+                <p className="text-sm text-green-200/80">
+                  Great news! Your transactions are sponsored by Alchemy Gas Manager. No ETH needed for gas fees.
+                </p>
+                {policyId && (
+                  <p className="text-xs text-green-200/60 mt-1">
+                    Policy ID: {policyId}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-yellow-300 mb-1">ETH Required for Gas</h4>
+                <p className="text-sm text-yellow-200/80">
+                  Your Account Kit smart wallet needs Base Sepolia ETH to pay for transaction gas fees.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Smart Wallet Address */}
         <div className="mb-4">

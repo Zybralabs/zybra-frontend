@@ -20,7 +20,7 @@ export const SWARM_VAULT_ADDRESS: Record<number, string> = {
 
 export const DOTCV2_ADDRESS: Record<number, string> = {
   1: "0x37516bE016988beA12b1d83BDCdd6542970F8236", // Base_Mainnet
-  84532: "0x3bbb23da0a7eea8b4747e8d0de37ed32e03ad363", // Rinkeby
+  84532: "0xa689F83a9603b4EBFE6d840d83204DC23C3909e6", // Rinkeby
   8453: "0x37516bE016988beA12b1d83BDCdd6542970F8236", // Base
 };
 

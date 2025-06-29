@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
-    "verbatimModuleSyntax": true,
+    "strict": false,
+    "verbatimModuleSyntax": false,
     "forceConsistentCasingInFileNames": true,
     "noUnusedParameters": false,
     "noUnusedLocals": false,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -23,15 +28,22 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/components/MainPane/components/TeslaCard.jsx"
-, "public/icons/base.scg", "src/app/offers/[...offerId]"  ],
-  "exclude": ["node_modules"]
+    "next-env.d.ts",
+    "public/icons/base.scg",
+    "src/app/offers/[...offerId]",
+    "src/components/MainPane/components/TeslaCard.jsx",
+    "out/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

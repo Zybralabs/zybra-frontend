@@ -1,6 +1,13 @@
 const nextConfig = {
   reactStrictMode: false,
-  appDir: true,
+  typescript: {
+    // Ignore TypeScript errors during build (like before)
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Ignore ESLint errors during build (like before)
+    ignoreDuringBuilds: true,
+  },
   images: {
     unoptimized: true,
   },

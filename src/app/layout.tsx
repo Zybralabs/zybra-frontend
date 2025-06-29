@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Suspense } from 'react';
 import LoadingContent from '@/components/LoadingContent';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { Analytics } from "@vercel/analytics/react";
 
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  let initialState;
+  let initialState: any = undefined;
   try {
     const cookieHeader = (await headers()).get("cookie") ?? undefined;
     initialState = cookieToInitialState(alchemy_config, cookieHeader) || initialState;
@@ -43,27 +45,30 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={open_sans.className}>
-        <Providers initialState={initialState}>
-          <div className="flex w-full min-h-screen overflow-x-hidden bg-darkBlue">
-            <div className={`flex flex-col flex-1 bg-darkGreen h-full w-full duration-300`}>
-              <Suspense fallback={<LoadingContent size="md" />}>
-                <Header />
-              </Suspense>
-              <main className="flex-1 pb-10 mb-10 min-h-[100vh] flex justify-center w-full">
-                <Suspense fallback={<LoadingContent size="lg" />}>
-                  {children}
+        <ErrorBoundary>
+          <Providers initialState={initialState}>
+            <div className="flex w-full min-h-screen overflow-x-hidden bg-darkBlue">
+              <div className={`flex flex-col flex-1 bg-darkGreen h-full w-full duration-300`}>
+                <Suspense fallback={<LoadingContent size="md" />}>
+                  <Header />
                 </Suspense>
-              </main>
-              <Suspense fallback={<LoadingContent size="sm" />}>
-                <Footer />
-              </Suspense>
+                <main className="flex-1 pb-10 mb-10 min-h-[100vh] flex justify-center w-full">
+                  <Suspense fallback={<LoadingContent size="lg" />}>
+                    {children}
+                  </Suspense>
+                </main>
+                <Suspense fallback={<LoadingContent size="sm" />}>
+                  <Footer />
+                </Suspense>
+              </div>
             </div>
-          </div>
-          <AlertModals />
-          {/* Add PageTracker to track page visits and mark exploration steps as completed */}
-          <ClientPageTracker />
-        </Providers>
-        <Toaster />
+            <AlertModals />
+            {/* Add PageTracker to track page visits and mark exploration steps as completed */}
+            <ClientPageTracker />
+          </Providers>
+          <Toaster />
+          <Analytics />
+        </ErrorBoundary>
       </body>
     </html>
   );
